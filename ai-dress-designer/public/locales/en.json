@@ -1,0 +1,528 @@
+{
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "loading": "Loading..."
+  },
+  "header": {
+    "home": "Home",
+    "designs": "Designs",
+    "howItWorks": "How it Works",
+    "pricing": "Pricing",
+    "contact": "Contact",
+    "cta": "Start Designing",
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "profile": "Profile"
+  },
+  "footer": {
+    "brand": {
+      "name": "Yasmine Al-Sham Smart Designer",
+      "tagline": "Where artificial intelligence meets haute couture"
+    },
+    "product": {
+      "title": "Product",
+      "features": "Features",
+      "pricing": "Pricing",
+      "examples": "Examples",
+      "documentation": "Documentation"
+    },
+    "company": {
+      "title": "Company",
+      "about": "About Us",
+      "blog": "Blog",
+      "careers": "Careers",
+      "contact": "Contact"
+    },
+    "legal": {
+      "title": "Legal",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "cookies": "Cookie Policy"
+    },
+    "copyright": "© 2024 Yasmine Al-Sham Smart Designer. All rights reserved."
+  },
+  "home": {
+    "hero": {
+      "title": "Design Your Dream Dress with AI",
+      "subtitle": "Transform your vision into stunning fashion designs using advanced artificial intelligence. From concept to creation in seconds.",
+      "cta": "Start Designing",
+      "previewText": "Design Preview"
+    },
+    "process": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Describe",
+        "description": "Tell us about your dream dress in detail"
+      },
+      "step2": {
+        "title": "Generate",
+        "description": "Our AI creates your unique design"
+      },
+      "step3": {
+        "title": "Download",
+        "description": "Get your high-quality design instantly"
+      }
+    },
+    "gallery": {
+      "title": "Featured Designs",
+      "subtitle": "Explore stunning AI-generated dress designs created by our community",
+      "sample1": "Elegant evening gown",
+      "sample2": "Modern cocktail dress",
+      "sample3": "Classic ball gown",
+      "sample4": "Contemporary midi dress"
+    }
+  },
+  "design": {
+    "title": "Design Studio",
+    "subtitle": "Create your perfect dress design with AI assistance",
+    "tabs": {
+      "results": "Results",
+      "history": "History",
+      "prompt": "Prompt",
+      "promptTitle": "Final Prompt Sent to AI",
+      "copyPrompt": "Copy Prompt",
+      "promptCopied": "Prompt copied!",
+      "promptNote": "Note: This section is temporary for testing and reviewing prompt quality",
+      "promptPlaceholder": "No prompt yet. Create a design first."
+    },
+    "prompt": {
+      "title": "Describe Your Design",
+      "placeholder": "Example: An elegant evening gown in royal blue with gold embroidery on the bodice, made from luxurious silk fabric, suitable for a wedding...",
+      "imageUpload": "Upload Reference Image",
+      "imageUploaded": "Image uploaded",
+      "removeImage": "Remove",
+      "uploadHint": "Click to upload image",
+      "useOptimizer": "Use Prompt Optimizer",
+      "preservePose": "Preserve model pose",
+      "generate": "Generate Design",
+      "generating": "Generating..."
+    },
+    "advanced": {
+      "title": "Advanced Options",
+      "optimizedPrompt": "Optimized Prompt",
+      "enhancing": "Enhancing prompt...",
+      "enhanced": "Prompt enhanced",
+      "generating": "Generating design...",
+      "complete": "Design complete",
+      "waiting": "Waiting..."
+    },
+    "results": {
+      "empty": "Your design will appear here",
+      "view": "View Full Size",
+      "download": "Download",
+      "newDesign": "New Design",
+      "downloadDesign": "Download Design",
+      "generatedDesign": "Generated dress design",
+      "historyPlaceholder": "Design history will appear here",
+      "feedbackPlaceholder": "Feedback options will appear here",
+      "placeholder": "Your design will appear here"
+    },
+    "toast": {
+      "emptyDescription": "Please enter a design description first",
+      "success": "Design generated successfully!",
+      "error": "Failed to generate design. Please try again.",
+      "enhanceError": "Failed to enhance prompt. Using original description.",
+      "downloaded": "Design downloaded successfully!"
+    }
+  },
+  "lightbox": {
+    "close": "Close",
+    "prompt": "Prompt",
+    "timestamp": "Generated",
+    "download": "Download Design",
+    "save": "Save"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "download": "Download",
+    "editColor": "Edit Color",
+    "variation": "Create Variation",
+    "favorite": "Favorite",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "questionnaire": {
+    "title": "Design Questionnaire",
+    "subtitle": "Answer the following questions to design your dream dress",
+    "progress": "Step {{current}} of {{total}}",
+    "customPlaceholder": "Please specify...",
+    "section1": {
+      "title": "Basics",
+      "q1": {
+        "question": "What type of dress would you like?",
+        "options": {
+          "evening": "Evening Gown",
+          "wedding": "Wedding Dress",
+          "engagement": "Engagement Dress",
+          "party": "Party Dress",
+          "casual": "Casual Dress",
+          "other": "Other (please specify)"
+        }
+      },
+      "q2": {
+        "question": "What length would you like for the dress?",
+        "options": {
+          "knee": "Knee-length",
+          "long": "Long",
+          "floor": "Floor-length",
+          "train": "With train",
+          "other": "Other"
+        }
+      }
+    },
+    "section2": {
+      "title": "Silhouette",
+      "q3": {
+        "question": "What waist shape would you prefer?",
+        "options": {
+          "fitted": "Fitted",
+          "aLine": "A-line",
+          "mermaid": "Mermaid",
+          "princess": "Princess",
+          "empire": "Empire waist",
+          "ballGown": "Ball gown",
+          "other": "Other"
+        }
+      },
+      "q4": {
+        "question": "How would you like the skirt to be?",
+        "options": {
+          "wide": "Wide",
+          "tight": "Tight",
+          "layered": "Layered",
+          "pleated": "Pleated",
+          "puffy": "Puffy",
+          "straight": "Straight",
+          "other": "Other"
+        }
+      }
+    },
+    "section3": {
+      "title": "Upper Body",
+      "q5": {
+        "question": "What neckline type would you prefer?",
+        "options": {
+          "vNeck": "V-neck",
+          "round": "Round neck",
+          "sweetheart": "Sweetheart",
+          "offShoulder": "Off-shoulder",
+          "high": "High neck",
+          "oneShoulder": "One-shoulder",
+          "strapless": "Strapless",
+          "square": "Square neck",
+          "other": "Other"
+        }
+      },
+      "q6": {
+        "question": "What sleeve type would you like?",
+        "options": {
+          "sleeveless": "Sleeveless",
+          "short": "Short sleeves",
+          "long": "Long sleeves",
+          "sheer": "Sheer sleeves",
+          "puff": "Puff sleeves",
+          "offShoulder": "Off-shoulder sleeves",
+          "lace": "Lace sleeves",
+          "other": "Other"
+        }
+      }
+    },
+    "section5": {
+      "title": "Fabric & Materials",
+      "q8": {
+        "question": "What fabric would you like for the dress?",
+        "options": {
+          "satin": "Satin",
+          "silk": "Silk",
+          "chiffon": "Chiffon",
+          "tulle": "Tulle",
+          "lace": "Lace",
+          "velvet": "Velvet",
+          "organza": "Organza",
+          "crepe": "Crepe",
+          "other": "Other"
+        }
+      },
+      "q9": {
+        "question": "Would you like transparent parts in the design?",
+        "placeholder": "If yes, where specifically?"
+      }
+    },
+    "section6": {
+      "title": "Embellishments & Details",
+      "q10": {
+        "question": "What embellishments would you like?",
+        "options": {
+          "handEmbroidery": "Hand embroidery",
+          "beads": "Beads",
+          "sequins": "Sequins",
+          "decorativeLace": "Decorative lace",
+          "3dFlowers": "3D flowers",
+          "stones": "Rhinestones",
+          "belt": "Belt",
+          "embroideredFabric": "Pre-embroidered fabric",
+          "none": "No embellishments",
+          "other": "Other"
+        },
+        "placementLabel": "Where would you like to place the embellishments?",
+        "placementPlaceholder": "Example: on the bodice and sleeves"
+      },
+      "q11": {
+        "question": "What level of shine would you prefer?",
+        "options": {
+          "none": "No shine",
+          "light": "Light shine",
+          "strong": "Strong shine",
+          "other": "Other"
+        }
+      }
+    },
+    "section7": {
+      "title": "Colors",
+      "q12": {
+        "question": "What is the primary color for the dress?",
+        "placeholder": "Example: Royal blue, white, gold..."
+      },
+      "q13": {
+        "question": "Would you like additional colors?",
+        "placeholder": "If yes, please specify"
+      }
+    },
+    "section8": {
+      "title": "Design Style",
+      "q14": {
+        "question": "What design style do you prefer?",
+        "options": {
+          "simple": "Simple",
+          "moderate": "Moderate details",
+          "luxurious": "Very luxurious",
+          "modern": "Modern",
+          "classic": "Classic",
+          "arabic": "Arabic / Oriental",
+          "european": "European",
+          "other": "Other"
+        }
+      }
+    },
+    "section9": {
+      "title": "Additional Notes",
+      "q16": {
+        "question": "Do you have any additional details you'd like to mention?",
+        "placeholder": "Any additional notes or details..."
+      }
+    }
+  },
+  "auth": {
+    "modal": {
+      "description": "Please sign in first to save and generate your design",
+      "login": {
+        "title": "Sign In",
+        "button": "Sign In"
+      },
+      "signup": {
+        "title": "Create Account",
+        "button": "Create Account"
+      },
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name (optional)",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter your password",
+      "or": "or",
+      "googleLogin": "Sign in with Google",
+      "googleSignup": "Sign up with Google",
+      "noAccount": "Don't have an account?",
+      "hasAccount": "Already have an account?",
+      "signupLink": "Create account",
+      "loginLink": "Sign in",
+      "success": {
+        "login": "Signed in successfully! Generating design...",
+        "signup": "Account created successfully! Generating design..."
+      },
+      "errors": {
+        "emailRequired": "Email is required",
+        "passwordRequired": "Password is required",
+        "passwordMismatch": "Passwords do not match",
+        "passwordTooShort": "Password must be at least 6 characters",
+        "invalidCredentials": "Invalid email or password",
+        "emailNotConfirmed": "Please confirm your email first. Check your inbox",
+        "emailExists": "This email is already registered",
+        "networkError": "Connection error. Please try again"
+      }
+    },
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue your amazing designs",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Sign In",
+      "loggingIn": "Signing in...",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Create a new account",
+      "orContinueWith": "Or continue with",
+      "googleLogin": "Sign in with Google",
+      "success": "Login successful!",
+      "errors": {
+        "invalidCredentials": "Invalid email or password",
+        "emailRequired": "Email is required",
+        "passwordRequired": "Password is required",
+        "invalidEmail": "Invalid email address",
+        "emailNotConfirmed": "Please confirm your email first. Check your inbox",
+        "linkExpired": "Link has expired. Please request a new one",
+        "networkError": "Network error. Please try again"
+      }
+    },
+    "signup": {
+      "title": "Start Your Creative Journey",
+      "subtitle": "Create an account to save your stunning designs",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter a strong password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Re-enter your password",
+      "agreeToTerms": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy",
+      "signupButton": "Create Account",
+      "signingUp": "Creating account...",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "orContinueWith": "Or continue with",
+      "googleSignup": "Sign up with Google",
+      "verificationSent": "Verification link sent to your email",
+      "checkEmail": "Please check your email to activate your account",
+      "errors": {
+        "emailExists": "Email already in use",
+        "weakPassword": "Password is too weak. Must be at least 8 characters",
+        "passwordMismatch": "Passwords do not match",
+        "fullNameRequired": "Full name is required",
+        "emailRequired": "Email is required",
+        "passwordRequired": "Password is required",
+        "confirmPasswordRequired": "Password confirmation is required",
+        "invalidEmail": "Invalid email address",
+        "termsRequired": "You must agree to the terms and conditions",
+        "networkError": "Network error. Please try again"
+      }
+    },
+    "resetPassword": {
+      "title": "Reset Password",
+      "subtitle": "Enter your email to receive a password reset link",
+      "email": "Email",
+      "emailPlaceholder": "Enter your email",
+      "sendButton": "Send Reset Link",
+      "sending": "Sending...",
+      "backToLogin": "Back to login",
+      "emailSent": "Password reset link sent",
+      "checkEmail": "Please check your email",
+      "errors": {
+        "emailRequired": "Email is required",
+        "invalidEmail": "Invalid email address",
+        "userNotFound": "No account found with this email",
+        "networkError": "Network error. Please try again"
+      }
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "Manage your personal information and designs",
+    "tabs": {
+      "overview": "Overview",
+      "designs": "My Designs",
+      "settings": "Settings"
+    },
+    "header": {
+      "memberSince": "Member since",
+      "editProfile": "Edit Profile",
+      "uploadPhoto": "Upload Photo",
+      "uploadError": "Failed to upload avatar",
+      "updateNameError": "Failed to update name"
+    },
+    "stats": {
+      "totalDesigns": "Total Designs",
+      "lastDesign": "Last Design"
+    },
+    "personalInfo": {
+      "title": "Personal Information",
+      "fullName": "Full Name",
+      "email": "Email",
+      "language": "Preferred Language",
+      "joinDate": "Join Date",
+      "save": "Save Changes",
+      "cancel": "Cancel"
+    },
+    "designs": {
+      "title": "My Previous Designs",
+      "empty": "You haven't created any designs yet",
+      "createFirst": "Start creating your first design!",
+      "goToDesign": "Create New Design",
+      "createdOn": "Created on",
+      "viewDetails": "View Details",
+      "designDetails": "Design Details",
+      "questionnaireAnswers": "Questionnaire Answers",
+      "noAnswers": "No answers available for this design",
+      "delete": "Delete",
+      "download": "Download Image",
+      "confirmDelete": "Are you sure you want to delete this design?",
+      "deleteSuccess": "Design deleted successfully",
+      "deleteError": "Failed to delete design",
+      "favoriteSuccess": "Design added to favorites",
+      "unfavoriteSuccess": "Design removed from favorites",
+      "sortBy": "Sort by",
+      "sortNewest": "Newest First",
+      "sortOldest": "Oldest First",
+      "sortFavorites": "Favorites Only",
+      "search": "Search designs..."
+    },
+    "settings": {
+      "title": "Account Settings",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "updatePassword": "Update Password",
+      "passwordMismatch": "Passwords do not match",
+      "languagePreference": "Language Preference",
+      "arabic": "العربية",
+      "english": "English",
+      "logout": "Logout",
+      "logoutDescription": "Sign out of your account. You can sign in again at any time.",
+      "logoutButton": "Logout",
+      "logoutError": "Failed to logout",
+      "deleteAccount": "Delete Account",
+      "deleteAccountWarning": "Warning: This action cannot be undone. All your designs and information will be permanently deleted.",
+      "deleteAccountConfirm": "I'm sure, delete my account",
+      "deleteAccountButton": "Delete Account Permanently",
+      "deleteAccountError": "Failed to delete account",
+      "passwordUpdateSuccess": "Password updated successfully",
+      "passwordUpdateError": "Failed to update password",
+      "profileUpdateSuccess": "Profile updated successfully",
+      "profileUpdateError": "Failed to update profile"
+    }
+  }
+}
+

@@ -1,0 +1,528 @@
+{
+  "common": {
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "loading": "جارٍ التحميل..."
+  },
+  "header": {
+    "home": "الرئيسية",
+    "designs": "التصاميم",
+    "howItWorks": "كيف يعمل",
+    "pricing": "الأسعار",
+    "contact": "اتصلي بنا",
+    "cta": "ابدئي التصميم",
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي"
+  },
+  "footer": {
+    "brand": {
+      "name": "مصمم ياسمين الشام الذكي",
+      "tagline": "حيث يلتقي الذكاء الاصطناعي بالأزياء الراقية"
+    },
+    "product": {
+      "title": "المنتج",
+      "features": "المميزات",
+      "pricing": "الأسعار",
+      "examples": "أمثلة",
+      "documentation": "التوثيق"
+    },
+    "company": {
+      "title": "الشركة",
+      "about": "من نحن",
+      "blog": "المدونة",
+      "careers": "الوظائف",
+      "contact": "اتصلي بنا"
+    },
+    "legal": {
+      "title": "قانوني",
+      "privacy": "سياسة الخصوصية",
+      "terms": "شروط الخدمة",
+      "cookies": "سياسة ملفات تعريف الارتباط"
+    },
+    "copyright": "© 2024 مصمم ياسمين الشام الذكي. جميع الحقوق محفوظة."
+  },
+  "home": {
+    "hero": {
+      "title": "صممي فستان أحلامك بالذكاء الاصطناعي",
+      "subtitle": "حوّلي رؤيتك إلى تصاميم أزياء مذهلة باستخدام الذكاء الاصطناعي المتقدم. من الفكرة إلى الإبداع في ثوانٍ.",
+      "cta": "ابدئي التصميم",
+      "previewText": "معاينة التصميم"
+    },
+    "process": {
+      "title": "كيف يعمل",
+      "step1": {
+        "title": "صِفي",
+        "description": "أخبرينا عن فستان أحلامك بالتفصيل"
+      },
+      "step2": {
+        "title": "ولّدي",
+        "description": "ذكاؤنا الاصطناعي يصنع تصميمك الفريد"
+      },
+      "step3": {
+        "title": "حمّلي",
+        "description": "احصلي على تصميمك عالي الجودة فوراً"
+      }
+    },
+    "gallery": {
+      "title": "التصاميم المميزة",
+      "subtitle": "استكشفي تصاميم الفساتين المذهلة التي أنشأها الذكاء الاصطناعي من مجتمعنا",
+      "sample1": "فستان سهرة أنيق",
+      "sample2": "فستان كوكتيل عصري",
+      "sample3": "فستان حفلات كلاسيكي",
+      "sample4": "فستان ميدي معاصر"
+    }
+  },
+  "design": {
+    "title": "استوديو التصميم",
+    "subtitle": "أنشئي تصميم فستانك المثالي بمساعدة الذكاء الاصطناعي",
+    "tabs": {
+      "results": "النتائج",
+      "history": "السجل",
+      "prompt": "البرومبت",
+      "promptTitle": "البرومبت النهائي المرسل للذكاء الاصطناعي",
+      "copyPrompt": "نسخ البرومبت",
+      "promptCopied": "تم نسخ البرومبت!",
+      "promptNote": "ملاحظة: هذا القسم مؤقت للتجريب ومراجعة جودة البرومبتات",
+      "promptPlaceholder": "لا يوجد برومبت بعد. قومي بإنشاء تصميم أولاً."
+    },
+    "prompt": {
+      "title": "صِفي تصميمك",
+      "placeholder": "مثال: فستان سهرة أنيق باللون الأزرق الملكي مع تطريز ذهبي على الصدر، مصنوع من قماش حريري فاخر، مناسب لحفل زفاف...",
+      "imageUpload": "تحميل صورة مرجعية",
+      "imageUploaded": "تم تحميل الصورة",
+      "removeImage": "إزالة",
+      "uploadHint": "اضغطي لتحميل صورة",
+      "useOptimizer": "استخدمي محسّن الوصف",
+      "preservePose": "الحفاظ على وضعية العارضة",
+      "generate": "توليد التصميم",
+      "generating": "جاري التوليد..."
+    },
+    "advanced": {
+      "title": "خيارات متقدمة",
+      "optimizedPrompt": "الوصف المحسّن",
+      "enhancing": "جاري تحسين الوصف...",
+      "enhanced": "تم تحسين الوصف",
+      "generating": "جاري توليد التصميم...",
+      "complete": "اكتمل التصميم",
+      "waiting": "في الانتظار..."
+    },
+    "results": {
+      "empty": "سيظهر تصميمك هنا",
+      "view": "عرض بالحجم الكامل",
+      "download": "تحميل",
+      "newDesign": "تصميم جديد",
+      "downloadDesign": "حملي التصميم",
+      "generatedDesign": "تصميم الفستان المُولّد",
+      "historyPlaceholder": "سيظهر سجل تصاميمك هنا",
+      "feedbackPlaceholder": "ستظهر خيارات التعليقات هنا",
+      "placeholder": "سيظهر تصميمك هنا"
+    },
+    "toast": {
+      "emptyDescription": "من فضلك أدخلي وصف التصميم أولاً",
+      "success": "تم توليد التصميم بنجاح!",
+      "error": "فشل توليد التصميم. يرجى المحاولة مرة أخرى.",
+      "enhanceError": "فشل تحسين الوصف. استخدام الوصف الأصلي.",
+      "downloaded": "تم تحميل التصميم بنجاح!"
+    }
+  },
+  "lightbox": {
+    "close": "إغلاق",
+    "prompt": "الوصف",
+    "timestamp": "تم التوليد",
+    "download": "حملي التصميم",
+    "save": "حفظي"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "retry": "أعيدي المحاولة",
+    "cancel": "إلغاء",
+    "save": "حفظي",
+    "delete": "احذفي",
+    "edit": "عدّلي",
+    "close": "إغلاق",
+    "download": "حملي",
+    "editColor": "تعديل اللون",
+    "variation": "نسخة مختلفة",
+    "favorite": "المفضلة",
+    "next": "التالي",
+    "previous": "السابق",
+    "submit": "إرسال",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "questionnaire": {
+    "title": "استبيان التصميم",
+    "subtitle": "أجيبي على الأسئلة التالية لنصمم لك فستان أحلامك",
+    "progress": "الخطوة {{current}} من {{total}}",
+    "customPlaceholder": "يرجى التوضيح...",
+    "section1": {
+      "title": "الأساسيات",
+      "q1": {
+        "question": "ما نوع الفستان الذي ترغبين به؟",
+        "options": {
+          "evening": "فستان سهرة",
+          "wedding": "فستان زفاف",
+          "engagement": "فستان خطوبة",
+          "party": "فستان حفلة",
+          "casual": "فستان يومي (كاجوال)",
+          "other": "وصف آخر (يرجى التوضيح)"
+        }
+      },
+      "q2": {
+        "question": "ما الطول المطلوب للفستان؟",
+        "options": {
+          "knee": "متوسط (حتى الركبة)",
+          "long": "طويل",
+          "floor": "ممتد إلى الأرض",
+          "train": "بذيل خلفي",
+          "other": "وصف آخر"
+        }
+      }
+    },
+    "section2": {
+      "title": "شكل الفستان",
+      "q3": {
+        "question": "ما شكل الخصر المطلوب؟",
+        "options": {
+          "fitted": "ضيق",
+          "aLine": "على شكل حرف (A)",
+          "mermaid": "ذيل السمكة",
+          "princess": "الأميرة",
+          "empire": "خصر مرتفع",
+          "ballGown": "فستان منتفخ",
+          "other": "وصف آخر"
+        }
+      },
+      "q4": {
+        "question": "كيف ترغبين بشكل التنورة؟",
+        "options": {
+          "wide": "واسعة",
+          "tight": "ضيقة",
+          "layered": "طبقات متعددة",
+          "pleated": "مكسّرة",
+          "puffy": "منفوشة",
+          "straight": "مستقيمة",
+          "other": "وصف آخر"
+        }
+      }
+    },
+    "section3": {
+      "title": "الجزء العلوي",
+      "q5": {
+        "question": "ما نوع الياقة المطلوب؟",
+        "options": {
+          "vNeck": "ياقة على شكل حرف (V)",
+          "round": "ياقة دائرية",
+          "sweetheart": "ياقة قلب",
+          "offShoulder": "ياقة ساقطة عن الكتفين",
+          "high": "ياقة مرتفعة",
+          "oneShoulder": "ياقة على كتف واحد",
+          "strapless": "بدون ياقة",
+          "square": "ياقة مربعة",
+          "other": "وصف آخر"
+        }
+      },
+      "q6": {
+        "question": "ما نوع الأكمام المطلوبة؟",
+        "options": {
+          "sleeveless": "بدون أكمام",
+          "short": "قصيرة",
+          "long": "طويلة",
+          "sheer": "شفافة",
+          "puff": "منفوشة",
+          "offShoulder": "ساقطة عن الكتف",
+          "lace": "دانتيل",
+          "other": "وصف آخر"
+        }
+      }
+    },
+    "section5": {
+      "title": "القماش والمواد",
+      "q8": {
+        "question": "ما نوع القماش المطلوب للفستان؟",
+        "options": {
+          "satin": "ساتان",
+          "silk": "حرير",
+          "chiffon": "شيفون",
+          "tulle": "تول",
+          "lace": "دانتيل",
+          "velvet": "مخمل",
+          "organza": "أورغانزا",
+          "crepe": "كريب",
+          "other": "وصف آخر"
+        }
+      },
+      "q9": {
+        "question": "هل ترغبين بوجود أجزاء شفافة في التصميم؟",
+        "placeholder": "إذا نعم، أين تحديداً؟"
+      }
+    },
+    "section6": {
+      "title": "الزينة والتفاصيل",
+      "q10": {
+        "question": "ما الإضافات التي ترغبين بها؟",
+        "options": {
+          "handEmbroidery": "تطريز يدوي",
+          "beads": "خرز",
+          "sequins": "ترتر",
+          "decorativeLace": "دانتيل زخرفي",
+          "3dFlowers": "ورود ثلاثية الأبعاد",
+          "stones": "أحجار لامعة",
+          "belt": "حزام",
+          "embroideredFabric": "قماش مطرز جاهز",
+          "none": "بدون إضافات",
+          "other": "وصف آخر"
+        },
+        "placementLabel": "أين تريدين وضع الزينة؟",
+        "placementPlaceholder": "مثال: على الصدر والأكمام"
+      },
+      "q11": {
+        "question": "ما درجة اللمعان التي تفضلينها؟",
+        "options": {
+          "none": "بدون لمعان",
+          "light": "لمعان خفيف",
+          "strong": "لمعان قوي",
+          "other": "وصف آخر"
+        }
+      }
+    },
+    "section7": {
+      "title": "الألوان",
+      "q12": {
+        "question": "ما اللون الأساسي للفستان؟",
+        "placeholder": "مثال: أزرق ملكي، أبيض، ذهبي..."
+      },
+      "q13": {
+        "question": "هل ترغبين بوجود ألوان إضافية؟",
+        "placeholder": "إذا نعم، يرجى ذكرها"
+      }
+    },
+    "section8": {
+      "title": "أسلوب التصميم",
+      "q14": {
+        "question": "أي نمط تصميم تفضلينه؟",
+        "options": {
+          "simple": "بسيط",
+          "moderate": "متوسط التفاصيل",
+          "luxurious": "فخم جداً",
+          "modern": "عصري",
+          "classic": "كلاسيكي",
+          "arabic": "عربي / شرقي",
+          "european": "أوروبي",
+          "other": "وصف آخر"
+        }
+      }
+    },
+    "section9": {
+      "title": "الملاحظات الإضافية",
+      "q16": {
+        "question": "هل لديكِ أي تفاصيل إضافية ترغبين بذكرها؟",
+        "placeholder": "أي ملاحظات أو تفاصيل إضافية..."
+      }
+    }
+  },
+  "auth": {
+    "modal": {
+      "description": "يرجى تسجيل الدخول أولاً لحفظ تصميمك وتوليده",
+      "login": {
+        "title": "تسجيل الدخول",
+        "button": "تسجيل الدخول"
+      },
+      "signup": {
+        "title": "إنشاء حساب جديد",
+        "button": "إنشاء حساب"
+      },
+      "fullName": "الاسم الكامل",
+      "fullNamePlaceholder": "أدخلي اسمك الكامل (اختياري)",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخلي بريدك الإلكتروني",
+      "password": "كلمة المرور",
+      "passwordPlaceholder": "أدخلي كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "confirmPasswordPlaceholder": "أعيدي إدخال كلمة المرور",
+      "or": "أو",
+      "googleLogin": "تسجيل الدخول بجوجل",
+      "googleSignup": "التسجيل بجوجل",
+      "noAccount": "ليس لديكِ حساب؟",
+      "hasAccount": "لديكِ حساب بالفعل؟",
+      "signupLink": "أنشئي حساباً",
+      "loginLink": "سجلي دخولك",
+      "success": {
+        "login": "تم تسجيل الدخول بنجاح! جارٍ توليد التصميم...",
+        "signup": "تم إنشاء الحساب بنجاح! جارٍ توليد التصميم..."
+      },
+      "errors": {
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "passwordRequired": "كلمة المرور مطلوبة",
+        "passwordMismatch": "كلمات المرور غير متطابقة",
+        "passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+        "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        "emailNotConfirmed": "يرجى تأكيد بريدك الإلكتروني أولاً. تحققي من صندوق الوارد",
+        "emailExists": "هذا البريد الإلكتروني مسجل بالفعل",
+        "networkError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى"
+      }
+    },
+    "login": {
+      "title": "مرحباً بعودتك",
+      "subtitle": "سجلي دخولك لمتابعة تصاميمك الرائعة",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخلي بريدك الإلكتروني",
+      "password": "كلمة المرور",
+      "passwordPlaceholder": "أدخلي كلمة المرور",
+      "rememberMe": "تذكريني",
+      "forgotPassword": "نسيتِ كلمة المرور؟",
+      "loginButton": "تسجيل الدخول",
+      "loggingIn": "جارٍ تسجيل الدخول...",
+      "noAccount": "ليس لديكِ حساب؟",
+      "signupLink": "أنشئي حساباً جديداً",
+      "orContinueWith": "أو تابعي باستخدام",
+      "googleLogin": "تسجيل الدخول بجوجل",
+      "success": "تم تسجيل الدخول بنجاح!",
+      "errors": {
+        "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "passwordRequired": "كلمة المرور مطلوبة",
+        "invalidEmail": "البريد الإلكتروني غير صالح",
+        "emailNotConfirmed": "يرجى تأكيد بريدك الإلكتروني أولاً. تحققي من صندوق الوارد",
+        "linkExpired": "انتهت صلاحية الرابط. يرجى طلب رابط جديد",
+        "networkError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى"
+      }
+    },
+    "signup": {
+      "title": "ابدئي رحلتك الإبداعية",
+      "subtitle": "أنشئي حساباً لحفظ تصاميمك المذهلة",
+      "fullName": "الاسم الكامل",
+      "fullNamePlaceholder": "أدخلي اسمك الكامل",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخلي بريدك الإلكتروني",
+      "password": "كلمة المرور",
+      "passwordPlaceholder": "أدخلي كلمة مرور قوية",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "confirmPasswordPlaceholder": "أعيدي إدخال كلمة المرور",
+      "agreeToTerms": "أوافق على",
+      "termsOfService": "شروط الخدمة",
+      "and": "و",
+      "privacyPolicy": "سياسة الخصوصية",
+      "signupButton": "إنشاء حساب",
+      "signingUp": "جارٍ إنشاء الحساب...",
+      "haveAccount": "لديكِ حساب بالفعل؟",
+      "loginLink": "سجلي دخولك",
+      "orContinueWith": "أو تابعي باستخدام",
+      "googleSignup": "التسجيل بجوجل",
+      "verificationSent": "تم إرسال رابط التحقق إلى بريدك الإلكتروني",
+      "checkEmail": "يرجى التحقق من بريدك الإلكتروني لتفعيل حسابك",
+      "errors": {
+        "emailExists": "البريد الإلكتروني مستخدم بالفعل",
+        "weakPassword": "كلمة المرور ضعيفة. يجب أن تكون 8 أحرف على الأقل",
+        "passwordMismatch": "كلمات المرور غير متطابقة",
+        "fullNameRequired": "الاسم الكامل مطلوب",
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "passwordRequired": "كلمة المرور مطلوبة",
+        "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+        "invalidEmail": "البريد الإلكتروني غير صالح",
+        "termsRequired": "يجب الموافقة على الشروط والأحكام",
+        "networkError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى"
+      }
+    },
+    "resetPassword": {
+      "title": "استعادة كلمة المرور",
+      "subtitle": "أدخلي بريدك الإلكتروني لإرسال رابط استعادة كلمة المرور",
+      "email": "البريد الإلكتروني",
+      "emailPlaceholder": "أدخلي بريدك الإلكتروني",
+      "sendButton": "إرسال رابط الاستعادة",
+      "sending": "جارٍ الإرسال...",
+      "backToLogin": "العودة لتسجيل الدخول",
+      "emailSent": "تم إرسال رابط استعادة كلمة المرور",
+      "checkEmail": "يرجى التحقق من بريدك الإلكتروني",
+      "errors": {
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "invalidEmail": "البريد الإلكتروني غير صالح",
+        "userNotFound": "لا يوجد حساب بهذا البريد الإلكتروني",
+        "networkError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى"
+      }
+    }
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "subtitle": "إدارة معلوماتك الشخصية وتصاميمك",
+    "tabs": {
+      "overview": "نظرة عامة",
+      "designs": "تصاميمي",
+      "settings": "الإعدادات"
+    },
+    "header": {
+      "memberSince": "عضوة منذ",
+      "editProfile": "تعديل البروفايل",
+      "uploadPhoto": "رفع صورة",
+      "uploadError": "فشل رفع الصورة",
+      "updateNameError": "فشل تحديث الاسم"
+    },
+    "stats": {
+      "totalDesigns": "إجمالي التصاميم",
+      "lastDesign": "آخر تصميم"
+    },
+    "personalInfo": {
+      "title": "المعلومات الشخصية",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "language": "اللغة المفضلة",
+      "joinDate": "تاريخ التسجيل",
+      "save": "حفظ التغييرات",
+      "cancel": "إلغاء"
+    },
+    "designs": {
+      "title": "تصاميمي السابقة",
+      "empty": "لم تقومي بإنشاء أي تصاميم بعد",
+      "createFirst": "ابدئي بإنشاء تصميمك الأول!",
+      "goToDesign": "إنشاء تصميم جديد",
+      "createdOn": "تم الإنشاء في",
+      "viewDetails": "عرض التفاصيل",
+      "designDetails": "تفاصيل التصميم",
+      "questionnaireAnswers": "إجابات الاستبيان",
+      "noAnswers": "لا توجد إجابات متاحة لهذا التصميم",
+      "delete": "حذف",
+      "download": "تحميل الصورة",
+      "confirmDelete": "هل أنتِ متأكدة من حذف هذا التصميم؟",
+      "deleteSuccess": "تم حذف التصميم بنجاح",
+      "deleteError": "فشل حذف التصميم",
+      "favoriteSuccess": "تم إضافة التصميم للمفضلة",
+      "unfavoriteSuccess": "تم إزالة التصميم من المفضلة",
+      "sortBy": "ترتيب حسب",
+      "sortNewest": "الأحدث أولاً",
+      "sortOldest": "الأقدم أولاً",
+      "sortFavorites": "المفضلة فقط",
+      "search": "بحث في التصاميم..."
+    },
+    "settings": {
+      "title": "إعدادات الحساب",
+      "changePassword": "تغيير كلمة المرور",
+      "currentPassword": "كلمة المرور الحالية",
+      "newPassword": "كلمة المرور الجديدة",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "updatePassword": "تحديث كلمة المرور",
+      "passwordMismatch": "كلمات المرور غير متطابقة",
+      "languagePreference": "اللغة المفضلة",
+      "arabic": "العربية",
+      "english": "English",
+      "logout": "تسجيل الخروج",
+      "logoutDescription": "تسجيل الخروج من حسابك. يمكنك تسجيل الدخول مرة أخرى في أي وقت.",
+      "logoutButton": "تسجيل الخروج",
+      "logoutError": "فشل تسجيل الخروج",
+      "deleteAccount": "حذف الحساب",
+      "deleteAccountWarning": "تحذير: هذا الإجراء لا يمكن التراجع عنه. سيتم حذف جميع تصاميمك ومعلوماتك بشكل دائم.",
+      "deleteAccountConfirm": "أنا متأكدة، احذفي حسابي",
+      "deleteAccountButton": "حذف الحساب نهائياً",
+      "deleteAccountError": "فشل حذف الحساب",
+      "passwordUpdateSuccess": "تم تحديث كلمة المرور بنجاح",
+      "passwordUpdateError": "فشل تحديث كلمة المرور",
+      "profileUpdateSuccess": "تم تحديث البروفايل بنجاح",
+      "profileUpdateError": "فشل تحديث البروفايل"
+    }
+  }
+}
+
