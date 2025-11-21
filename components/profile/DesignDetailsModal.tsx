@@ -3,16 +3,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Trash2, Edit } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { QuestionnaireAnswers } from '@/types';
+import type { Design } from '@/types';
 import Button from '@/components/Button';
-
-interface Design {
-  id: string;
-  image_url: string;
-  enhanced_prompt: string;
-  created_at: string;
-  questionnaire_answers?: QuestionnaireAnswers | null;
-}
 
 interface DesignDetailsModalProps {
   design: Design | null;

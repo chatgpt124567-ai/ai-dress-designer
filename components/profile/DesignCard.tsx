@@ -4,16 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import type { QuestionnaireAnswers } from '@/types';
-
-interface Design {
-  id: string;
-  image_url: string;
-  enhanced_prompt: string;
-  created_at: string;
-  is_favorite: boolean;
-  questionnaire_answers?: QuestionnaireAnswers | null;
-}
+import type { Design } from '@/types';
 
 interface DesignCardProps {
   design: Design;

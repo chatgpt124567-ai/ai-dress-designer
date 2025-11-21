@@ -11,7 +11,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import DesignGallery from '@/components/profile/DesignGallery';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import { Palette, Settings } from 'lucide-react';
-import type { QuestionnaireAnswers } from '@/types';
+import type { Design } from '@/types';
 
 type Tab = 'designs' | 'settings';
 
@@ -22,15 +22,6 @@ interface Profile {
   email: string;
   created_at: string;
   preferred_language: string;
-}
-
-interface Design {
-  id: string;
-  image_url: string;
-  enhanced_prompt: string;
-  created_at: string;
-  is_favorite: boolean;
-  questionnaire_answers?: QuestionnaireAnswers | null;
 }
 
 export default function ProfilePage() {

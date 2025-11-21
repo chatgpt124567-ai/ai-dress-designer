@@ -95,3 +95,16 @@ export interface QuestionnaireAnswers {
   additionalNotes?: string;
 }
 
+// Design Type (for saved designs from database)
+export interface Design {
+  id: string;
+  image_url: string;
+  enhanced_prompt: string;
+  created_at: string;
+  is_favorite: boolean;
+  questionnaire_answers?: QuestionnaireAnswers | null;
+  original_description?: string; // Optional: JSON string of questionnaire answers or text description
+  image_data?: string; // Optional: Base64 image data
+  embellishment_placement?: string | null; // Optional: Embellishment placement details
+}
+

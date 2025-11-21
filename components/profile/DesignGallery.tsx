@@ -7,17 +7,8 @@ import DesignCard from './DesignCard';
 import DesignDetailsModal from './DesignDetailsModal';
 import EditDesignModal from '@/components/EditDesignModal';
 import { createClient } from '@/lib/supabase/client';
-import type { QuestionnaireAnswers } from '@/types';
+import type { QuestionnaireAnswers, Design } from '@/types';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
-
-interface Design {
-  id: string;
-  image_url: string;
-  enhanced_prompt: string;
-  created_at: string;
-  is_favorite: boolean;
-  questionnaire_answers?: QuestionnaireAnswers | null;
-}
 
 interface DesignGalleryProps {
   designs: Design[];
