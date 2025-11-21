@@ -17,7 +17,9 @@ import Toast, { ToastType } from '@/components/Toast';
 import { ImageSkeleton } from '@/components/Skeleton';
 import AuthModal from '@/components/AuthModal';
 import DesignDetailsModal from '@/components/profile/DesignDetailsModal';
+import EditDesignModal from '@/components/EditDesignModal';
 import { createClient } from '@/lib/supabase/client';
+import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 
 export default function DesignPage() {
   const { t, direction } = useLanguage();
@@ -39,6 +41,8 @@ export default function DesignPage() {
   const [previousDesigns, setPreviousDesigns] = useState<any[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedHistoryDesign, setSelectedHistoryDesign] = useState<any | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingDesign, setEditingDesign] = useState(false);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -216,6 +220,54 @@ export default function DesignPage() {
     }
   };
 
+  const handleEditDesign = async (editRequest: string) => {
+    if (!imageUrl) {
+      showToast('لا توجد صورة للتعديل', 'error');
+      return;
+    }
+
+    try {
+      setEditingDesign(true);
+      setStep('generating');
+
+      const response = await fetch('/api/edit-design', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalImageUrl: imageUrl,
+          editRequest,
+        } as EditDesignRequest),
+      });
+
+      const data: EditDesignResponse = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to edit design');
+      }
+
+      if (data.imageData) {
+        setImageUrl(data.imageData);
+        setStep('complete');
+        setEditModalOpen(false);
+        showToast('تم تعديل التصميم بنجاح!', 'success');
+
+        // Auto-save edited design if user is authenticated
+        if (isAuthenticated && currentAnswers) {
+          await autoSaveDesign(currentAnswers, enhancedPrompt, data.imageData);
+        }
+      }
+    } catch (error) {
+      console.error('Error editing design:', error);
+      setError(error instanceof Error ? error.message : 'Failed to edit design');
+      showToast(error instanceof Error ? error.message : 'فشل في تعديل التصميم', 'error');
+      setStep('complete');
+    } finally {
+      setEditingDesign(false);
+    }
+  };
+
   // Auto-save design after successful generation
   const autoSaveDesign = async (
     answers: QuestionnaireAnswers,
@@ -378,23 +430,37 @@ export default function DesignPage() {
                         onDownload={handleDownload}
                       />
 
-                      <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                      <div className="space-y-3 md:space-y-4">
+                        {/* Request Edit Button */}
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="lg"
-                          onClick={handleReset}
-                          className="flex-1 text-sm md:text-base"
+                          onClick={() => setEditModalOpen(true)}
+                          disabled={editingDesign}
+                          className="w-full text-sm md:text-base border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all"
                         >
-                          {t('design.results.newDesign')}
+                          {t('design.results.requestEdit')}
                         </Button>
-                        <Button
-                          variant="primary"
-                          size="lg"
-                          onClick={handleDownload}
-                          className="flex-1 text-sm md:text-base"
-                        >
-                          {t('design.results.download')}
-                        </Button>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                          <Button
+                            variant="ghost"
+                            size="lg"
+                            onClick={handleReset}
+                            className="flex-1 text-sm md:text-base"
+                          >
+                            {t('design.results.newDesign')}
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="lg"
+                            onClick={handleDownload}
+                            className="flex-1 text-sm md:text-base"
+                          >
+                            {t('design.results.download')}
+                          </Button>
+                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -556,6 +622,14 @@ export default function DesignPage() {
               );
             }
           }}
+        />
+
+        {/* Edit Design Modal */}
+        <EditDesignModal
+          isOpen={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          onSubmit={handleEditDesign}
+          loading={editingDesign}
         />
 
         </div>

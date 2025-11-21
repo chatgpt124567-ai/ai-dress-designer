@@ -17,13 +17,12 @@ interface QuestionnaireWizardProps {
 export default function QuestionnaireWizard({ onSubmit, loading = false }: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 14; // 14 questions total (removed Q7: Back Design, Q15: Reference Image)
+  const totalSteps = 11; // 11 questions total (Q2 combines Primary Color + Additional Colors)
 
   // Initialize answers state
   const [answers, setAnswers] = useState<QuestionnaireAnswers>({
     dressType: '',
     dressLength: '',
-    waistShape: '',
     skirtShape: '',
     necklineType: '',
     sleeveType: '',
@@ -33,7 +32,6 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
     shineLevel: '',
     primaryColor: '',
     hasAdditionalColors: '',
-    designStyle: '',
   });
 
   const handleNext = () => {
@@ -74,7 +72,6 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
               { value: 'wedding', labelKey: 'questionnaire.section1.q1.options.wedding' },
               { value: 'engagement', labelKey: 'questionnaire.section1.q1.options.engagement' },
               { value: 'party', labelKey: 'questionnaire.section1.q1.options.party' },
-              { value: 'casual', labelKey: 'questionnaire.section1.q1.options.casual' },
               { value: 'other', labelKey: 'questionnaire.section1.q1.options.other', hasCustomInput: true },
             ]}
             value={answers.dressType}
@@ -83,7 +80,49 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 2: // Section 1: Basics - Q2
+      case 2: // Section 7: Colors - Combined (Primary Color + Additional Colors)
+        return (
+          <div className="space-y-6">
+            {/* القسم الأول: اللون الأساسي */}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section7.title')}
+              questionText={t('questionnaire.section7.q12.question')}
+              questionType="text"
+              value={answers.primaryColor}
+              onChange={(value) => updateAnswer('primaryColor', value as string)}
+              placeholder={t('questionnaire.section7.q12.placeholder')}
+            />
+
+            {/* القسم الثاني: ألوان إضافية */}
+            <QuestionStep
+              sectionTitle=""
+              questionText={t('questionnaire.section7.q13.question')}
+              questionType="yesno"
+              value={answers.hasAdditionalColors}
+              onChange={(value) => updateAnswer('hasAdditionalColors', value as string)}
+            />
+
+            {/* الحقل الفرعي الشرطي */}
+            {answers.hasAdditionalColors === 'yes' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <input
+                  type="text"
+                  value={answers.additionalColors || ''}
+                  onChange={(e) => updateAnswer('additionalColors' as any, e.target.value)}
+                  placeholder={t('questionnaire.section7.q13.placeholder')}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20 transition-all text-sm md:text-base"
+                  dir={direction}
+                />
+              </motion.div>
+            )}
+          </div>
+        );
+
+      case 3: // Section 1: Basics - Q2 (Dress Length - moved from case 2)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section1.title')}
@@ -102,28 +141,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 3: // Section 2: Silhouette - Q3
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section2.title')}
-            questionText={t('questionnaire.section2.q3.question')}
-            questionType="radio"
-            options={[
-              { value: 'fitted', labelKey: 'questionnaire.section2.q3.options.fitted' },
-              { value: 'aLine', labelKey: 'questionnaire.section2.q3.options.aLine' },
-              { value: 'mermaid', labelKey: 'questionnaire.section2.q3.options.mermaid' },
-              { value: 'princess', labelKey: 'questionnaire.section2.q3.options.princess' },
-              { value: 'empire', labelKey: 'questionnaire.section2.q3.options.empire' },
-              { value: 'ballGown', labelKey: 'questionnaire.section2.q3.options.ballGown' },
-              { value: 'other', labelKey: 'questionnaire.section2.q3.options.other', hasCustomInput: true },
-            ]}
-            value={answers.waistShape}
-            customValue={answers.waistShapeCustom}
-            onChange={(value, customValue) => updateAnswer('waistShape', value as string, customValue)}
-          />
-        );
-
-      case 4: // Section 2: Silhouette - Q4
+      case 4: // Section 2: Silhouette - Q4 (Skirt Shape - moved from case 3)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section2.title')}
@@ -136,6 +154,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
               { value: 'pleated', labelKey: 'questionnaire.section2.q4.options.pleated' },
               { value: 'puffy', labelKey: 'questionnaire.section2.q4.options.puffy' },
               { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
+              { value: 'mermaidTail', labelKey: 'questionnaire.section2.q4.options.mermaidTail' },
               { value: 'other', labelKey: 'questionnaire.section2.q4.options.other', hasCustomInput: true },
             ]}
             value={answers.skirtShape}
@@ -144,7 +163,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 5: // Section 3: Upper Body - Q5
+      case 5: // Section 3: Upper Body - Q5 (Neckline - moved from case 4)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -167,7 +186,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 6: // Section 3: Upper Body - Q6
+      case 6: // Section 3: Upper Body - Q6 (Sleeves - moved from case 5)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -189,7 +208,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 7: // Section 5: Fabric - Q7 (was Q8)
+      case 7: // Section 5: Fabric - Q8 (Fabric Type - moved from case 6)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section5.title')}
@@ -212,7 +231,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 8: // Section 5: Fabric - Q8 (was Q9 - Transparent parts)
+      case 8: // Section 5: Fabric - Q9 (Transparent parts - moved from case 7)
         return (
           <div className="space-y-6">
             <QuestionStep
@@ -241,7 +260,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           </div>
         );
 
-      case 9: // Section 6: Embellishments - Q9 (was Q10)
+      case 9: // Section 6: Embellishments - Q10 (Embellishments - moved from case 8)
         return (
           <div className="space-y-6">
             <QuestionStep
@@ -295,7 +314,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           </div>
         );
 
-      case 10: // Section 6: Embellishments - Q10 (was Q11)
+      case 10: // Section 6: Embellishments - Q11 (Shine Level - moved from case 9)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
@@ -313,70 +332,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 11: // Section 7: Colors - Q11 (was Q12)
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section7.title')}
-            questionText={t('questionnaire.section7.q12.question')}
-            questionType="text"
-            value={answers.primaryColor}
-            onChange={(value) => updateAnswer('primaryColor', value as string)}
-            placeholder={t('questionnaire.section7.q12.placeholder')}
-          />
-        );
-
-      case 12: // Section 7: Colors - Q12 (was Q13)
-        return (
-          <div className="space-y-6">
-            <QuestionStep
-              sectionTitle={t('questionnaire.section7.title')}
-              questionText={t('questionnaire.section7.q13.question')}
-              questionType="yesno"
-              value={answers.hasAdditionalColors}
-              onChange={(value) => updateAnswer('hasAdditionalColors', value as string)}
-            />
-            {answers.hasAdditionalColors === 'yes' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <input
-                  type="text"
-                  value={answers.additionalColors || ''}
-                  onChange={(e) => updateAnswer('additionalColors' as any, e.target.value)}
-                  placeholder={t('questionnaire.section7.q13.placeholder')}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20 transition-all text-sm md:text-base"
-                  dir={direction}
-                />
-              </motion.div>
-            )}
-          </div>
-        );
-
-      case 13: // Section 8: Design Style - Q13 (was Q14)
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section8.title')}
-            questionText={t('questionnaire.section8.q14.question')}
-            questionType="radio"
-            options={[
-              { value: 'simple', labelKey: 'questionnaire.section8.q14.options.simple' },
-              { value: 'moderate', labelKey: 'questionnaire.section8.q14.options.moderate' },
-              { value: 'luxurious', labelKey: 'questionnaire.section8.q14.options.luxurious' },
-              { value: 'modern', labelKey: 'questionnaire.section8.q14.options.modern' },
-              { value: 'classic', labelKey: 'questionnaire.section8.q14.options.classic' },
-              { value: 'arabic', labelKey: 'questionnaire.section8.q14.options.arabic' },
-              { value: 'european', labelKey: 'questionnaire.section8.q14.options.european' },
-              { value: 'other', labelKey: 'questionnaire.section8.q14.options.other', hasCustomInput: true },
-            ]}
-            value={answers.designStyle}
-            customValue={answers.designStyleCustom}
-            onChange={(value, customValue) => updateAnswer('designStyle', value as string, customValue)}
-          />
-        );
-
-      case 14: // Section 9: Additional Notes - Q14 (was Q16)
+      case 11: // Section 9: Additional Notes - Q16 (Additional Notes - moved from case 12)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}

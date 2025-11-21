@@ -58,9 +58,7 @@ export interface QuestionnaireAnswers {
   dressLength: string;
   dressLengthCustom?: string;
 
-  // Section 2: Silhouette
-  waistShape: string;
-  waistShapeCustom?: string;
+  // Section 2: Silhouette (Q3 Waist Shape removed)
   skirtShape: string;
   skirtShapeCustom?: string;
 
@@ -88,11 +86,7 @@ export interface QuestionnaireAnswers {
   hasAdditionalColors: string;
   additionalColors?: string;
 
-  // Section 8: Design Style (Q15 removed: Reference Image)
-  designStyle: string;
-  designStyleCustom?: string;
-
-  // Section 9: Additional Notes
+  // Section 9: Additional Notes (Q13 Design Style removed)
   additionalNotes?: string;
 }
 

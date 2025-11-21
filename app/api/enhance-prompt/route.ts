@@ -9,8 +9,7 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   parts.push(`**Dress Type:** ${answers.dressType}${answers.dressTypeCustom ? ` (${answers.dressTypeCustom})` : ''}`);
   parts.push(`**Dress Length:** ${answers.dressLength}${answers.dressLengthCustom ? ` (${answers.dressLengthCustom})` : ''}`);
 
-  // Section 2: Silhouette
-  parts.push(`**Waist Shape:** ${answers.waistShape}${answers.waistShapeCustom ? ` (${answers.waistShapeCustom})` : ''}`);
+  // Section 2: Silhouette (Q3 Waist Shape removed)
   parts.push(`**Skirt Shape:** ${answers.skirtShape}${answers.skirtShapeCustom ? ` (${answers.skirtShapeCustom})` : ''}`);
 
   // Section 3: Upper Body
@@ -41,10 +40,7 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
     parts.push(`**Additional Colors:** ${answers.additionalColors}`);
   }
 
-  // Section 8: Design Style (Q15 removed: Reference Image)
-  parts.push(`**Design Style:** ${answers.designStyle}${answers.designStyleCustom ? ` (${answers.designStyleCustom})` : ''}`);
-
-  // Section 9: Additional Notes
+  // Section 9: Additional Notes (Q13 Design Style removed)
   if (answers.additionalNotes) {
     parts.push(`**Additional Notes:** ${answers.additionalNotes}`);
   }
@@ -91,20 +87,18 @@ IMPORTANT RULES:
 - The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.
 
 Your output must be a single polished paragraph describing ONLY:
-• silhouette  
-• proportions  
-• fabrics  
-• materials  
-• neckline  
-• sleeves  
-• skirt shape  
-• waist shape  
-• back design  
-• embellishments  
-• transparency details  
-• colors  
-• movement & textile behavior  
-• aesthetic style  
+• silhouette
+• proportions
+• fabrics
+• materials
+• neckline
+• sleeves
+• skirt shape
+• embellishments
+• transparency details
+• colors
+• movement & textile behavior
+• aesthetic style
 
 Do NOT mention questionnaires, choices, user inputs, or any meta context.  
 Write in the tone of an elite fashion designer describing a couture dress.

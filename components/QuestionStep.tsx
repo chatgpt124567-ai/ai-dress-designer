@@ -151,10 +151,10 @@ export default function QuestionStep({
               <label
                 key={option}
                 className={cn(
-                  'flex-1 flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-accent-gold',
+                  'flex-1 flex items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200',
                   value === option
-                    ? 'border-accent-gold bg-accent-gold/5'
-                    : 'border-gray-200 bg-white'
+                    ? 'border-accent-gold bg-accent-gold/10 shadow-lg scale-105 ring-2 ring-accent-gold/30'
+                    : 'border-gray-300 bg-white hover:border-accent-gold hover:shadow-md'
                 )}
               >
                 <input
@@ -165,7 +165,10 @@ export default function QuestionStep({
                   onChange={() => onChange(option)}
                   className="sr-only"
                 />
-                <span className="text-base md:text-lg font-medium text-primary">
+                <span className={cn(
+                  "text-base md:text-lg font-medium transition-colors",
+                  value === option ? "text-accent-gold font-bold" : "text-primary"
+                )}>
                   {t(`common.${option}`)}
                 </span>
               </label>

@@ -23,6 +23,9 @@ export default function Header() {
   // Check if we're on pages that should have white header always
   const isWhiteHeaderPage = pathname === '/design' || pathname === '/profile';
 
+  // Check if we're on pages that should have white header on desktop only
+  const isWhiteHeaderDesktopPage = pathname === '/' || pathname === '/auth/login' || pathname === '/profile';
+
   // Monitor scroll to detect when hero section ends
   useEffect(() => {
     // If we're on design or profile page, always show white header
@@ -69,9 +72,12 @@ export default function Header() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        // Mobile behavior: transparent -> white on scroll
         isScrolled || isMobileMenuOpen
-          ? 'bg-white backdrop-blur-2xl shadow-xl py-4' // Unified solid white with glass effect
-          : 'bg-transparent py-6'
+          ? 'bg-white backdrop-blur-2xl shadow-xl py-4'
+          : 'bg-transparent py-6',
+        // Desktop behavior: white always on specific pages
+        isWhiteHeaderDesktopPage && 'lg:bg-white lg:backdrop-blur-2xl lg:shadow-xl lg:py-4'
       )}
     >
       <div className="container mx-auto px-4">
@@ -83,8 +89,8 @@ export default function Header() {
               "z-10 transition-all duration-300",
               // Mobile: centered absolute
               "absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2",
-              // Desktop: normal positioning (right for RTL, left for LTR)
-              "lg:static lg:transform-none",
+              // Desktop: normal positioning with vertical centering
+              "lg:static lg:transform-none lg:flex lg:items-center",
               direction === 'rtl' ? 'lg:order-first' : 'lg:order-first'
             )}
           >
@@ -93,7 +99,9 @@ export default function Header() {
               className={cn(
                 "text-lg sm:text-xl lg:text-2xl font-headline font-bold whitespace-nowrap transition-colors duration-300",
                 // Mobile: white when transparent, primary when scrolled
-                isScrolled || isMobileMenuOpen ? "text-primary" : "text-white lg:text-primary"
+                isScrolled || isMobileMenuOpen ? "text-primary" : "text-white",
+                // Desktop: always primary on specific pages
+                isWhiteHeaderDesktopPage && "lg:text-primary"
               )}
             >
               {t('footer.brand.name')}
@@ -104,21 +112,21 @@ export default function Header() {
           <nav className={cn(
             "hidden lg:flex items-center flex-grow justify-center",
             direction === 'rtl' ? 'space-x-reverse' : '',
-            "gap-3 lg:gap-4 xl:gap-6 2xl:gap-8"
+            "gap-4 lg:gap-6 xl:gap-8 2xl:gap-10"
           )}>
-            <Link href="/" className="text-sm lg:text-base xl:text-sm font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="/" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.home')}
             </Link>
-            <Link href="/design" className="text-sm lg:text-base xl:text-sm font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="/design" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.designs')}
             </Link>
-            <Link href="#how-it-works" className="text-sm lg:text-base xl:text-sm font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="#how-it-works" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.howItWorks')}
             </Link>
-            <Link href="#pricing" className="text-sm lg:text-base xl:text-sm font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="#pricing" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.pricing')}
             </Link>
-            <Link href="#contact" className="text-sm lg:text-base xl:text-sm font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="#contact" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.contact')}
             </Link>
           </nav>
@@ -160,6 +168,7 @@ export default function Header() {
             className={cn(
               "lg:hidden p-2 flex-shrink-0 transition-colors duration-300",
               direction === 'rtl' ? 'mr-auto' : 'ml-auto',
+              // Mobile: white when transparent, primary when scrolled
               isScrolled || isMobileMenuOpen ? "text-primary" : "text-white"
             )}
             aria-label="Toggle menu"
