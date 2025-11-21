@@ -256,8 +256,24 @@
           "velvet": "مخمل",
           "organza": "أورغانزا",
           "crepe": "كريب",
+          "customFabric": "استخدام قماش مخصص (رفع صورة)",
           "other": "وصف آخر"
-        }
+        },
+        "uploadImage": "رفع صورة القماش",
+        "takePhoto": "التقاط صورة",
+        "chooseFromGallery": "اختيار من المعرض",
+        "imageUploaded": "تم رفع الصورة",
+        "changeImage": "تغيير الصورة",
+        "removeImage": "حذف الصورة",
+        "fabricPlacementQuestion": "أين تريدين استخدام هذا القماش؟",
+        "placementOptions": {
+          "full": "الفستان بالكامل",
+          "bodice": "الصدر فقط",
+          "skirt": "التنورة فقط",
+          "sleeves": "الأكمام فقط",
+          "custom": "تفاصيل محددة (يرجى التوضيح)"
+        },
+        "placementDetailsPlaceholder": "مثال: استخدام القماش على الجزء العلوي من التنورة فقط"
       },
       "q9": {
         "question": "هل ترغبين بوجود أجزاء شفافة في التصميم؟",

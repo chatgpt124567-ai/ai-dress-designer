@@ -17,7 +17,25 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   parts.push(`**Sleeve Type:** ${answers.sleeveType}${answers.sleeveTypeCustom ? ` (${answers.sleeveTypeCustom})` : ''}`);
 
   // Section 5: Fabric & Materials (Section 4 removed: Back Design)
-  parts.push(`**Fabric Type:** ${answers.fabricType}${answers.fabricTypeCustom ? ` (${answers.fabricTypeCustom})` : ''}`);
+  if (answers.fabricType === 'customFabric' && answers.customFabricImage) {
+    // Custom fabric with image
+    let placementText = '';
+    if (answers.fabricPlacement === 'full') {
+      placementText = 'entire dress';
+    } else if (answers.fabricPlacement === 'bodice') {
+      placementText = 'bodice only';
+    } else if (answers.fabricPlacement === 'skirt') {
+      placementText = 'skirt only';
+    } else if (answers.fabricPlacement === 'sleeves') {
+      placementText = 'sleeves only';
+    } else if (answers.fabricPlacement === 'custom' && answers.fabricPlacementDetails) {
+      placementText = answers.fabricPlacementDetails;
+    }
+    parts.push(`**Fabric Type:** Custom fabric from provided image (to be used on: ${placementText})`);
+  } else {
+    parts.push(`**Fabric Type:** ${answers.fabricType}${answers.fabricTypeCustom ? ` (${answers.fabricTypeCustom})` : ''}`);
+  }
+
   if (answers.hasTransparentParts === 'yes' && answers.transparentPartsLocation) {
     parts.push(`**Transparent Parts:** Yes, at ${answers.transparentPartsLocation}`);
   } else {
@@ -77,14 +95,43 @@ export async function POST(request: NextRequest) {
       clientAnswersText = `Client Description: ${description}`;
     }
 
+    // Check if custom fabric image is provided
+    const hasCustomFabric = questionnaireAnswers?.fabricType === 'customFabric' && questionnaireAnswers?.customFabricImage;
+
+    // Build custom fabric instruction if needed
+    let customFabricInstruction = '';
+    if (hasCustomFabric && questionnaireAnswers) {
+      let placementText = '';
+      if (questionnaireAnswers.fabricPlacement === 'full') {
+        placementText = 'the entire dress';
+      } else if (questionnaireAnswers.fabricPlacement === 'bodice') {
+        placementText = 'the bodice only';
+      } else if (questionnaireAnswers.fabricPlacement === 'skirt') {
+        placementText = 'the skirt only';
+      } else if (questionnaireAnswers.fabricPlacement === 'sleeves') {
+        placementText = 'the sleeves only';
+      } else if (questionnaireAnswers.fabricPlacement === 'custom' && questionnaireAnswers.fabricPlacementDetails) {
+        placementText = questionnaireAnswers.fabricPlacementDetails;
+      }
+
+      customFabricInstruction = `
+
+CRITICAL CUSTOM FABRIC INSTRUCTION:
+The client has provided a custom fabric image. In your enhanced description, you MUST include the following instruction EXACTLY:
+
+"Use the exact fabric pattern, texture, and colors shown in the attached custom fabric image for ${placementText}. Do NOT modify, recolor, or alter the fabric design in any way. Apply it with photorealistic precision maintaining all original details, including the pattern repeat, texture depth, and color accuracy. The fabric should drape naturally and realistically on the dress."
+
+This instruction must be seamlessly integrated into your description where you describe the fabric/materials.`;
+    }
+
     const systemPrompt = `Your task is to create a detailed, professional, couture-level dress description based ONLY on the client's answers below.
 
 IMPORTANT RULES:
-- Describe the DRESS ONLY. 
+- Describe the DRESS ONLY.
 - Do NOT describe any background, environment, room, mannequin, lighting, camera position, or logo. These elements are handled separately.
 - You may enhance clarity and professionalism, but you must NOT invent new features that the client did not imply.
 - All improvements must reflect the client's intended style, materials, preferences, and notes.
-- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.
+- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.${customFabricInstruction}
 
 Your output must be a single polished paragraph describing ONLY:
 • silhouette
@@ -100,7 +147,7 @@ Your output must be a single polished paragraph describing ONLY:
 • movement & textile behavior
 • aesthetic style
 
-Do NOT mention questionnaires, choices, user inputs, or any meta context.  
+Do NOT mention questionnaires, choices, user inputs, or any meta context.
 Write in the tone of an elite fashion designer describing a couture dress.
 
 ---

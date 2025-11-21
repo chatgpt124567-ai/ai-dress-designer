@@ -43,6 +43,67 @@ export default function DesignPage() {
   const [selectedHistoryDesign, setSelectedHistoryDesign] = useState<any | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingDesign, setEditingDesign] = useState(false);
+  const [savedAnswers, setSavedAnswers] = useState<QuestionnaireAnswers | null>(null);
+  const [editingHistoryDesign, setEditingHistoryDesign] = useState<any | null>(null);
+
+  // LocalStorage key for saving questionnaire answers
+  const STORAGE_KEY = 'ai_dress_designer_questionnaire_answers';
+  const OAUTH_REDIRECT_FLAG = 'ai_dress_designer_oauth_redirect';
+
+  // Load saved answers from localStorage on mount ONLY if returning from OAuth
+  useEffect(() => {
+    console.log('=== Design Page Mount ===');
+    console.log('Checking OAuth redirect flag...');
+
+    try {
+      // Check if we're returning from OAuth redirect
+      const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
+      console.log('OAuth redirect flag:', isOAuthRedirect);
+
+      if (isOAuthRedirect) {
+        // Restore saved answers
+        const saved = localStorage.getItem(STORAGE_KEY);
+        console.log('Saved answers in localStorage:', saved ? 'Found' : 'Not found');
+
+        if (saved) {
+          const parsedAnswers = JSON.parse(saved);
+          setSavedAnswers(parsedAnswers);
+          console.log('✅ Restored answers after OAuth redirect:', parsedAnswers);
+        }
+
+        // Clear the OAuth redirect flag
+        sessionStorage.removeItem(OAUTH_REDIRECT_FLAG);
+        console.log('Cleared OAuth redirect flag');
+      } else {
+        // Normal page load - clear any old saved answers
+        console.log('Normal page load detected - clearing old saved answers...');
+        clearSavedAnswers();
+        console.log('✅ Normal page load - cleared old saved answers');
+      }
+    } catch (error) {
+      console.error('❌ Error loading saved answers:', error);
+    }
+
+    // Cleanup function: Clear saved answers when component unmounts (user navigates away)
+    return () => {
+      console.log('=== Design Page Unmount ===');
+
+      // Only clear if NOT in the middle of OAuth flow
+      const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
+      console.log('OAuth redirect flag on unmount:', isOAuthRedirect);
+
+      if (!isOAuthRedirect) {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+          console.log('✅ Component unmounting - cleared saved answers from localStorage');
+        } catch (error) {
+          console.error('❌ Error clearing saved answers on unmount:', error);
+        }
+      } else {
+        console.log('OAuth flow in progress - keeping saved answers');
+      }
+    };
+  }, []);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -50,6 +111,23 @@ export default function DesignPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
+
+      // If user just logged in and there are saved answers AND OAuth redirect flag is set, restore them
+      if (user) {
+        const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
+        if (isOAuthRedirect) {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+              const parsedAnswers = JSON.parse(saved);
+              setPendingAnswers(parsedAnswers);
+              console.log('Restored pending answers after OAuth login');
+            }
+          } catch (error) {
+            console.error('Error restoring answers after login:', error);
+          }
+        }
+      }
     };
     checkAuth();
 
@@ -57,6 +135,23 @@ export default function DesignPage() {
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(!!session?.user);
+
+      // When user logs in via OAuth, restore saved answers if OAuth redirect flag is set
+      if (event === 'SIGNED_IN' && session?.user) {
+        const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
+        if (isOAuthRedirect) {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+              const parsedAnswers = JSON.parse(saved);
+              setPendingAnswers(parsedAnswers);
+              console.log('Restored pending answers after OAuth redirect');
+            }
+          } catch (error) {
+            console.error('Error restoring answers after OAuth:', error);
+          }
+        }
+      }
     });
 
     return () => {
@@ -68,6 +163,27 @@ export default function DesignPage() {
     setToastMessage(message);
     setToastType(type);
     setToastVisible(true);
+  };
+
+  // Save answers to localStorage
+  const saveAnswersToLocalStorage = (answers: QuestionnaireAnswers) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+    } catch (error) {
+      console.error('Error saving answers to localStorage:', error);
+    }
+  };
+
+  // Clear saved answers from localStorage
+  const clearSavedAnswers = () => {
+    console.log('clearSavedAnswers() called');
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      setSavedAnswers(null);
+      console.log('✅ Cleared saved answers from localStorage and state');
+    } catch (error) {
+      console.error('❌ Error clearing saved answers:', error);
+    }
   };
 
   // Fetch previous designs when history tab is opened
@@ -108,15 +224,30 @@ export default function DesignPage() {
   }, [activeTab, isAuthenticated]);
 
   const handleSubmit = async (questionnaireAnswers: QuestionnaireAnswers) => {
+    console.log('=== handleSubmit called ===');
+    console.log('Is authenticated:', isAuthenticated);
+
     // Check if user is authenticated
     if (!isAuthenticated) {
+      console.log('User not authenticated - saving answers and showing auth modal');
+
+      // Save answers to localStorage (for recovery after OAuth)
+      saveAnswersToLocalStorage(questionnaireAnswers);
+      console.log('Saved answers to localStorage');
+
+      // Set OAuth redirect flag so we know to restore answers after login
+      sessionStorage.setItem(OAUTH_REDIRECT_FLAG, 'true');
+      console.log('Set OAuth redirect flag');
+
       // Save answers temporarily and show auth modal
       setPendingAnswers(questionnaireAnswers);
       setAuthModalOpen(true);
       return;
     }
 
-    // Proceed with design generation
+    // User is authenticated - proceed with design generation
+    console.log('User authenticated - proceeding with design generation');
+    // No need to save to localStorage since we're processing immediately
     await processDesign(questionnaireAnswers);
   };
 
@@ -162,12 +293,18 @@ export default function DesignPage() {
       // Step 2: Generate image using enhanced prompt
       setStep('generating');
 
+      // Include custom fabric image if provided
+      const generatePayload: any = { prompt: finalPrompt };
+      if (questionnaireAnswers.customFabricImage) {
+        generatePayload.fabricImage = questionnaireAnswers.customFabricImage;
+      }
+
       const generateResponse = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: finalPrompt }),
+        body: JSON.stringify(generatePayload),
       });
 
       const generateData: GenerateImageResponse = await generateResponse.json();
@@ -189,6 +326,9 @@ export default function DesignPage() {
 
       // Step 3: Auto-save design to database
       await autoSaveDesign(questionnaireAnswers, finalPrompt, generatedImageUrl);
+
+      // Clear saved answers from localStorage after successful generation
+      clearSavedAnswers();
 
       setStep('complete');
       showToast(t('design.toast.success'), 'success');
@@ -221,14 +361,28 @@ export default function DesignPage() {
   };
 
   const handleEditDesign = async (editRequest: string) => {
-    if (!imageUrl) {
-      showToast('لا توجد صورة للتعديل', 'error');
+    // Check if editing from history or current design
+    const targetImageUrl = editingHistoryDesign?.image_url || imageUrl;
+
+    if (!targetImageUrl) {
+      showToast(direction === 'rtl' ? 'لا توجد صورة للتعديل' : 'No image to edit', 'error');
       return;
     }
 
+    console.log('Starting edit design process...', {
+      editingFromHistory: !!editingHistoryDesign,
+      imageUrlLength: targetImageUrl.length,
+      editRequestLength: editRequest.length,
+      imageUrlPrefix: targetImageUrl.substring(0, 100),
+      isBase64DataUrl: targetImageUrl.startsWith('data:image/'),
+      imageUrlType: typeof targetImageUrl,
+    });
+
     try {
       setEditingDesign(true);
-      setStep('generating');
+      if (!editingHistoryDesign) {
+        setStep('generating');
+      }
 
       const response = await fetch('/api/edit-design', {
         method: 'POST',
@@ -236,36 +390,138 @@ export default function DesignPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          originalImageUrl: imageUrl,
+          originalImageUrl: targetImageUrl,
           editRequest,
         } as EditDesignRequest),
       });
 
-      const data: EditDesignResponse = await response.json();
+      console.log('API Response status:', response.status, response.statusText);
+
+      let data: EditDesignResponse;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        throw new Error(direction === 'rtl'
+          ? 'خطأ في الاستجابة من الخادم'
+          : 'Invalid response from server');
+      }
+
+      console.log('API Response data:', { hasImageData: !!data.imageData, error: data.error });
 
       if (!response.ok || data.error) {
-        throw new Error(data.error || 'Failed to edit design');
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       if (data.imageData) {
-        setImageUrl(data.imageData);
-        setStep('complete');
-        setEditModalOpen(false);
-        showToast('تم تعديل التصميم بنجاح!', 'success');
+        console.log('Received image data from API, length:', data.imageData.length);
 
-        // Auto-save edited design if user is authenticated
-        if (isAuthenticated && currentAnswers) {
-          await autoSaveDesign(currentAnswers, enhancedPrompt, data.imageData);
+        // If editing from history, save as new design
+        if (editingHistoryDesign) {
+          console.log('Editing from history, saving as new design...');
+
+          try {
+            // Save edited design to database
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (!user) {
+              throw new Error(direction === 'rtl' ? 'المستخدم غير مسجل الدخول' : 'User not authenticated');
+            }
+
+            console.log('Inserting design into database for user:', user.id);
+
+            const { error: dbError } = await supabase.from('designs').insert({
+              user_id: user.id,
+              original_description: editingHistoryDesign.original_description || JSON.stringify(editingHistoryDesign.questionnaire_answers),
+              image_url: data.imageData,
+              image_data: data.imageData,
+              enhanced_prompt: editingHistoryDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`,
+              questionnaire_answers: editingHistoryDesign.questionnaire_answers,
+              embellishment_placement: editingHistoryDesign.questionnaire_answers?.embellishmentPlacement || null,
+            });
+
+            if (dbError) {
+              console.error('Supabase insert error:', {
+                message: dbError.message,
+                details: dbError.details,
+                hint: dbError.hint,
+                code: dbError.code,
+              });
+              throw new Error(
+                dbError.message ||
+                (direction === 'rtl' ? 'فشل في حفظ التصميم في قاعدة البيانات' : 'Failed to save design to database')
+              );
+            }
+
+            console.log('Design saved successfully, refreshing history...');
+
+            // Refresh history
+            await fetchPreviousDesigns();
+
+            console.log('History refreshed successfully');
+
+            showToast(
+              direction === 'rtl' ? 'تم حفظ التصميم المعدّل بنجاح!' : 'Edited design saved successfully!',
+              'success'
+            );
+          } catch (dbSaveError) {
+            console.error('Error saving edited design to database:', dbSaveError);
+            throw dbSaveError; // Re-throw to be caught by outer catch
+          }
+
+          setEditingHistoryDesign(null);
+        } else {
+          // Update current design
+          setImageUrl(data.imageData);
+          setStep('complete');
+          showToast(
+            direction === 'rtl' ? 'تم تعديل التصميم بنجاح!' : 'Design edited successfully!',
+            'success'
+          );
+
+          // Auto-save edited design if user is authenticated
+          if (isAuthenticated && currentAnswers) {
+            await autoSaveDesign(currentAnswers, enhancedPrompt, data.imageData);
+          }
         }
+
+        setEditModalOpen(false);
       }
     } catch (error) {
       console.error('Error editing design:', error);
-      setError(error instanceof Error ? error.message : 'Failed to edit design');
-      showToast(error instanceof Error ? error.message : 'فشل في تعديل التصميم', 'error');
-      setStep('complete');
+      console.error('Error type:', typeof error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        raw: error,
+      });
+
+      let errorMessage = direction === 'rtl' ? 'فشل في تعديل التصميم' : 'Failed to edit design';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      }
+
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+
+      if (!editingHistoryDesign) {
+        setStep('complete');
+      }
     } finally {
       setEditingDesign(false);
     }
+  };
+
+  // Handle edit request from history
+  const handleRequestEditFromHistory = (design: any) => {
+    setEditingHistoryDesign(design);
+    setEditModalOpen(true);
   };
 
   // Auto-save design after successful generation
@@ -337,7 +593,44 @@ export default function DesignPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
           {/* Left Column - Questionnaire (40%) - Full width on mobile */}
           <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            <QuestionnaireWizard onSubmit={handleSubmit} loading={loading} />
+            {/* Show "Start Fresh" button if there are saved answers */}
+            {savedAnswers && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="luxury-card p-4 bg-accent-gold/10 border-2 border-accent-gold/30"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-primary mb-1">
+                      {direction === 'rtl'
+                        ? 'تم العثور على بيانات محفوظة'
+                        : 'Saved data found'}
+                    </p>
+                    <p className="text-xs text-neutral-600">
+                      {direction === 'rtl'
+                        ? 'يمكنك المتابعة من حيث توقفت أو البدء من جديد'
+                        : 'Continue where you left off or start fresh'}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearSavedAnswers}
+                    className="text-xs whitespace-nowrap"
+                  >
+                    {direction === 'rtl' ? 'بدء جديد' : 'Start Fresh'}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+
+            <QuestionnaireWizard
+              key={savedAnswers ? 'with-saved-answers' : 'fresh-start'}
+              onSubmit={handleSubmit}
+              loading={loading}
+              initialAnswers={savedAnswers || undefined}
+            />
           </div>
 
           {/* Right Column - Results Preview (60%) - Full width on mobile */}
@@ -622,6 +915,7 @@ export default function DesignPage() {
               );
             }
           }}
+          onRequestEdit={handleRequestEditFromHistory}
         />
 
         {/* Edit Design Modal */}

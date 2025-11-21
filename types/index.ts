@@ -3,6 +3,7 @@
 export interface EnhancePromptRequest {
   description?: string; // For backward compatibility
   questionnaireAnswers?: QuestionnaireAnswers; // New questionnaire format
+  fabricImage?: string; // NEW: Custom fabric image (Base64 data URL)
 }
 
 export interface EnhancePromptResponse {
@@ -13,6 +14,7 @@ export interface EnhancePromptResponse {
 
 export interface GenerateImageRequest {
   prompt: string;
+  fabricImage?: string; // NEW: Custom fabric image (Base64 data URL)
 }
 
 export interface GenerateImageResponse {
@@ -71,6 +73,9 @@ export interface QuestionnaireAnswers {
   // Section 5: Fabric & Materials (Section 4 removed: Back Design)
   fabricType: string;
   fabricTypeCustom?: string;
+  customFabricImage?: string; // NEW: Custom fabric image (Base64 data URL)
+  fabricPlacement?: 'full' | 'bodice' | 'skirt' | 'sleeves' | 'custom'; // NEW: Where to use custom fabric
+  fabricPlacementDetails?: string; // NEW: Details if placement is 'custom'
   hasTransparentParts: string;
   transparentPartsLocation?: string;
 

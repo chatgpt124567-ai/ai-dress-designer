@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DesignCard from './DesignCard';
 import DesignDetailsModal from './DesignDetailsModal';
+import EditDesignModal from '@/components/EditDesignModal';
 import { createClient } from '@/lib/supabase/client';
 import type { QuestionnaireAnswers } from '@/types';
+import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 
 interface Design {
   id: string;
@@ -24,9 +26,12 @@ interface DesignGalleryProps {
 }
 
 export default function DesignGallery({ designs, loading, onDesignsUpdate }: DesignGalleryProps) {
-  const { t } = useLanguage();
+  const { t, direction } = useLanguage();
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingDesign, setEditingDesign] = useState<Design | null>(null);
+  const [isEditingDesign, setIsEditingDesign] = useState(false);
 
   const handleDelete = async (id: string) => {
     try {
@@ -52,6 +57,132 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
 
   const handleCardClick = (design: Design) => {
     setSelectedDesign(design);
+  };
+
+  const handleRequestEdit = (design: Design) => {
+    setEditingDesign(design);
+    setEditModalOpen(true);
+  };
+
+  const handleEditDesign = async (editRequest: string) => {
+    if (!editingDesign) return;
+
+    console.log('Starting edit design process in DesignGallery...', {
+      imageUrlLength: editingDesign.image_url.length,
+      editRequestLength: editRequest.length,
+      imageUrlPrefix: editingDesign.image_url.substring(0, 100),
+      isBase64DataUrl: editingDesign.image_url.startsWith('data:image/'),
+      imageUrlType: typeof editingDesign.image_url,
+    });
+
+    try {
+      setIsEditingDesign(true);
+
+      const response = await fetch('/api/edit-design', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalImageUrl: editingDesign.image_url,
+          editRequest,
+        } as EditDesignRequest),
+      });
+
+      console.log('API Response status:', response.status, response.statusText);
+
+      let data: EditDesignResponse;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        throw new Error(direction === 'rtl'
+          ? 'خطأ في الاستجابة من الخادم'
+          : 'Invalid response from server');
+      }
+
+      console.log('API Response data:', { hasImageData: !!data.imageData, error: data.error });
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (data.imageData) {
+        console.log('Received image data from API, length:', data.imageData.length);
+        console.log('Saving edited design to database...');
+
+        try {
+          // Save edited design to database
+          const supabase = createClient();
+          const { data: { user } } = await supabase.auth.getUser();
+
+          if (!user) {
+            throw new Error(direction === 'rtl' ? 'المستخدم غير مسجل الدخول' : 'User not authenticated');
+          }
+
+          console.log('Inserting design into database for user:', user.id);
+
+          const { error: dbError } = await supabase.from('designs').insert({
+            user_id: user.id,
+            original_description: editingDesign.original_description || JSON.stringify(editingDesign.questionnaire_answers),
+            image_url: data.imageData,
+            image_data: data.imageData,
+            enhanced_prompt: editingDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`,
+            questionnaire_answers: editingDesign.questionnaire_answers,
+            embellishment_placement: editingDesign.questionnaire_answers?.embellishmentPlacement || null,
+          });
+
+          if (dbError) {
+            console.error('Supabase insert error:', {
+              message: dbError.message,
+              details: dbError.details,
+              hint: dbError.hint,
+              code: dbError.code,
+            });
+            throw new Error(
+              dbError.message ||
+              (direction === 'rtl' ? 'فشل في حفظ التصميم في قاعدة البيانات' : 'Failed to save design to database')
+            );
+          }
+
+          console.log('Design saved successfully, refreshing designs...');
+
+          // Refresh designs
+          onDesignsUpdate();
+
+          console.log('Designs refreshed successfully');
+
+          setEditModalOpen(false);
+          setEditingDesign(null);
+          alert(direction === 'rtl' ? 'تم حفظ التصميم المعدّل بنجاح!' : 'Edited design saved successfully!');
+        } catch (dbSaveError) {
+          console.error('Error saving edited design to database:', dbSaveError);
+          throw dbSaveError; // Re-throw to be caught by outer catch
+        }
+      }
+    } catch (error) {
+      console.error('Error editing design:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        raw: error,
+      });
+
+      let errorMessage = direction === 'rtl' ? 'فشل في تعديل التصميم' : 'Failed to edit design';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object') {
+        errorMessage = JSON.stringify(error);
+      }
+
+      alert(errorMessage);
+    } finally {
+      setIsEditingDesign(false);
+    }
   };
 
   // Filter out designs that are being deleted (optimistic UI)
@@ -108,6 +239,18 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
         design={selectedDesign}
         onClose={() => setSelectedDesign(null)}
         onDelete={handleDelete}
+        onRequestEdit={handleRequestEdit}
+      />
+
+      {/* Edit Design Modal */}
+      <EditDesignModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingDesign(null);
+        }}
+        onSubmit={handleEditDesign}
+        loading={isEditingDesign}
       />
     </div>
   );

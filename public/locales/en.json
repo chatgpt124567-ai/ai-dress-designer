@@ -256,8 +256,24 @@
           "velvet": "Velvet",
           "organza": "Organza",
           "crepe": "Crepe",
+          "customFabric": "Custom Fabric (Upload Image)",
           "other": "Other"
-        }
+        },
+        "uploadImage": "Upload Fabric Image",
+        "takePhoto": "Take Photo",
+        "chooseFromGallery": "Choose from Gallery",
+        "imageUploaded": "Image Uploaded",
+        "changeImage": "Change Image",
+        "removeImage": "Remove Image",
+        "fabricPlacementQuestion": "Where would you like to use this fabric?",
+        "placementOptions": {
+          "full": "Entire Dress",
+          "bodice": "Bodice Only",
+          "skirt": "Skirt Only",
+          "sleeves": "Sleeves Only",
+          "custom": "Specific Details (Please Specify)"
+        },
+        "placementDetailsPlaceholder": "Example: Use the fabric on the upper part of the skirt only"
       },
       "q9": {
         "question": "Would you like transparent parts in the design?",

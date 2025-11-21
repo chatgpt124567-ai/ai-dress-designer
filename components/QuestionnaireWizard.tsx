@@ -12,15 +12,22 @@ import QuestionStep from './QuestionStep';
 interface QuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
   loading?: boolean;
+  initialAnswers?: QuestionnaireAnswers;
+  onAnswersChange?: (answers: QuestionnaireAnswers) => void;
 }
 
-export default function QuestionnaireWizard({ onSubmit, loading = false }: QuestionnaireWizardProps) {
+export default function QuestionnaireWizard({
+  onSubmit,
+  loading = false,
+  initialAnswers,
+  onAnswersChange
+}: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 11; // 11 questions total (Q2 combines Primary Color + Additional Colors)
 
-  // Initialize answers state
-  const [answers, setAnswers] = useState<QuestionnaireAnswers>({
+  // Initialize answers state with saved answers if available
+  const [answers, setAnswers] = useState<QuestionnaireAnswers>(initialAnswers || {
     dressType: '',
     dressLength: '',
     skirtShape: '',
@@ -37,12 +44,16 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
   const handleNext = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
+      // Smooth scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
+      // Smooth scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -51,11 +62,17 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
   };
 
   const updateAnswer = (field: keyof QuestionnaireAnswers, value: string | string[], customValue?: string) => {
-    setAnswers((prev) => ({
-      ...prev,
+    const updatedAnswers = {
+      ...answers,
       [field]: value,
       ...(customValue !== undefined && { [`${field}Custom`]: customValue }),
-    }));
+    };
+    setAnswers(updatedAnswers);
+
+    // Auto-save to localStorage via callback
+    if (onAnswersChange) {
+      onAnswersChange(updatedAnswers);
+    }
   };
 
   // Define question configurations
@@ -80,7 +97,214 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 2: // Section 7: Colors - Combined (Primary Color + Additional Colors)
+      case 2: // Section 5: Fabric - Q8 (Fabric Type - MOVED TO POSITION 2)
+        return (
+          <div className="space-y-6">
+            <QuestionStep
+              sectionTitle={t('questionnaire.section5.title')}
+              questionText={t('questionnaire.section5.q8.question')}
+              questionType="radio"
+              options={[
+                { value: 'satin', labelKey: 'questionnaire.section5.q8.options.satin' },
+                { value: 'silk', labelKey: 'questionnaire.section5.q8.options.silk' },
+                { value: 'chiffon', labelKey: 'questionnaire.section5.q8.options.chiffon' },
+                { value: 'tulle', labelKey: 'questionnaire.section5.q8.options.tulle' },
+                { value: 'lace', labelKey: 'questionnaire.section5.q8.options.lace' },
+                { value: 'velvet', labelKey: 'questionnaire.section5.q8.options.velvet' },
+                { value: 'organza', labelKey: 'questionnaire.section5.q8.options.organza' },
+                { value: 'crepe', labelKey: 'questionnaire.section5.q8.options.crepe' },
+                { value: 'customFabric', labelKey: 'questionnaire.section5.q8.options.customFabric' },
+                { value: 'other', labelKey: 'questionnaire.section5.q8.options.other', hasCustomInput: true },
+              ]}
+              value={answers.fabricType}
+              customValue={answers.fabricTypeCustom}
+              onChange={(value, customValue) => updateAnswer('fabricType', value as string, customValue)}
+            />
+
+            {/* Custom Fabric Image Upload */}
+            {answers.fabricType === 'customFabric' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 md:space-y-6"
+              >
+                {/* Image Upload Section */}
+                {!answers.customFabricImage ? (
+                  <div className="space-y-3 md:space-y-4">
+                    <label className="block text-sm md:text-base font-medium text-gray-700">
+                      {t('questionnaire.section5.q8.uploadImage')}
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                      {/* Take Photo Button (Mobile Camera) */}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 5 * 1024 * 1024) {
+                                alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updateAnswer('customFabricImage' as any, reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <div className="px-4 py-3 md:px-6 md:py-4 border-2 border-accent-gold rounded-lg text-center hover:bg-accent-gold hover:text-white transition-all">
+                          <span className="text-sm md:text-base lg:text-lg font-medium">
+                            📷 {t('questionnaire.section5.q8.takePhoto')}
+                          </span>
+                        </div>
+                      </label>
+
+                      {/* Choose from Gallery Button */}
+                      <label className="flex-1 cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 5 * 1024 * 1024) {
+                                alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updateAnswer('customFabricImage' as any, reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <div className="px-4 py-3 md:px-6 md:py-4 border-2 border-accent-gold rounded-lg text-center hover:bg-accent-gold hover:text-white transition-all">
+                          <span className="text-sm md:text-base lg:text-lg font-medium">
+                            🖼️ {t('questionnaire.section5.q8.chooseFromGallery')}
+                          </span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 md:space-y-5">
+                    {/* Image Preview */}
+                    <div className="relative rounded-lg overflow-hidden border-2 border-accent-gold max-w-md mx-auto">
+                      <img
+                        src={answers.customFabricImage}
+                        alt="Custom Fabric"
+                        className="w-full h-48 md:h-56 lg:h-64 object-cover"
+                      />
+                      <div className={cn(
+                        "absolute top-2 flex gap-2",
+                        direction === 'rtl' ? 'left-2' : 'right-2'
+                      )}>
+                        {/* Change Image Button */}
+                        <label className="cursor-pointer bg-white/90 hover:bg-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-md transition-all">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
+                                  return;
+                                }
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  updateAnswer('customFabricImage' as any, reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                          <span className="text-xs md:text-sm font-medium text-gray-700">
+                            {t('questionnaire.section5.q8.changeImage')}
+                          </span>
+                        </label>
+                        {/* Remove Image Button */}
+                        <button
+                          onClick={() => {
+                            updateAnswer('customFabricImage' as any, '');
+                            updateAnswer('fabricPlacement' as any, '');
+                            updateAnswer('fabricPlacementDetails' as any, '');
+                          }}
+                          className="bg-red-500/90 hover:bg-red-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-md transition-all"
+                        >
+                          <span className="text-xs md:text-sm font-medium">
+                            {t('questionnaire.section5.q8.removeImage')}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Fabric Placement Question */}
+                    <div className="space-y-3 md:space-y-4">
+                      <label className="block text-sm md:text-base lg:text-lg font-medium text-gray-700">
+                        {t('questionnaire.section5.q8.fabricPlacementQuestion')}
+                      </label>
+                      <div className="space-y-2 md:space-y-3">
+                        {['full', 'bodice', 'skirt', 'sleeves', 'custom'].map((placement) => (
+                          <label
+                            key={placement}
+                            className={cn(
+                              'flex items-center gap-3 md:gap-4 p-3 md:p-4 border-2 rounded-lg cursor-pointer transition-all',
+                              answers.fabricPlacement === placement
+                                ? 'border-accent-gold bg-accent-gold/5'
+                                : 'border-gray-200 hover:border-accent-gold/50'
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name="fabricPlacement"
+                              value={placement}
+                              checked={answers.fabricPlacement === placement}
+                              onChange={(e) => updateAnswer('fabricPlacement' as any, e.target.value)}
+                              className="w-4 h-4 md:w-5 md:h-5 text-accent-gold focus:ring-accent-gold"
+                            />
+                            <span className="text-sm md:text-base lg:text-lg">
+                              {t(`questionnaire.section5.q8.placementOptions.${placement}`)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+
+                      {/* Custom Placement Details */}
+                      {answers.fabricPlacement === 'custom' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                        >
+                          <input
+                            type="text"
+                            value={answers.fabricPlacementDetails || ''}
+                            onChange={(e) => updateAnswer('fabricPlacementDetails' as any, e.target.value)}
+                            placeholder={t('questionnaire.section5.q8.placementDetailsPlaceholder')}
+                            className="w-full px-4 py-3 md:px-5 md:py-4 border-2 border-gray-200 rounded-lg focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20 transition-all text-sm md:text-base lg:text-lg"
+                            dir={direction}
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
+        );
+
+      case 3: // Section 7: Colors - Combined (Primary Color + Additional Colors) - MOVED FROM CASE 2
         return (
           <div className="space-y-6">
             {/* القسم الأول: اللون الأساسي */}
@@ -122,7 +346,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           </div>
         );
 
-      case 3: // Section 1: Basics - Q2 (Dress Length - moved from case 2)
+      case 4: // Section 1: Basics - Q2 (Dress Length - moved from case 3)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section1.title')}
@@ -141,7 +365,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 4: // Section 2: Silhouette - Q4 (Skirt Shape - moved from case 3)
+      case 5: // Section 2: Silhouette - Q4 (Skirt Shape - moved from case 4)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section2.title')}
@@ -163,7 +387,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 5: // Section 3: Upper Body - Q5 (Neckline - moved from case 4)
+      case 6: // Section 3: Upper Body - Q5 (Neckline - moved from case 5)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -186,7 +410,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 6: // Section 3: Upper Body - Q6 (Sleeves - moved from case 5)
+      case 7: // Section 3: Upper Body - Q6 (Sleeves - moved from case 6)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -208,30 +432,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 7: // Section 5: Fabric - Q8 (Fabric Type - moved from case 6)
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section5.title')}
-            questionText={t('questionnaire.section5.q8.question')}
-            questionType="radio"
-            options={[
-              { value: 'satin', labelKey: 'questionnaire.section5.q8.options.satin' },
-              { value: 'silk', labelKey: 'questionnaire.section5.q8.options.silk' },
-              { value: 'chiffon', labelKey: 'questionnaire.section5.q8.options.chiffon' },
-              { value: 'tulle', labelKey: 'questionnaire.section5.q8.options.tulle' },
-              { value: 'lace', labelKey: 'questionnaire.section5.q8.options.lace' },
-              { value: 'velvet', labelKey: 'questionnaire.section5.q8.options.velvet' },
-              { value: 'organza', labelKey: 'questionnaire.section5.q8.options.organza' },
-              { value: 'crepe', labelKey: 'questionnaire.section5.q8.options.crepe' },
-              { value: 'other', labelKey: 'questionnaire.section5.q8.options.other', hasCustomInput: true },
-            ]}
-            value={answers.fabricType}
-            customValue={answers.fabricTypeCustom}
-            onChange={(value, customValue) => updateAnswer('fabricType', value as string, customValue)}
-          />
-        );
-
-      case 8: // Section 5: Fabric - Q9 (Transparent parts - moved from case 7)
+      case 8: // Section 5: Fabric - Q9 (Transparent parts)
         return (
           <div className="space-y-6">
             <QuestionStep
@@ -260,7 +461,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           </div>
         );
 
-      case 9: // Section 6: Embellishments - Q10 (Embellishments - moved from case 8)
+      case 9: // Section 6: Embellishments - Q10 (Embellishments)
         return (
           <div className="space-y-6">
             <QuestionStep
@@ -314,7 +515,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           </div>
         );
 
-      case 10: // Section 6: Embellishments - Q11 (Shine Level - moved from case 9)
+      case 10: // Section 6: Embellishments - Q11 (Shine Level)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
@@ -332,7 +533,7 @@ export default function QuestionnaireWizard({ onSubmit, loading = false }: Quest
           />
         );
 
-      case 11: // Section 9: Additional Notes - Q16 (Additional Notes - moved from case 12)
+      case 11: // Section 9: Additional Notes - Q16 (Additional Notes)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}

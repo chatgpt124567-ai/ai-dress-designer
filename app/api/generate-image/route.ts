@@ -4,7 +4,7 @@ import type { GenerateImageRequest, GenerateImageResponse } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateImageRequest = await request.json();
-    const { prompt } = body;
+    const { prompt, fabricImage } = body;
 
     if (!prompt || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -20,9 +20,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build custom fabric instruction if fabric image is provided
+    let customFabricInstruction = '';
+    if (fabricImage) {
+      customFabricInstruction = `
+
+FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
+• A custom fabric image has been provided by the client (attached below)
+• You MUST use the EXACT fabric pattern, texture, colors, and design from the attached custom fabric image
+• Apply this fabric EXACTLY as specified in the dress description above
+• Do NOT modify, recolor, or alter the fabric pattern in ANY way
+• Do NOT change the pattern repeat, print, texture, or any visual characteristic
+• Maintain photorealistic accuracy when applying the fabric to the dress
+• The fabric should drape naturally and realistically on the dress with proper folds and textile behavior
+• Ensure the fabric pattern aligns correctly and looks professionally tailored
+• The custom fabric is the PRIMARY design element - treat it with utmost precision`;
+    }
+
     const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
 
-${prompt}
+${prompt}${customFabricInstruction}
 
 ---
 
@@ -71,7 +88,7 @@ Hard Rules (must follow):
 • Do NOT distort proportions.
 • Dress must always be smooth, clean, symmetrical, and fully constructed.
 • The garment must look wearable and professionally tailored.
-
+  Photo siz will be 9:16
 Output:
 A full-body mannequin wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above it.`;
 
@@ -84,6 +101,27 @@ A full-body mannequin wearing the complete dress, centered, with the "yasmin-als
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         // استخدام OpenRouter API مع Gemini 2.5 Flash Image لتوليد الصور
+        // Build message content based on whether fabric image is provided
+        let messageContent: any;
+        if (fabricImage) {
+          // Multimodal request: text + image
+          messageContent = [
+            {
+              type: 'text',
+              text: imagePrompt,
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: fabricImage, // Base64 data URL or image URL
+              },
+            },
+          ];
+        } else {
+          // Text-only request
+          messageContent = imagePrompt;
+        }
+
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -97,7 +135,7 @@ A full-body mannequin wearing the complete dress, centered, with the "yasmin-als
             messages: [
               {
                 role: 'user',
-                content: imagePrompt,
+                content: messageContent,
               },
             ],
             modalities: ['image', 'text'], // طلب توليد صورة

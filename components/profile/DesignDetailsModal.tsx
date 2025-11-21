@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Trash2 } from 'lucide-react';
+import { X, Download, Trash2, Edit } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { QuestionnaireAnswers } from '@/types';
 import Button from '@/components/Button';
@@ -18,12 +18,14 @@ interface DesignDetailsModalProps {
   design: Design | null;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onRequestEdit?: (design: Design) => void;
 }
 
 export default function DesignDetailsModal({
   design,
   onClose,
   onDelete,
+  onRequestEdit,
 }: DesignDetailsModalProps) {
   const { t, direction } = useLanguage();
 
@@ -244,6 +246,20 @@ export default function DesignDetailsModal({
             >
               {t('common.close')}
             </Button>
+            {onRequestEdit && (
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => {
+                  onRequestEdit(design);
+                  onClose();
+                }}
+                className="flex-1 text-sm sm:text-base py-2 sm:py-3"
+              >
+                <Edit className={`w-4 h-4 sm:w-5 sm:h-5 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`} />
+                {direction === 'rtl' ? 'طلب تعديل' : 'Request Edit'}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="lg"

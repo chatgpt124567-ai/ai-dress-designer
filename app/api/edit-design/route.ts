@@ -12,10 +12,23 @@ export interface EditDesignResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== Edit Design API Called ===');
+
     const body: EditDesignRequest = await request.json();
     const { originalImageUrl, editRequest } = body;
 
+    console.log('Request details:', {
+      hasImageUrl: !!originalImageUrl,
+      imageUrlLength: originalImageUrl?.length || 0,
+      imageUrlPrefix: originalImageUrl?.substring(0, 50) || '',
+      isBase64DataUrl: originalImageUrl?.startsWith('data:image/') || false,
+      imageUrlType: typeof originalImageUrl,
+      editRequestLength: editRequest?.length || 0,
+      editRequest: editRequest?.substring(0, 100) || '',
+    });
+
     if (!editRequest || editRequest.trim().length === 0) {
+      console.error('Validation failed: No edit request');
       return NextResponse.json(
         { error: 'الرجاء إدخال التعديل المطلوب' } as EditDesignResponse,
         { status: 400 }
@@ -23,13 +36,25 @@ export async function POST(request: NextRequest) {
     }
 
     if (!originalImageUrl || originalImageUrl.trim().length === 0) {
+      console.error('Validation failed: No image URL');
       return NextResponse.json(
         { error: 'الصورة الأصلية غير موجودة' } as EditDesignResponse,
         { status: 400 }
       );
     }
 
+    // Validate that the image URL is a Base64 data URL
+    if (!originalImageUrl.startsWith('data:image/')) {
+      console.error('Validation failed: Image URL is not a Base64 data URL');
+      console.error('Image URL prefix:', originalImageUrl.substring(0, 100));
+      return NextResponse.json(
+        { error: 'تنسيق الصورة غير صحيح. يجب أن تكون Base64 data URL' } as EditDesignResponse,
+        { status: 400 }
+      );
+    }
+
     if (!process.env.OPENROUTER_API_KEY) {
+      console.error('Validation failed: No API key');
       return NextResponse.json(
         { error: 'مفتاح OpenRouter API غير موجود' } as EditDesignResponse,
         { status: 500 }
@@ -86,6 +111,8 @@ Please generate a new version of this dress design that incorporates ONLY the re
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        console.log(`Attempt ${attempt}/${maxRetries}: Calling OpenRouter API...`);
+
         // Use OpenRouter API with Gemini 2.5 Flash Image
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -118,12 +145,22 @@ Please generate a new version of this dress design that incorporates ONLY the re
           }),
         });
 
+        console.log(`OpenRouter API response status: ${response.status} ${response.statusText}`);
+
         if (!response.ok) {
           const errorText = await response.text();
+          console.error('OpenRouter API error response:', errorText);
           throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
         const data = await response.json();
+        console.log('OpenRouter API response data structure:', {
+          hasChoices: !!data.choices,
+          choicesLength: data.choices?.length || 0,
+          hasMessage: !!data.choices?.[0]?.message,
+          hasImages: !!data.choices?.[0]?.message?.images,
+          imagesLength: data.choices?.[0]?.message?.images?.length || 0,
+        });
 
         // Extract image from response
         if (data.choices && data.choices.length > 0) {
@@ -133,9 +170,16 @@ Please generate a new version of this dress design that incorporates ONLY the re
             const image = message.images[0];
             if (image.image_url && image.image_url.url) {
               imageData = image.image_url.url; // Base64 data URL
+              console.log('Successfully extracted image data, length:', imageData?.length || 0);
               break;
+            } else {
+              console.error('Image object missing image_url.url:', image);
             }
+          } else {
+            console.error('Message missing images array:', message);
           }
+        } else {
+          console.error('Response missing choices array:', data);
         }
 
         if (!imageData) {
@@ -144,6 +188,7 @@ Please generate a new version of this dress design that incorporates ONLY the re
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.error(`محاولة ${attempt}/${maxRetries} فشلت:`, lastError.message);
+        console.error('Error stack:', lastError.stack);
 
         if (attempt < maxRetries) {
           console.log(`انتظار ${retryDelay}ms قبل المحاولة التالية...`);
@@ -154,6 +199,8 @@ Please generate a new version of this dress design that incorporates ONLY the re
 
     // If all attempts failed
     if (!imageData) {
+      console.error('All attempts failed. Last error:', lastError);
+
       const errorMessage = lastError?.message.includes('503') || lastError?.message.includes('overloaded')
         ? 'الخدمة مزدحمة حالياً. يرجى المحاولة مرة أخرى بعد دقيقة.'
         : lastError?.message || 'فشل في تعديل التصميم';
@@ -164,6 +211,7 @@ Please generate a new version of this dress design that incorporates ONLY the re
       );
     }
 
+    console.log('=== Edit Design API Success ===');
     return NextResponse.json({
       imageData,
     } as EditDesignResponse);
