@@ -81,7 +81,7 @@ export default function DesignDetailsModal({
     // Add all answers with correct translation keys
     addAnswer('questionnaire.section1.q1', answers.dressType, answers.dressTypeCustom);
     addAnswer('questionnaire.section1.q2', answers.dressLength, answers.dressLengthCustom);
-    addAnswer('questionnaire.section2.q3', answers.waistShape, answers.waistShapeCustom);
+    // Q3 Waist Shape removed - skip it
     addAnswer('questionnaire.section2.q4', answers.skirtShape, answers.skirtShapeCustom);
     addAnswer('questionnaire.section3.q5', answers.necklineType, answers.necklineTypeCustom);
     addAnswer('questionnaire.section3.q6', answers.sleeveType, answers.sleeveTypeCustom);
@@ -144,7 +144,7 @@ export default function DesignDetailsModal({
       });
     }
 
-    addAnswer('questionnaire.section8.q14', answers.designStyle, answers.designStyleCustom);
+    // Q14 Design Style removed - skip it
 
     // Additional notes
     if (answers.additionalNotes) {
