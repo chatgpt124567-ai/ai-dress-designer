@@ -103,13 +103,6 @@ export default function QuestionnaireReviewModal({
         : '-',
     },
     {
-      question: getTranslation('questionnaire.section6.q11.question', 'درجة اللمعان'),
-      answer: answers.shineLevel
-        ? getTranslation(`questionnaire.section6.q11.options.${answers.shineLevel}`, answers.shineLevel)
-        : '-',
-      custom: answers.shineLevelCustom,
-    },
-    {
       question: getTranslation('questionnaire.section7.q12.question', 'اللون الأساسي'),
       answer: answers.primaryColor || '-',
     },

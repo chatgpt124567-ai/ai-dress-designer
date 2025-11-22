@@ -42,7 +42,7 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
     parts.push(`**Transparent Parts:** No`);
   }
 
-  // Section 6: Embellishments
+  // Section 6: Embellishments & Body Size
   if (answers.embellishments && answers.embellishments.length > 0) {
     let embellishmentText = `**Embellishments:** ${answers.embellishments.join(', ')}${answers.embellishmentsCustom ? ` (${answers.embellishmentsCustom})` : ''}`;
     if (answers.embellishmentPlacement) {
@@ -50,7 +50,9 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
     }
     parts.push(embellishmentText);
   }
-  parts.push(`**Shine Level:** ${answers.shineLevel}${answers.shineLevelCustom ? ` (${answers.shineLevelCustom})` : ''}`);
+  if (answers.bodySize) {
+    parts.push(`**Body Size:** ${answers.bodySize}`);
+  }
 
   // Section 7: Colors
   parts.push(`**Primary Color:** ${answers.primaryColor}`);

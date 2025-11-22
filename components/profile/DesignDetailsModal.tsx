@@ -115,7 +115,13 @@ export default function DesignDetailsModal({
       });
     }
 
-    addAnswer('questionnaire.section6.q11', answers.shineLevel, answers.shineLevelCustom);
+    // Body Size
+    if (answers.bodySize) {
+      formatted.push({
+        label: t('questionnaire.section6.q10.question'),
+        value: t(`questionnaire.section6.q10.options.${answers.bodySize}`)
+      });
+    }
 
     // Primary color (text input)
     if (answers.primaryColor) {
