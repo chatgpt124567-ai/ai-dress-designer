@@ -18,6 +18,7 @@ import { ImageSkeleton } from '@/components/Skeleton';
 import AuthModal from '@/components/AuthModal';
 import DesignDetailsModal from '@/components/profile/DesignDetailsModal';
 import EditDesignModal from '@/components/EditDesignModal';
+import QuestionnaireReviewModal from '@/components/QuestionnaireReviewModal';
 import { createClient } from '@/lib/supabase/client';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 
@@ -33,7 +34,7 @@ export default function DesignPage() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<ToastType>('success');
-  const [activeTab, setActiveTab] = useState<'results' | 'history' | 'prompt'>('results');
+  const [activeTab, setActiveTab] = useState<'results' | 'history'>('results');
   const [currentAnswers, setCurrentAnswers] = useState<QuestionnaireAnswers | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [pendingAnswers, setPendingAnswers] = useState<QuestionnaireAnswers | null>(null);
@@ -45,64 +46,43 @@ export default function DesignPage() {
   const [editingDesign, setEditingDesign] = useState(false);
   const [savedAnswers, setSavedAnswers] = useState<QuestionnaireAnswers | null>(null);
   const [editingHistoryDesign, setEditingHistoryDesign] = useState<any | null>(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [pendingSubmitAnswers, setPendingSubmitAnswers] = useState<QuestionnaireAnswers | null>(null);
 
-  // LocalStorage key for saving questionnaire answers
+  // LocalStorage keys for saving questionnaire answers and current step
   const STORAGE_KEY = 'ai_dress_designer_questionnaire_answers';
+  const STORAGE_STEP_KEY = 'ai_dress_designer_current_step';
   const OAUTH_REDIRECT_FLAG = 'ai_dress_designer_oauth_redirect';
 
-  // Load saved answers from localStorage on mount ONLY if returning from OAuth
+  // Load saved answers from localStorage on mount
   useEffect(() => {
     console.log('=== Design Page Mount ===');
-    console.log('Checking OAuth redirect flag...');
 
     try {
+      // Always try to restore saved answers (whether from OAuth or normal navigation)
+      const saved = localStorage.getItem(STORAGE_KEY);
+      console.log('Saved answers in localStorage:', saved ? 'Found' : 'Not found');
+
+      if (saved) {
+        const parsedAnswers = JSON.parse(saved);
+        setSavedAnswers(parsedAnswers);
+        console.log('✅ Restored saved answers:', parsedAnswers);
+      }
+
       // Check if we're returning from OAuth redirect
       const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
       console.log('OAuth redirect flag:', isOAuthRedirect);
 
       if (isOAuthRedirect) {
-        // Restore saved answers
-        const saved = localStorage.getItem(STORAGE_KEY);
-        console.log('Saved answers in localStorage:', saved ? 'Found' : 'Not found');
-
-        if (saved) {
-          const parsedAnswers = JSON.parse(saved);
-          setSavedAnswers(parsedAnswers);
-          console.log('✅ Restored answers after OAuth redirect:', parsedAnswers);
-        }
-
         // Clear the OAuth redirect flag
         sessionStorage.removeItem(OAUTH_REDIRECT_FLAG);
         console.log('Cleared OAuth redirect flag');
-      } else {
-        // Normal page load - clear any old saved answers
-        console.log('Normal page load detected - clearing old saved answers...');
-        clearSavedAnswers();
-        console.log('✅ Normal page load - cleared old saved answers');
       }
     } catch (error) {
       console.error('❌ Error loading saved answers:', error);
     }
 
-    // Cleanup function: Clear saved answers when component unmounts (user navigates away)
-    return () => {
-      console.log('=== Design Page Unmount ===');
-
-      // Only clear if NOT in the middle of OAuth flow
-      const isOAuthRedirect = sessionStorage.getItem(OAUTH_REDIRECT_FLAG);
-      console.log('OAuth redirect flag on unmount:', isOAuthRedirect);
-
-      if (!isOAuthRedirect) {
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-          console.log('✅ Component unmounting - cleared saved answers from localStorage');
-        } catch (error) {
-          console.error('❌ Error clearing saved answers on unmount:', error);
-        }
-      } else {
-        console.log('OAuth flow in progress - keeping saved answers');
-      }
-    };
+    // No cleanup function - we want to keep the data even when navigating away
   }, []);
 
   // Check authentication status on mount
@@ -169,9 +149,16 @@ export default function DesignPage() {
   const saveAnswersToLocalStorage = (answers: QuestionnaireAnswers) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
+      console.log('💾 Auto-saved answers to localStorage');
     } catch (error) {
       console.error('Error saving answers to localStorage:', error);
     }
+  };
+
+  // Handle answers change - auto-save to localStorage
+  const handleAnswersChange = (answers: QuestionnaireAnswers) => {
+    saveAnswersToLocalStorage(answers);
+    setSavedAnswers(answers); // Update state to reflect saved data
   };
 
   // Clear saved answers from localStorage
@@ -179,8 +166,9 @@ export default function DesignPage() {
     console.log('clearSavedAnswers() called');
     try {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_STEP_KEY); // Also clear saved step
       setSavedAnswers(null);
-      console.log('✅ Cleared saved answers from localStorage and state');
+      console.log('✅ Cleared saved answers and step from localStorage and state');
     } catch (error) {
       console.error('❌ Error clearing saved answers:', error);
     }
@@ -227,12 +215,23 @@ export default function DesignPage() {
     console.log('=== handleSubmit called ===');
     console.log('Is authenticated:', isAuthenticated);
 
+    // Show review modal instead of processing immediately
+    setPendingSubmitAnswers(questionnaireAnswers);
+    setReviewModalOpen(true);
+  };
+
+  const handleReviewConfirm = async () => {
+    console.log('=== Review confirmed ===');
+    setReviewModalOpen(false);
+
+    if (!pendingSubmitAnswers) return;
+
     // Check if user is authenticated
     if (!isAuthenticated) {
       console.log('User not authenticated - saving answers and showing auth modal');
 
       // Save answers to localStorage (for recovery after OAuth)
-      saveAnswersToLocalStorage(questionnaireAnswers);
+      saveAnswersToLocalStorage(pendingSubmitAnswers);
       console.log('Saved answers to localStorage');
 
       // Set OAuth redirect flag so we know to restore answers after login
@@ -240,15 +239,21 @@ export default function DesignPage() {
       console.log('Set OAuth redirect flag');
 
       // Save answers temporarily and show auth modal
-      setPendingAnswers(questionnaireAnswers);
+      setPendingAnswers(pendingSubmitAnswers);
       setAuthModalOpen(true);
       return;
     }
 
     // User is authenticated - proceed with design generation
     console.log('User authenticated - proceeding with design generation');
-    // No need to save to localStorage since we're processing immediately
-    await processDesign(questionnaireAnswers);
+    await processDesign(pendingSubmitAnswers);
+    setPendingSubmitAnswers(null);
+  };
+
+  const handleReviewEdit = () => {
+    console.log('=== Review edit requested ===');
+    setReviewModalOpen(false);
+    // User stays on questionnaire to edit answers
   };
 
   const handleAuthSuccess = async () => {
@@ -565,7 +570,7 @@ export default function DesignPage() {
 
 
   return (
-    <div className="min-h-screen bg-muted-beige">
+    <div className="min-h-screen bg-muted-beige flex flex-col">
       <Header />
 
       <Toast
@@ -575,7 +580,7 @@ export default function DesignPage() {
         onClose={() => setToastVisible(false)}
       />
 
-      <main className="pt-24 md:pt-32 pb-16 md:pb-24 px-4">
+      <main className="flex-1 pt-24 md:pt-32 pb-16 md:pb-24 px-4">
         <div className="container mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -590,55 +595,32 @@ export default function DesignPage() {
             </p>
           </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-8">
+        <div className={cn(
+          "grid gap-6 md:gap-8",
+          step === 'input' ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-5"
+        )}>
           {/* Left Column - Questionnaire (40%) - Full width on mobile */}
-          <div className="lg:col-span-2 space-y-4 md:space-y-6">
-            {/* Show "Start Fresh" button if there are saved answers */}
-            {savedAnswers && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="luxury-card p-4 bg-accent-gold/10 border-2 border-accent-gold/30"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-primary mb-1">
-                      {direction === 'rtl'
-                        ? 'تم العثور على بيانات محفوظة'
-                        : 'Saved data found'}
-                    </p>
-                    <p className="text-xs text-neutral-600">
-                      {direction === 'rtl'
-                        ? 'يمكنك المتابعة من حيث توقفت أو البدء من جديد'
-                        : 'Continue where you left off or start fresh'}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSavedAnswers}
-                    className="text-xs whitespace-nowrap"
-                  >
-                    {direction === 'rtl' ? 'بدء جديد' : 'Start Fresh'}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            <QuestionnaireWizard
-              key={savedAnswers ? 'with-saved-answers' : 'fresh-start'}
-              onSubmit={handleSubmit}
-              loading={loading}
-              initialAnswers={savedAnswers || undefined}
-            />
-          </div>
+          {/* Show questionnaire only during input step */}
+          {step === 'input' && (
+            <div className={cn(step === 'input' ? "" : "lg:col-span-2", "space-y-4 md:space-y-6")}>
+              <QuestionnaireWizard
+                key={savedAnswers ? 'with-saved-answers' : 'fresh-start'}
+                onSubmit={handleSubmit}
+                loading={loading}
+                initialAnswers={savedAnswers || undefined}
+                onAnswersChange={handleAnswersChange}
+              />
+            </div>
+          )}
 
           {/* Right Column - Results Preview (60%) - Full width on mobile */}
-          <div className="lg:col-span-3">
+          {/* Show results only after questionnaire submission */}
+          {step !== 'input' && (
+            <div className="lg:col-span-5">
             <div className="luxury-card p-4 md:p-6">
               {/* Tabs */}
               <div className={cn("flex border-b border-gray-200 mb-4 md:mb-6", direction === 'rtl' ? 'space-x-reverse space-x-2 md:space-x-4' : 'space-x-2 md:space-x-4')}>
-                {(['results', 'history', 'prompt'] as const).map((tab) => (
+                {(['results', 'history'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -730,7 +712,7 @@ export default function DesignPage() {
                           size="lg"
                           onClick={() => setEditModalOpen(true)}
                           disabled={editingDesign}
-                          className="w-full text-sm md:text-base border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all"
+                          className="w-full text-sm md:text-base bg-white border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all shadow-sm"
                         >
                           {t('design.results.requestEdit')}
                         </Button>
@@ -738,18 +720,18 @@ export default function DesignPage() {
                         {/* Action Buttons */}
                         <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="lg"
                             onClick={handleReset}
-                            className="flex-1 text-sm md:text-base"
+                            className="flex-1 text-sm md:text-base bg-white border-2 border-gray-300 text-primary hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
                           >
                             {t('design.results.newDesign')}
                           </Button>
                           <Button
-                            variant="primary"
+                            variant="outline"
                             size="lg"
                             onClick={handleDownload}
-                            className="flex-1 text-sm md:text-base"
+                            className="flex-1 text-sm md:text-base bg-white border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all shadow-sm"
                           >
                             {t('design.results.download')}
                           </Button>
@@ -762,7 +744,7 @@ export default function DesignPage() {
 
               {/* History Tab */}
               {activeTab === 'history' && (
-                <div className="space-y-4">
+                <div className="space-y-4 min-h-[500px] md:min-h-[600px]">
                   {!isAuthenticated ? (
                     <div className="text-center py-12">
                       <p className="text-neutral-500 mb-4">
@@ -818,14 +800,6 @@ export default function DesignPage() {
                               </div>
                             )}
                           </div>
-                          <div className="p-3">
-                            <p className="text-xs text-gray-500">
-                              {new Date(design.created_at).toLocaleDateString(
-                                direction === 'rtl' ? 'ar-SA' : 'en-US',
-                                { year: 'numeric', month: 'short', day: 'numeric' }
-                              )}
-                            </p>
-                          </div>
                         </motion.div>
                       ))}
                     </div>
@@ -833,44 +807,10 @@ export default function DesignPage() {
                 </div>
               )}
 
-              {/* Prompt Tab */}
-              {activeTab === 'prompt' && (
-                <div className="space-y-4">
-                  {enhancedPrompt ? (
-                    <>
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-lg font-semibold text-primary">
-                          {t('design.tabs.promptTitle')}
-                        </h3>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(enhancedPrompt);
-                            showToast(t('design.tabs.promptCopied'), 'success');
-                          }}
-                        >
-                          {t('design.tabs.copyPrompt')}
-                        </Button>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-700 font-mono">
-                          {enhancedPrompt}
-                        </pre>
-                      </div>
-                      <p className="text-xs text-gray-500 italic">
-                        {t('design.tabs.promptNote')}
-                      </p>
-                    </>
-                  ) : (
-                    <div className="text-center py-12">
-                      <p className="text-neutral-500">{t('design.tabs.promptPlaceholder')}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+
             </div>
           </div>
+          )}
         </div>
 
         {/* Lightbox */}
@@ -882,6 +822,17 @@ export default function DesignPage() {
           prompt={enhancedPrompt || description}
           timestamp={new Date().toLocaleString()}
         />
+
+        {/* Questionnaire Review Modal */}
+        {pendingSubmitAnswers && (
+          <QuestionnaireReviewModal
+            isOpen={reviewModalOpen}
+            answers={pendingSubmitAnswers}
+            onConfirm={handleReviewConfirm}
+            onEdit={handleReviewEdit}
+            onClose={() => setReviewModalOpen(false)}
+          />
+        )}
 
         {/* Auth Modal */}
         <AuthModal

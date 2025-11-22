@@ -6,11 +6,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface ProgressBarProps {
   currentStep: number;
   totalSteps: number;
+  onStepClick?: (step: number) => void; // Optional callback for step navigation
 }
 
-export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProps) {
+export default function ProgressBar({ currentStep, totalSteps, onStepClick }: ProgressBarProps) {
   const { t } = useLanguage();
   const progress = (currentStep / totalSteps) * 100;
+
+  const handleStepClick = (step: number) => {
+    if (onStepClick) {
+      onStepClick(step);
+    }
+  };
 
   return (
     <div className="mb-6 md:mb-8">
@@ -37,18 +44,23 @@ export default function ProgressBar({ currentStep, totalSteps }: ProgressBarProp
       {/* Step Indicators */}
       <div className="flex justify-between mt-3 md:mt-4">
         {Array.from({ length: totalSteps }, (_, i) => i + 1).map((step) => (
-          <div
+          <button
             key={step}
+            onClick={() => handleStepClick(step)}
+            disabled={!onStepClick}
             className={`flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full text-xs md:text-sm font-medium transition-all ${
               step < currentStep
                 ? 'bg-accent-gold text-white'
                 : step === currentStep
                 ? 'bg-accent-gold text-white ring-4 ring-accent-gold/30'
                 : 'bg-gray-200 text-gray-500'
+            } ${
+              onStepClick ? 'cursor-pointer hover:scale-110 hover:shadow-lg active:scale-95' : 'cursor-default'
             }`}
+            aria-label={`${t('questionnaire.goToStep')} ${step}`}
           >
             {step < currentStep ? '✓' : step}
-          </div>
+          </button>
         ))}
       </div>
     </div>

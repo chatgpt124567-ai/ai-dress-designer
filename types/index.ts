@@ -79,12 +79,11 @@ export interface QuestionnaireAnswers {
   hasTransparentParts: string;
   transparentPartsLocation?: string;
 
-  // Section 6: Embellishments
+  // Section 6: Embellishments & Body Size
   embellishments: string[];
   embellishmentsCustom?: string;
   embellishmentPlacement?: string;
-  shineLevel: string;
-  shineLevelCustom?: string;
+  bodySize: string; // XS, S, M, L, XL, XXL
 
   // Section 7: Colors
   primaryColor: string;

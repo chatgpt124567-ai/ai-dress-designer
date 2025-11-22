@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import type { QuestionnaireAnswers } from '@/types';
 import Button from './Button';
 import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
+import CustomFabricModal from './CustomFabricModal';
 
 interface QuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -16,6 +17,8 @@ interface QuestionnaireWizardProps {
   onAnswersChange?: (answers: QuestionnaireAnswers) => void;
 }
 
+const STORAGE_STEP_KEY = 'ai_dress_designer_current_step';
+
 export default function QuestionnaireWizard({
   onSubmit,
   loading = false,
@@ -23,8 +26,38 @@ export default function QuestionnaireWizard({
   onAnswersChange
 }: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 11; // 11 questions total (Q2 combines Primary Color + Additional Colors)
+
+  // Initialize with default value (1) to avoid hydration mismatch
+  // The saved step will be loaded in useEffect after hydration
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Track if we've loaded the saved step to prevent unnecessary updates
+  const [hasLoadedSavedStep, setHasLoadedSavedStep] = useState(false);
+
+  // Custom Fabric Modal state
+  const [customFabricModalOpen, setCustomFabricModalOpen] = useState(false);
+
+  // Load saved step from localStorage after component mounts (client-side only)
+  // This runs after hydration is complete, avoiding hydration mismatch
+  useEffect(() => {
+    // Only load once
+    if (hasLoadedSavedStep) return;
+
+    try {
+      const saved = localStorage.getItem(STORAGE_STEP_KEY);
+      if (saved) {
+        const step = parseInt(saved, 10);
+        if (step >= 1 && step <= totalSteps) {
+          setCurrentStep(step);
+          setHasLoadedSavedStep(true);
+          console.log('✅ Restored saved step:', step);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved step:', error);
+    }
+  }, [hasLoadedSavedStep, totalSteps]); // Dependencies to ensure it runs correctly
 
   // Initialize answers state with saved answers if available
   const [answers, setAnswers] = useState<QuestionnaireAnswers>(initialAnswers || {
@@ -36,10 +69,20 @@ export default function QuestionnaireWizard({
     fabricType: '',
     hasTransparentParts: '',
     embellishments: [],
-    shineLevel: '',
+    bodySize: '',
     primaryColor: '',
     hasAdditionalColors: '',
   });
+
+  // Save current step to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_STEP_KEY, currentStep.toString());
+      console.log('💾 Saved current step:', currentStep);
+    } catch (error) {
+      console.error('Error saving current step:', error);
+    }
+  }, [currentStep]);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -57,7 +100,23 @@ export default function QuestionnaireWizard({
     }
   };
 
+  const handleStepClick = (step: number) => {
+    if (step >= 1 && step <= totalSteps) {
+      setCurrentStep(step);
+      // Smooth scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.log('📍 Navigated to step:', step);
+    }
+  };
+
   const handleSubmit = () => {
+    // Clear saved step when submitting
+    try {
+      localStorage.removeItem(STORAGE_STEP_KEY);
+      console.log('🗑️ Cleared saved step on submit');
+    } catch (error) {
+      console.error('Error clearing saved step:', error);
+    }
     onSubmit(answers);
   };
 
@@ -94,6 +153,7 @@ export default function QuestionnaireWizard({
             value={answers.dressType}
             customValue={answers.dressTypeCustom}
             onChange={(value, customValue) => updateAnswer('dressType', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -105,6 +165,7 @@ export default function QuestionnaireWizard({
               questionText={t('questionnaire.section5.q8.question')}
               questionType="radio"
               options={[
+                { value: 'customFabric', labelKey: 'questionnaire.section5.q8.options.customFabric' },
                 { value: 'satin', labelKey: 'questionnaire.section5.q8.options.satin' },
                 { value: 'silk', labelKey: 'questionnaire.section5.q8.options.silk' },
                 { value: 'chiffon', labelKey: 'questionnaire.section5.q8.options.chiffon' },
@@ -113,192 +174,51 @@ export default function QuestionnaireWizard({
                 { value: 'velvet', labelKey: 'questionnaire.section5.q8.options.velvet' },
                 { value: 'organza', labelKey: 'questionnaire.section5.q8.options.organza' },
                 { value: 'crepe', labelKey: 'questionnaire.section5.q8.options.crepe' },
-                { value: 'customFabric', labelKey: 'questionnaire.section5.q8.options.customFabric' },
                 { value: 'other', labelKey: 'questionnaire.section5.q8.options.other', hasCustomInput: true },
               ]}
               value={answers.fabricType}
               customValue={answers.fabricTypeCustom}
-              onChange={(value, customValue) => updateAnswer('fabricType', value as string, customValue)}
+              onChange={(value, customValue) => {
+                updateAnswer('fabricType', value as string, customValue);
+                // Open modal when customFabric is selected
+                if (value === 'customFabric') {
+                  setCustomFabricModalOpen(true);
+                }
+              }}
+              onAutoAdvance={handleNext}
+              disableAutoAdvanceFor={['customFabric']}
             />
 
-            {/* Custom Fabric Image Upload */}
-            {answers.fabricType === 'customFabric' && (
+            {/* Show custom fabric summary if configured */}
+            {answers.fabricType === 'customFabric' && answers.customFabricImage && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="space-y-4 md:space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-accent-gold/10 border-2 border-accent-gold rounded-lg space-y-3"
               >
-                {/* Image Upload Section */}
-                {!answers.customFabricImage ? (
-                  <div className="space-y-3 md:space-y-4">
-                    <label className="block text-sm md:text-base font-medium text-gray-700">
-                      {t('questionnaire.section5.q8.uploadImage')}
-                    </label>
-                    <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                      {/* Take Photo Button (Mobile Camera) */}
-                      <label className="flex-1 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.size > 5 * 1024 * 1024) {
-                                alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-                                return;
-                              }
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                updateAnswer('customFabricImage' as any, reader.result as string);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <div className="px-4 py-3 md:px-6 md:py-4 border-2 border-accent-gold rounded-lg text-center hover:bg-accent-gold hover:text-white transition-all">
-                          <span className="text-sm md:text-base lg:text-lg font-medium">
-                            📷 {t('questionnaire.section5.q8.takePhoto')}
-                          </span>
-                        </div>
-                      </label>
-
-                      {/* Choose from Gallery Button */}
-                      <label className="flex-1 cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (file.size > 5 * 1024 * 1024) {
-                                alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-                                return;
-                              }
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                updateAnswer('customFabricImage' as any, reader.result as string);
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                        <div className="px-4 py-3 md:px-6 md:py-4 border-2 border-accent-gold rounded-lg text-center hover:bg-accent-gold hover:text-white transition-all">
-                          <span className="text-sm md:text-base lg:text-lg font-medium">
-                            🖼️ {t('questionnaire.section5.q8.chooseFromGallery')}
-                          </span>
-                        </div>
-                      </label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-accent-gold">
+                      <img src={answers.customFabricImage} alt="Custom Fabric" className="w-full h-full object-cover" />
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 md:space-y-5">
-                    {/* Image Preview */}
-                    <div className="relative rounded-lg overflow-hidden border-2 border-accent-gold max-w-md mx-auto">
-                      <img
-                        src={answers.customFabricImage}
-                        alt="Custom Fabric"
-                        className="w-full h-48 md:h-56 lg:h-64 object-cover"
-                      />
-                      <div className={cn(
-                        "absolute top-2 flex gap-2",
-                        direction === 'rtl' ? 'left-2' : 'right-2'
-                      )}>
-                        {/* Change Image Button */}
-                        <label className="cursor-pointer bg-white/90 hover:bg-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-md transition-all">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.size > 5 * 1024 * 1024) {
-                                  alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-                                  return;
-                                }
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  updateAnswer('customFabricImage' as any, reader.result as string);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                          <span className="text-xs md:text-sm font-medium text-gray-700">
-                            {t('questionnaire.section5.q8.changeImage')}
-                          </span>
-                        </label>
-                        {/* Remove Image Button */}
-                        <button
-                          onClick={() => {
-                            updateAnswer('customFabricImage' as any, '');
-                            updateAnswer('fabricPlacement' as any, '');
-                            updateAnswer('fabricPlacementDetails' as any, '');
-                          }}
-                          className="bg-red-500/90 hover:bg-red-500 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg shadow-md transition-all"
-                        >
-                          <span className="text-xs md:text-sm font-medium">
-                            {t('questionnaire.section5.q8.removeImage')}
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Fabric Placement Question */}
-                    <div className="space-y-3 md:space-y-4">
-                      <label className="block text-sm md:text-base lg:text-lg font-medium text-gray-700">
-                        {t('questionnaire.section5.q8.fabricPlacementQuestion')}
-                      </label>
-                      <div className="space-y-2 md:space-y-3">
-                        {['full', 'bodice', 'skirt', 'sleeves', 'custom'].map((placement) => (
-                          <label
-                            key={placement}
-                            className={cn(
-                              'flex items-center gap-3 md:gap-4 p-3 md:p-4 border-2 rounded-lg cursor-pointer transition-all',
-                              answers.fabricPlacement === placement
-                                ? 'border-accent-gold bg-accent-gold/5'
-                                : 'border-gray-200 hover:border-accent-gold/50'
-                            )}
-                          >
-                            <input
-                              type="radio"
-                              name="fabricPlacement"
-                              value={placement}
-                              checked={answers.fabricPlacement === placement}
-                              onChange={(e) => updateAnswer('fabricPlacement' as any, e.target.value)}
-                              className="w-4 h-4 md:w-5 md:h-5 text-accent-gold focus:ring-accent-gold"
-                            />
-                            <span className="text-sm md:text-base lg:text-lg">
-                              {t(`questionnaire.section5.q8.placementOptions.${placement}`)}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-
-                      {/* Custom Placement Details */}
-                      {answers.fabricPlacement === 'custom' && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                        >
-                          <input
-                            type="text"
-                            value={answers.fabricPlacementDetails || ''}
-                            onChange={(e) => updateAnswer('fabricPlacementDetails' as any, e.target.value)}
-                            placeholder={t('questionnaire.section5.q8.placementDetailsPlaceholder')}
-                            className="w-full px-4 py-3 md:px-5 md:py-4 border-2 border-gray-200 rounded-lg focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20 transition-all text-sm md:text-base lg:text-lg"
-                            dir={direction}
-                          />
-                        </motion.div>
+                    <div>
+                      <p className="font-medium text-primary">{t('questionnaire.section5.q8.imageUploaded')}</p>
+                      {answers.fabricPlacement && (
+                        <p className="text-sm text-gray-600">
+                          {t(`questionnaire.section5.q8.placementOptions.${answers.fabricPlacement}`)}
+                        </p>
                       )}
                     </div>
                   </div>
-                )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCustomFabricModalOpen(true)}
+                    className="text-sm"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                </div>
               </motion.div>
             )}
           </div>
@@ -362,6 +282,7 @@ export default function QuestionnaireWizard({
             value={answers.dressLength}
             customValue={answers.dressLengthCustom}
             onChange={(value, customValue) => updateAnswer('dressLength', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -384,6 +305,7 @@ export default function QuestionnaireWizard({
             value={answers.skirtShape}
             customValue={answers.skirtShapeCustom}
             onChange={(value, customValue) => updateAnswer('skirtShape', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -407,6 +329,7 @@ export default function QuestionnaireWizard({
             value={answers.necklineType}
             customValue={answers.necklineTypeCustom}
             onChange={(value, customValue) => updateAnswer('necklineType', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -429,6 +352,7 @@ export default function QuestionnaireWizard({
             value={answers.sleeveType}
             customValue={answers.sleeveTypeCustom}
             onChange={(value, customValue) => updateAnswer('sleeveType', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -441,6 +365,7 @@ export default function QuestionnaireWizard({
               questionType="yesno"
               value={answers.hasTransparentParts}
               onChange={(value) => updateAnswer('hasTransparentParts', value as string)}
+              onAutoAdvance={handleNext}
             />
             {answers.hasTransparentParts === 'yes' && (
               <motion.div
@@ -461,24 +386,24 @@ export default function QuestionnaireWizard({
           </div>
         );
 
-      case 9: // Section 6: Embellishments - Q10 (Embellishments)
+      case 9: // Section 6: Embellishments - Q9 (Embellishments)
         return (
           <div className="space-y-6">
             <QuestionStep
               sectionTitle={t('questionnaire.section6.title')}
-              questionText={t('questionnaire.section6.q10.question')}
+              questionText={t('questionnaire.section6.q9.question')}
               questionType="checkbox"
               options={[
-                { value: 'handEmbroidery', labelKey: 'questionnaire.section6.q10.options.handEmbroidery' },
-                { value: 'beads', labelKey: 'questionnaire.section6.q10.options.beads' },
-                { value: 'sequins', labelKey: 'questionnaire.section6.q10.options.sequins' },
-                { value: 'decorativeLace', labelKey: 'questionnaire.section6.q10.options.decorativeLace' },
-                { value: '3dFlowers', labelKey: 'questionnaire.section6.q10.options.3dFlowers' },
-                { value: 'stones', labelKey: 'questionnaire.section6.q10.options.stones' },
-                { value: 'belt', labelKey: 'questionnaire.section6.q10.options.belt' },
-                { value: 'embroideredFabric', labelKey: 'questionnaire.section6.q10.options.embroideredFabric' },
-                { value: 'none', labelKey: 'questionnaire.section6.q10.options.none' },
-                { value: 'other', labelKey: 'questionnaire.section6.q10.options.other', hasCustomInput: true },
+                { value: 'handEmbroidery', labelKey: 'questionnaire.section6.q9.options.handEmbroidery' },
+                { value: 'beads', labelKey: 'questionnaire.section6.q9.options.beads' },
+                { value: 'sequins', labelKey: 'questionnaire.section6.q9.options.sequins' },
+                { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
+                { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
+                { value: 'stones', labelKey: 'questionnaire.section6.q9.options.stones' },
+                { value: 'belt', labelKey: 'questionnaire.section6.q9.options.belt' },
+                { value: 'embroideredFabric', labelKey: 'questionnaire.section6.q9.options.embroideredFabric' },
+                { value: 'none', labelKey: 'questionnaire.section6.q9.options.none' },
+                { value: 'other', labelKey: 'questionnaire.section6.q9.options.other', hasCustomInput: true },
               ]}
               value={answers.embellishments}
               customValue={answers.embellishmentsCustom}
@@ -495,13 +420,13 @@ export default function QuestionnaireWizard({
                 className="mt-4"
               >
                 <label className="block text-sm font-medium text-primary mb-2">
-                  {t('questionnaire.section6.q10.placementLabel')}
+                  {t('questionnaire.section6.q9.placementLabel')}
                 </label>
                 <input
                   type="text"
                   value={answers.embellishmentPlacement || ''}
                   onChange={(e) => updateAnswer('embellishmentPlacement' as any, e.target.value)}
-                  placeholder={t('questionnaire.section6.q10.placementPlaceholder')}
+                  placeholder={t('questionnaire.section6.q9.placementPlaceholder')}
                   className={cn(
                     'w-full px-4 py-3 border-2 border-gray-200 rounded-lg',
                     'focus:border-accent-gold focus:outline-none',
@@ -515,21 +440,23 @@ export default function QuestionnaireWizard({
           </div>
         );
 
-      case 10: // Section 6: Embellishments - Q11 (Shine Level)
+      case 10: // Section 6: Body Size - Q10 (Body Size)
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
-            questionText={t('questionnaire.section6.q11.question')}
+            questionText={t('questionnaire.section6.q10.question')}
             questionType="radio"
             options={[
-              { value: 'none', labelKey: 'questionnaire.section6.q11.options.none' },
-              { value: 'light', labelKey: 'questionnaire.section6.q11.options.light' },
-              { value: 'strong', labelKey: 'questionnaire.section6.q11.options.strong' },
-              { value: 'other', labelKey: 'questionnaire.section6.q11.options.other', hasCustomInput: true },
+              { value: 'xs', labelKey: 'questionnaire.section6.q10.options.xs' },
+              { value: 's', labelKey: 'questionnaire.section6.q10.options.s' },
+              { value: 'm', labelKey: 'questionnaire.section6.q10.options.m' },
+              { value: 'l', labelKey: 'questionnaire.section6.q10.options.l' },
+              { value: 'xl', labelKey: 'questionnaire.section6.q10.options.xl' },
+              { value: 'xxl', labelKey: 'questionnaire.section6.q10.options.xxl' },
             ]}
-            value={answers.shineLevel}
-            customValue={answers.shineLevelCustom}
-            onChange={(value, customValue) => updateAnswer('shineLevel', value as string, customValue)}
+            value={answers.bodySize}
+            onChange={(value) => updateAnswer('bodySize', value as string)}
+            onAutoAdvance={handleNext}
           />
         );
 
@@ -562,7 +489,11 @@ export default function QuestionnaireWizard({
       </div>
 
       {/* Progress Bar */}
-      <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+      <ProgressBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        onStepClick={handleStepClick}
+      />
 
       {/* Question Content */}
       <AnimatePresence mode="wait">
@@ -607,6 +538,23 @@ export default function QuestionnaireWizard({
           </Button>
         )}
       </div>
+
+      {/* Custom Fabric Modal */}
+      <CustomFabricModal
+        isOpen={customFabricModalOpen}
+        onClose={() => setCustomFabricModalOpen(false)}
+        customFabricImage={answers.customFabricImage}
+        fabricPlacement={answers.fabricPlacement}
+        fabricPlacementDetails={answers.fabricPlacementDetails}
+        onImageChange={(imageData) => updateAnswer('customFabricImage' as any, imageData)}
+        onPlacementChange={(placement) => updateAnswer('fabricPlacement' as any, placement)}
+        onPlacementDetailsChange={(details) => updateAnswer('fabricPlacementDetails' as any, details)}
+        onRemoveImage={() => {
+          updateAnswer('customFabricImage' as any, '');
+          updateAnswer('fabricPlacement' as any, '');
+          updateAnswer('fabricPlacementDetails' as any, '');
+        }}
+      />
     </div>
   );
 }

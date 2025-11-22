@@ -43,7 +43,7 @@
       "terms": "Terms of Service",
       "cookies": "Cookie Policy"
     },
-    "copyright": "© 2024 Yasmine Al-Sham Smart Designer. All rights reserved."
+    "copyright": "© 2025 Yasmine Al-Sham Smart Designer. All rights reserved."
   },
   "home": {
     "hero": {
@@ -166,6 +166,7 @@
     "next": "Next",
     "previous": "Previous",
     "submit": "Submit",
+    "done": "Done",
     "yes": "Yes",
     "no": "No"
   },
@@ -173,7 +174,14 @@
     "title": "Design Questionnaire",
     "subtitle": "Answer the following questions to design your dream dress",
     "progress": "Step {{current}} of {{total}}",
+    "goToStep": "Go to question",
     "customPlaceholder": "Please specify...",
+    "review": {
+      "title": "Review Your Answers",
+      "subtitle": "Please review your answers before submitting the questionnaire. You can edit or confirm to proceed.",
+      "confirmButton": "Confirm & Submit",
+      "editButton": "Edit Answers"
+    },
     "section1": {
       "title": "Basics",
       "q1": {
@@ -259,6 +267,7 @@
           "customFabric": "Custom Fabric (Upload Image)",
           "other": "Other"
         },
+        "customFabricTitle": "Custom Fabric Settings",
         "uploadImage": "Upload Fabric Image",
         "takePhoto": "Take Photo",
         "chooseFromGallery": "Choose from Gallery",
@@ -281,8 +290,8 @@
       }
     },
     "section6": {
-      "title": "Embellishments & Details",
-      "q10": {
+      "title": "Embellishments & Size",
+      "q9": {
         "question": "What embellishments would you like?",
         "options": {
           "handEmbroidery": "Hand embroidery",
@@ -299,13 +308,15 @@
         "placementLabel": "Where would you like to place the embellishments?",
         "placementPlaceholder": "Example: on the bodice and sleeves"
       },
-      "q11": {
-        "question": "What level of shine would you prefer?",
+      "q10": {
+        "question": "What is your body size?",
         "options": {
-          "none": "No shine",
-          "light": "Light shine",
-          "strong": "Strong shine",
-          "other": "Other"
+          "xs": "XS (Extra Small)",
+          "s": "S (Small)",
+          "m": "M (Medium)",
+          "l": "L (Large)",
+          "xl": "XL (Extra Large)",
+          "xxl": "XXL (Extra Extra Large)"
         }
       }
     },

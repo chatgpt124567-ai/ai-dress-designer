@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, Trash2, Edit } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -20,6 +21,7 @@ export default function DesignDetailsModal({
   onRequestEdit,
 }: DesignDetailsModalProps) {
   const { t, direction } = useLanguage();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   if (!design) return null;
 
@@ -154,22 +156,25 @@ export default function DesignDetailsModal({
   const formattedAnswers = getFormattedAnswers();
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
-      >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.9, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-lg sm:rounded-xl max-w-4xl w-full my-4 sm:my-8 max-h-[95vh] sm:max-h-[90vh] flex flex-col"
-          dir={direction}
-        >
+    <>
+      <AnimatePresence>
+        {design && (
+          <motion.div
+            key="modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-lg sm:rounded-xl max-w-4xl w-full my-4 sm:my-8 max-h-[95vh] sm:max-h-[90vh] flex flex-col"
+              dir={direction}
+            >
           {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
             <h2 className="text-lg sm:text-2xl font-headline font-bold text-primary">
@@ -188,12 +193,21 @@ export default function DesignDetailsModal({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Image */}
               <div className="space-y-3 sm:space-y-4">
-                <div className="w-full aspect-[3/4] relative rounded-lg overflow-hidden shadow-lg">
+                <div
+                  className="w-full aspect-[3/4] relative rounded-lg overflow-hidden shadow-lg cursor-pointer hover:opacity-95 transition-opacity"
+                  onClick={() => setLightboxOpen(true)}
+                >
                   <img
                     src={design.image_url}
                     alt="Design"
                     className="w-full h-full object-cover"
                   />
+                  {/* Hover overlay hint */}
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 hover:opacity-100 transition-opacity bg-white/90 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium text-primary">
+                      {direction === 'rtl' ? 'اضغط للتكبير' : 'Click to enlarge'}
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-500 text-center">
                   {formatDate(design.created_at)}
@@ -230,14 +244,6 @@ export default function DesignDetailsModal({
 
           {/* Footer Actions */}
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-200 flex-shrink-0">
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onClose}
-              className="flex-1 text-sm sm:text-base py-2 sm:py-3"
-            >
-              {t('common.close')}
-            </Button>
             {onRequestEdit && (
               <Button
                 variant="primary"
@@ -271,9 +277,45 @@ export default function DesignDetailsModal({
               {t('profile.designs.delete')}
             </Button>
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox for fullscreen image view */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            key="lightbox"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxOpen(false)}
+            className="fixed inset-0 bg-black/95 z-[60] flex items-center justify-center p-4 cursor-zoom-out"
+          >
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+            >
+              <X className="w-6 h-6 text-white" />
+            </motion.button>
+
+            <motion.img
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              src={design.image_url}
+              alt="Design"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

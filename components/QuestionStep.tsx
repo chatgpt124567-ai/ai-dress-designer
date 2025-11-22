@@ -20,6 +20,8 @@ interface QuestionStepProps {
   customValue?: string;
   onChange: (value: string | string[], customValue?: string) => void;
   placeholder?: string;
+  onAutoAdvance?: () => void; // New prop for auto-advancing to next question
+  disableAutoAdvanceFor?: string[]; // Values that should NOT trigger auto-advance
 }
 
 export default function QuestionStep({
@@ -31,6 +33,8 @@ export default function QuestionStep({
   customValue = '',
   onChange,
   placeholder,
+  onAutoAdvance,
+  disableAutoAdvanceFor = [],
 }: QuestionStepProps) {
   const { t, direction } = useLanguage();
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -49,6 +53,18 @@ export default function QuestionStep({
 
   const handleRadioChange = (selectedValue: string) => {
     onChange(selectedValue, selectedValue === 'other' ? localCustomValue : undefined);
+
+    // Auto-advance to next question for single-choice (radio) questions
+    // But NOT if the selected value is 'other' (which requires custom input)
+    // Also NOT if the value is in the disableAutoAdvanceFor list
+    const shouldNotAutoAdvance = selectedValue === 'other' || disableAutoAdvanceFor.includes(selectedValue);
+
+    if (onAutoAdvance && !shouldNotAutoAdvance) {
+      // Small delay to show the selection before advancing
+      setTimeout(() => {
+        onAutoAdvance();
+      }, 300);
+    }
   };
 
   const handleCheckboxChange = (selectedValue: string) => {
@@ -72,18 +88,15 @@ export default function QuestionStep({
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      {/* Section Title */}
+      {/* Question Text as Header (replacing section title) */}
       <div className="border-b border-gray-200 pb-3">
         <h3 className="text-lg md:text-xl font-headline font-semibold text-accent-gold">
-          {sectionTitle}
+          {questionText}
         </h3>
       </div>
 
-      {/* Question Text */}
+      {/* Options/Input Section */}
       <div>
-        <label className="block text-base md:text-lg font-medium text-primary mb-4">
-          {questionText}
-        </label>
 
         {/* Radio Options */}
         {questionType === 'radio' && (
@@ -162,7 +175,16 @@ export default function QuestionStep({
                   name="yesno"
                   value={option}
                   checked={value === option}
-                  onChange={() => onChange(option)}
+                  onChange={() => {
+                    onChange(option);
+                    // Auto-advance for yes/no questions (but only if selecting 'no')
+                    // If 'yes', user might need to fill additional fields
+                    if (onAutoAdvance && option === 'no') {
+                      setTimeout(() => {
+                        onAutoAdvance();
+                      }, 300);
+                    }
+                  }}
                   className="sr-only"
                 />
                 <span className={cn(

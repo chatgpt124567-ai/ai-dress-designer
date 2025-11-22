@@ -26,6 +26,9 @@ export default function Header() {
   // Check if we're on pages that should have white header on desktop only
   const isWhiteHeaderDesktopPage = pathname === '/' || pathname === '/auth/login' || pathname === '/profile';
 
+  // Check if we're on login page (for mobile white background)
+  const isLoginPage = pathname === '/auth/login' || pathname === '/login';
+
   // Monitor scroll to detect when hero section ends
   useEffect(() => {
     // If we're on design or profile page, always show white header
@@ -72,8 +75,8 @@ export default function Header() {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        // Mobile behavior: transparent -> white on scroll
-        isScrolled || isMobileMenuOpen
+        // Mobile behavior: transparent -> white on scroll OR white always on login page
+        isScrolled || isMobileMenuOpen || isLoginPage
           ? 'bg-white backdrop-blur-2xl shadow-xl py-4'
           : 'bg-transparent py-6',
         // Desktop behavior: white always on specific pages
