@@ -17,7 +17,9 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   parts.push(`**Sleeve Type:** ${answers.sleeveType}${answers.sleeveTypeCustom ? ` (${answers.sleeveTypeCustom})` : ''}`);
 
   // Section 5: Fabric & Materials (Section 4 removed: Back Design)
-  if (answers.fabricType === 'customFabric' && answers.customFabricImage) {
+  const fabricTypes = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);
+
+  if (fabricTypes.includes('customFabric') && answers.customFabricImage) {
     // Custom fabric with image
     let placementText = '';
     if (answers.fabricPlacement === 'full') {
@@ -32,13 +34,44 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
       placementText = answers.fabricPlacementDetails;
     }
     parts.push(`**Fabric Type:** Custom fabric from provided image (to be used on: ${placementText})`);
-  } else {
-    parts.push(`**Fabric Type:** ${answers.fabricType}${answers.fabricTypeCustom ? ` (${answers.fabricTypeCustom})` : ''}`);
+
+    // Add other selected fabrics if any
+    const otherFabrics = fabricTypes.filter(f => f !== 'customFabric' && f !== 'other');
+    if (otherFabrics.length > 0) {
+      if (answers.fabricPlacements && Object.keys(answers.fabricPlacements).length > 0) {
+        const fabricDescriptions = otherFabrics.map(f => {
+          const placement = answers.fabricPlacements?.[f];
+          return placement ? `${f} (${placement})` : f;
+        });
+        parts.push(`**Additional Fabrics:** ${fabricDescriptions.join(', ')}`);
+      } else {
+        parts.push(`**Additional Fabrics:** ${otherFabrics.join(', ')}`);
+      }
+    }
+  } else if (fabricTypes.length > 0) {
+    // Multiple fabrics selected
+    if (fabricTypes.length === 1) {
+      parts.push(`**Fabric Type:** ${fabricTypes[0]}${answers.fabricTypeCustom ? ` (${answers.fabricTypeCustom})` : ''}`);
+    } else {
+      // Multiple fabrics with placements
+      if (answers.fabricPlacements && Object.keys(answers.fabricPlacements).length > 0) {
+        const fabricDescriptions = fabricTypes.filter(f => f !== 'other').map(f => {
+          const placement = answers.fabricPlacements?.[f];
+          return placement ? `${f} (${placement})` : f;
+        });
+        parts.push(`**Fabric Types:** ${fabricDescriptions.join(', ')}${answers.fabricTypeCustom ? ` - Other: ${answers.fabricTypeCustom}` : ''}`);
+      } else {
+        parts.push(`**Fabric Types:** ${fabricTypes.join(', ')}${answers.fabricTypeCustom ? ` (${answers.fabricTypeCustom})` : ''}`);
+      }
+    }
   }
 
+  // Support both full questionnaire (hasTransparentParts) and simplified (transparentParts)
   if (answers.hasTransparentParts === 'yes' && answers.transparentPartsLocation) {
     parts.push(`**Transparent Parts:** Yes, at ${answers.transparentPartsLocation}`);
-  } else {
+  } else if (answers.transparentParts) {
+    parts.push(`**Transparent Parts:** ${answers.transparentParts}`);
+  } else if (answers.hasTransparentParts === 'no') {
     parts.push(`**Transparent Parts:** No`);
   }
 
@@ -50,19 +83,26 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
     }
     parts.push(embellishmentText);
   }
-  if (answers.bodySize) {
-    parts.push(`**Body Size:** ${answers.bodySize}`);
+  // Support both bodySize (full questionnaire) and bodyType (simplified questionnaire)
+  const bodySize = answers.bodySize || answers.bodyType;
+  const bodySizeCustom = answers.bodyTypeCustom;
+  if (bodySize) {
+    parts.push(`**Body Size:** ${bodySize}${bodySizeCustom ? ` (${bodySizeCustom})` : ''}`);
   }
 
   // Section 7: Colors
-  parts.push(`**Primary Color:** ${answers.primaryColor}`);
+  if (answers.primaryColor) {
+    parts.push(`**Primary Color:** ${answers.primaryColor}`);
+  }
   if (answers.hasAdditionalColors === 'yes' && answers.additionalColors) {
     parts.push(`**Additional Colors:** ${answers.additionalColors}`);
   }
 
   // Section 9: Additional Notes (Q13 Design Style removed)
-  if (answers.additionalNotes) {
-    parts.push(`**Additional Notes:** ${answers.additionalNotes}`);
+  // Support both additionalNotes (full questionnaire) and additionalDetails (simplified questionnaire)
+  const additionalNotes = answers.additionalNotes || answers.additionalDetails;
+  if (additionalNotes) {
+    parts.push(`**Additional Notes:** ${additionalNotes}`);
   }
 
   return parts.join('\n');
@@ -71,7 +111,15 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
 export async function POST(request: NextRequest) {
   try {
     const body: EnhancePromptRequest = await request.json();
-    const { description, questionnaireAnswers } = body;
+    const {
+      description,
+      questionnaireAnswers,
+      primaryFabricImage,
+      secondaryFabricImage,
+      secondaryFabricType,
+      primaryFabricPlacement,
+      secondaryFabricPlacement
+    } = body;
 
     // Support both old (description) and new (questionnaireAnswers) formats
     if (!description && !questionnaireAnswers) {
@@ -97,12 +145,48 @@ export async function POST(request: NextRequest) {
       clientAnswersText = `Client Description: ${description}`;
     }
 
-    // Check if custom fabric image is provided
+    // Check if custom fabric image is provided (old workflow)
     const hasCustomFabric = questionnaireAnswers?.fabricType === 'customFabric' && questionnaireAnswers?.customFabricImage;
+
+    // Check if own fabric workflow is being used
+    const hasOwnFabricWorkflow = !!primaryFabricImage;
 
     // Build custom fabric instruction if needed
     let customFabricInstruction = '';
-    if (hasCustomFabric && questionnaireAnswers) {
+
+    // Own Fabric Workflow
+    if (hasOwnFabricWorkflow) {
+      const primaryPlacement = primaryFabricPlacement || 'the entire dress';
+
+      if (secondaryFabricImage || secondaryFabricType) {
+        // Has secondary fabric
+        const secondaryPlacement = secondaryFabricPlacement || 'accent areas';
+        const secondaryFabricDesc = secondaryFabricType
+          ? `${secondaryFabricType} fabric`
+          : 'the secondary fabric shown in the attached image';
+
+        customFabricInstruction = `
+
+CRITICAL CUSTOM FABRIC INSTRUCTION:
+The client has provided their own fabric images. In your enhanced description, you MUST include the following instructions EXACTLY:
+
+"Use the exact fabric pattern, texture, and colors shown in the attached PRIMARY fabric image for ${primaryPlacement}. Use ${secondaryFabricDesc} for ${secondaryPlacement}. Do NOT modify, recolor, or alter the fabric designs in any way. Apply both fabrics with photorealistic precision maintaining all original details, including pattern repeats, texture depth, and color accuracy. The fabrics should drape naturally and realistically on the dress."
+
+This instruction must be seamlessly integrated into your description where you describe the fabric/materials.`;
+      } else {
+        // Only primary fabric
+        customFabricInstruction = `
+
+CRITICAL CUSTOM FABRIC INSTRUCTION:
+The client has provided their own fabric image. In your enhanced description, you MUST include the following instruction EXACTLY:
+
+"Use the exact fabric pattern, texture, and colors shown in the attached fabric image for ${primaryPlacement}. Do NOT modify, recolor, or alter the fabric design in any way. Apply it with photorealistic precision maintaining all original details, including the pattern repeat, texture depth, and color accuracy. The fabric should drape naturally and realistically on the dress."
+
+This instruction must be seamlessly integrated into your description where you describe the fabric/materials.`;
+      }
+    }
+    // Old Custom Fabric Workflow (from questionnaire)
+    else if (hasCustomFabric && questionnaireAnswers) {
       let placementText = '';
       if (questionnaireAnswers.fabricPlacement === 'full') {
         placementText = 'the entire dress';

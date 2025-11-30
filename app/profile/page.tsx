@@ -12,6 +12,7 @@ import DesignGallery from '@/components/profile/DesignGallery';
 import ProfileSettings from '@/components/profile/ProfileSettings';
 import { Palette, Settings } from 'lucide-react';
 import type { Design } from '@/types';
+import { fetchDesignsWithRetry, getUserWithRetry } from '@/lib/supabaseUtils';
 
 type Tab = 'designs' | 'settings';
 
@@ -32,6 +33,9 @@ export default function ProfilePage() {
   const [designs, setDesigns] = useState<Design[]>([]);
   const [loading, setLoading] = useState(true);
   const [designsLoading, setDesignsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const DESIGNS_PER_PAGE = 12;
 
   useEffect(() => {
     loadProfile();
@@ -69,32 +73,44 @@ export default function ProfilePage() {
     }
   };
 
-  const loadDesigns = async () => {
+  const loadDesigns = async (pageNum: number = 0, append: boolean = false) => {
     try {
       setDesignsLoading(true);
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
 
-      if (!user) return;
+      // Get user with retry logic
+      const user = await getUserWithRetry();
+      if (!user) {
+        router.push('/auth/login');
+        return;
+      }
 
-      // Optimized query - select only needed fields
-      const { data, error } = await supabase
-        .from('designs')
-        .select('id, image_url, enhanced_prompt, created_at, is_favorite, questionnaire_answers')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50); // Limit to 50 most recent designs
+      // Fetch designs with retry logic
+      const data = await fetchDesignsWithRetry(user.id, pageNum, DESIGNS_PER_PAGE);
 
-      if (error) throw error;
+      // Check if there are more designs
+      setHasMore((data || []).length === DESIGNS_PER_PAGE);
 
-      setDesigns(data || []);
+      // Append or replace designs
+      if (append) {
+        setDesigns(prev => [...prev, ...(data || [])]);
+      } else {
+        setDesigns(data || []);
+      }
     } catch (error) {
       console.error('Error loading designs:', error);
+      // Show user-friendly error message
+      alert(direction === 'rtl'
+        ? 'فشل في تحميل التصاميم. يرجى المحاولة مرة أخرى.'
+        : 'Failed to load designs. Please try again.');
     } finally {
       setDesignsLoading(false);
     }
+  };
+
+  const loadMoreDesigns = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadDesigns(nextPage, true);
   };
 
   const stats = {
@@ -203,7 +219,12 @@ export default function ProfilePage() {
               <DesignGallery
                 designs={designs}
                 loading={designsLoading}
-                onDesignsUpdate={loadDesigns}
+                onDesignsUpdate={() => {
+                  setPage(0);
+                  loadDesigns(0, false);
+                }}
+                hasMore={hasMore}
+                onLoadMore={loadMoreDesigns}
               />
             )}
             {activeTab === 'settings' && (

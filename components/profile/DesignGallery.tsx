@@ -9,14 +9,23 @@ import EditDesignModal from '@/components/EditDesignModal';
 import { createClient } from '@/lib/supabase/client';
 import type { QuestionnaireAnswers, Design } from '@/types';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
+import { processAndUploadDesignImage } from '@/lib/imageUtils';
 
 interface DesignGalleryProps {
   designs: Design[];
   loading: boolean;
   onDesignsUpdate: () => void;
+  hasMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export default function DesignGallery({ designs, loading, onDesignsUpdate }: DesignGalleryProps) {
+export default function DesignGallery({
+  designs,
+  loading,
+  onDesignsUpdate,
+  hasMore = false,
+  onLoadMore
+}: DesignGalleryProps) {
   const { t, direction } = useLanguage();
   const [selectedDesign, setSelectedDesign] = useState<Design | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -28,17 +37,93 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
     try {
       setDeletingId(id);
 
-      // Optimistic UI update - remove from UI immediately
       const supabase = createClient();
-      const { error } = await supabase.from('designs').delete().eq('id', id);
 
-      if (error) throw error;
+      console.log('=== Starting delete process for design:', id);
+
+      // Get design details to delete storage files
+      const { data: design, error: fetchError } = await supabase
+        .from('designs')
+        .select('storage_path, thumbnail_storage_path, user_id')
+        .eq('id', id)
+        .single();
+
+      console.log('Fetch result:', { design, fetchError });
+
+      if (fetchError) {
+        console.error('❌ Error fetching design for deletion:', {
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          code: fetchError.code,
+        });
+        throw new Error(`Failed to fetch design: ${fetchError.message}`);
+      }
+
+      if (!design) {
+        console.error('❌ Design not found:', id);
+        throw new Error('Design not found');
+      }
+
+      console.log('✅ Design fetched successfully:', design);
+
+      // Delete from database
+      console.log('Attempting to delete from database...');
+      const { data: deleteData, error: deleteError } = await supabase
+        .from('designs')
+        .delete()
+        .eq('id', id)
+        .select(); // Add select() to get deleted row
+
+      console.log('Delete result:', { deleteData, deleteError });
+
+      if (deleteError) {
+        console.error('❌ Error deleting design from database:', {
+          message: deleteError.message,
+          details: deleteError.details,
+          hint: deleteError.hint,
+          code: deleteError.code,
+        });
+        throw new Error(`Failed to delete from database: ${deleteError.message}`);
+      }
+
+      console.log('✅ Design deleted from database successfully');
+
+      // Manually delete storage files as backup (in case trigger doesn't work)
+      if (design?.storage_path || design?.thumbnail_storage_path) {
+        const filesToDelete = [];
+        if (design.storage_path) filesToDelete.push(design.storage_path);
+        if (design.thumbnail_storage_path) filesToDelete.push(design.thumbnail_storage_path);
+
+        if (filesToDelete.length > 0) {
+          console.log('Attempting to delete storage files:', filesToDelete);
+          const { data: storageData, error: storageError } = await supabase.storage
+            .from('design-images')
+            .remove(filesToDelete);
+
+          console.log('Storage delete result:', { storageData, storageError });
+
+          if (storageError) {
+            console.error('⚠️ Error deleting storage files:', storageError);
+            // Don't throw - design is already deleted from DB
+          } else {
+            console.log('✅ Storage files deleted successfully');
+          }
+        }
+      }
+
+      console.log('=== Delete process completed successfully');
 
       // Refresh designs list
       onDesignsUpdate();
     } catch (error) {
-      console.error('Error deleting design:', error);
-      alert(t('profile.designs.deleteError'));
+      console.error('❌ Error deleting design:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`${t('profile.designs.deleteError')}\n\n${errorMessage}`);
+
       // Refresh to restore the design if delete failed
       onDesignsUpdate();
     } finally {
@@ -55,7 +140,7 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
     setEditModalOpen(true);
   };
 
-  const handleEditDesign = async (editRequest: string) => {
+  const handleEditDesign = async (editRequest: string, model: string) => {
     if (!editingDesign) return;
 
     console.log('Starting edit design process in DesignGallery...', {
@@ -64,6 +149,7 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
       imageUrlPrefix: editingDesign.image_url.substring(0, 100),
       isBase64DataUrl: editingDesign.image_url.startsWith('data:image/'),
       imageUrlType: typeof editingDesign.image_url,
+      model,
     });
 
     try {
@@ -77,6 +163,7 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
         body: JSON.stringify({
           originalImageUrl: editingDesign.image_url,
           editRequest,
+          model,
         } as EditDesignRequest),
       });
 
@@ -103,7 +190,7 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
         console.log('Saving edited design to database...');
 
         try {
-          // Save edited design to database
+          // Save edited design to database with storage upload
           const supabase = createClient();
           const { data: { user } } = await supabase.auth.getUser();
 
@@ -111,13 +198,25 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
             throw new Error(direction === 'rtl' ? 'المستخدم غير مسجل الدخول' : 'User not authenticated');
           }
 
-          console.log('Inserting design into database for user:', user.id);
+          console.log('Uploading edited design to storage for user:', user.id);
+
+          // Generate a unique design ID
+          const designId = crypto.randomUUID();
+
+          // Process and upload image to storage (full + thumbnail)
+          const { fullImageUrl, thumbnailUrl, fullImagePath, thumbnailPath } =
+            await processAndUploadDesignImage(user.id, designId, data.imageData);
+
+          console.log('Images uploaded to storage, saving to database...');
 
           const { error: dbError } = await supabase.from('designs').insert({
+            id: designId,
             user_id: user.id,
             original_description: editingDesign.original_description || JSON.stringify(editingDesign.questionnaire_answers),
-            image_url: data.imageData,
-            image_data: data.imageData,
+            image_url: fullImageUrl, // Public URL from storage
+            storage_path: fullImagePath, // Storage path for full image
+            thumbnail_url: thumbnailUrl, // Public URL for thumbnail
+            thumbnail_storage_path: thumbnailPath, // Storage path for thumbnail
             enhanced_prompt: editingDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`,
             questionnaire_answers: editingDesign.questionnaire_answers,
             embellishment_placement: editingDesign.questionnaire_answers?.embellishmentPlacement || null,
@@ -211,18 +310,35 @@ export default function DesignGallery({ designs, loading, onDesignsUpdate }: Des
           </a>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          <AnimatePresence mode="popLayout">
-            {visibleDesigns.map((design) => (
-              <DesignCard
-                key={design.id}
-                design={design}
-                onDelete={handleDelete}
-                onClick={handleCardClick}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <AnimatePresence mode="popLayout">
+              {visibleDesigns.map((design) => (
+                <DesignCard
+                  key={design.id}
+                  design={design}
+                  onDelete={handleDelete}
+                  onClick={handleCardClick}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+
+          {/* Load More Button */}
+          {hasMore && onLoadMore && (
+            <div className="flex justify-center mt-8">
+              <button
+                onClick={onLoadMore}
+                disabled={loading}
+                className="px-8 py-3 bg-accent-gold text-white rounded-lg hover:bg-accent-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading
+                  ? (direction === 'rtl' ? 'جارٍ التحميل...' : 'Loading...')
+                  : (direction === 'rtl' ? 'تحميل المزيد' : 'Load More')}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Design Details Modal */}

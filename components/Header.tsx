@@ -89,11 +89,11 @@ export default function Header() {
           <Link
             href="/"
             className={cn(
-              "z-10 transition-all duration-300",
-              // Mobile: centered absolute
-              "absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2",
-              // Desktop: normal positioning with vertical centering
-              "lg:static lg:transform-none lg:flex lg:items-center",
+              "z-10 transition-all duration-300 flex items-center",
+              // Mobile: centered absolute positioning
+              "absolute left-1/2 -translate-x-1/2",
+              // Desktop: normal static positioning (no transform)
+              "lg:static lg:translate-x-0",
               direction === 'rtl' ? 'lg:order-first' : 'lg:order-first'
             )}
           >

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export type GeminiModel = 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview';
+
 export interface EditDesignRequest {
   originalImageUrl: string;
   editRequest: string;
+  model?: GeminiModel; // Optional: defaults to gemini-2.5-flash-image
 }
 
 export interface EditDesignResponse {
@@ -15,7 +18,7 @@ export async function POST(request: NextRequest) {
     console.log('=== Edit Design API Called ===');
 
     const body: EditDesignRequest = await request.json();
-    const { originalImageUrl, editRequest } = body;
+    const { originalImageUrl, editRequest, model = 'google/gemini-2.5-flash-image' } = body;
 
     console.log('Request details:', {
       hasImageUrl: !!originalImageUrl,
@@ -25,6 +28,7 @@ export async function POST(request: NextRequest) {
       imageUrlType: typeof originalImageUrl,
       editRequestLength: editRequest?.length || 0,
       editRequest: editRequest?.substring(0, 100) || '',
+      model: model,
     });
 
     if (!editRequest || editRequest.trim().length === 0) {
@@ -43,14 +47,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate that the image URL is a Base64 data URL
+    // Convert image to Base64 if it's a URL (from Supabase Storage)
+    let imageBase64 = originalImageUrl;
+
     if (!originalImageUrl.startsWith('data:image/')) {
-      console.error('Validation failed: Image URL is not a Base64 data URL');
-      console.error('Image URL prefix:', originalImageUrl.substring(0, 100));
-      return NextResponse.json(
-        { error: 'تنسيق الصورة غير صحيح. يجب أن تكون Base64 data URL' } as EditDesignResponse,
-        { status: 400 }
-      );
+      console.log('Image is a URL, converting to Base64...');
+      console.log('Image URL:', originalImageUrl.substring(0, 100));
+
+      try {
+        // Fetch the image from the URL
+        const imageResponse = await fetch(originalImageUrl);
+
+        if (!imageResponse.ok) {
+          console.error('Failed to fetch image from URL:', imageResponse.status, imageResponse.statusText);
+          return NextResponse.json(
+            { error: 'فشل في تحميل الصورة من الرابط' } as EditDesignResponse,
+            { status: 400 }
+          );
+        }
+
+        // Convert to buffer
+        const imageBuffer = await imageResponse.arrayBuffer();
+
+        // Convert to Base64
+        const base64 = Buffer.from(imageBuffer).toString('base64');
+
+        // Determine image type from URL or response headers
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+
+        // Create data URL
+        imageBase64 = `data:${contentType};base64,${base64}`;
+
+        console.log('✅ Successfully converted URL to Base64');
+        console.log('Base64 length:', imageBase64.length);
+      } catch (error) {
+        console.error('Error converting URL to Base64:', error);
+        return NextResponse.json(
+          { error: 'فشل في تحويل الصورة إلى Base64' } as EditDesignResponse,
+          { status: 500 }
+        );
+      }
+    } else {
+      console.log('Image is already Base64, using directly');
     }
 
     if (!process.env.OPENROUTER_API_KEY) {
@@ -111,9 +149,9 @@ Please generate a new version of this dress design that incorporates ONLY the re
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`Attempt ${attempt}/${maxRetries}: Calling OpenRouter API...`);
+        console.log(`Attempt ${attempt}/${maxRetries}: Calling OpenRouter API with model: ${model}...`);
 
-        // Use OpenRouter API with Gemini 2.5 Flash Image
+        // Use OpenRouter API with selected Gemini model
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -123,25 +161,25 @@ Please generate a new version of this dress design that incorporates ONLY the re
             'X-Title': 'Yasmine Al-Sham Smart Designer',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-image',
+            model: model,
             messages: [
               {
                 role: 'user',
                 content: [
                   {
-                    type: 'text',
-                    text: editPrompt,
-                  },
-                  {
                     type: 'image_url',
                     image_url: {
-                      url: originalImageUrl,
+                      url: imageBase64, // Use the Base64 version (converted if needed)
                     },
+                  },
+                  {
+                    type: 'text',
+                    text: editPrompt,
                   },
                 ],
               },
             ],
-            modalities: ['image', 'text'],
+            modalities: ['text', 'image'],
           }),
         });
 
@@ -154,37 +192,97 @@ Please generate a new version of this dress design that incorporates ONLY the re
         }
 
         const data = await response.json();
+
+        // Save the complete response to a file for debugging
+        const fs = require('fs');
+        const path = require('path');
+        const debugFilePath = path.join(process.cwd(), 'openrouter-response-debug.json');
+        try {
+          fs.writeFileSync(debugFilePath, JSON.stringify(data, null, 2), 'utf8');
+          console.log(`✅ Full API response saved to: ${debugFilePath}`);
+        } catch (err) {
+          console.error('Failed to save debug file:', err);
+        }
+
+        // Log the complete response for debugging
+        console.log('\n\n=== COMPLETE API RESPONSE START ===');
+        console.log(JSON.stringify(data, null, 2));
+        console.log('=== COMPLETE API RESPONSE END ===\n\n');
+
         console.log('OpenRouter API response data structure:', {
           hasChoices: !!data.choices,
           choicesLength: data.choices?.length || 0,
           hasMessage: !!data.choices?.[0]?.message,
+          messageContentType: typeof data.choices?.[0]?.message?.content,
+          messageContentIsArray: Array.isArray(data.choices?.[0]?.message?.content),
+          messageContentLength: Array.isArray(data.choices?.[0]?.message?.content) ? data.choices[0].message.content.length : 'N/A',
           hasImages: !!data.choices?.[0]?.message?.images,
           imagesLength: data.choices?.[0]?.message?.images?.length || 0,
         });
 
+        // Log the first content item if it exists
+        if (data.choices?.[0]?.message?.content) {
+          const content = data.choices[0].message.content;
+          if (Array.isArray(content) && content.length > 0) {
+            console.log('\n=== FIRST CONTENT ITEM ===');
+            console.log(JSON.stringify(content[0], null, 2));
+            console.log('=== END FIRST CONTENT ITEM ===\n');
+          }
+        }
+
         // Extract image from response
+        console.log('Extracting image from API response...');
+
         if (data.choices && data.choices.length > 0) {
           const message = data.choices[0].message;
+          console.log('Message structure:', {
+            hasContent: !!message.content,
+            contentType: typeof message.content,
+            isArray: Array.isArray(message.content),
+            contentLength: Array.isArray(message.content) ? message.content.length : 'N/A',
+            hasImages: !!message.images,
+            imagesLength: message.images?.length || 0,
+          });
 
+          // OpenRouter returns images in message.images array (not in message.content)
           if (message.images && message.images.length > 0) {
-            const image = message.images[0];
-            if (image.image_url && image.image_url.url) {
-              imageData = image.image_url.url; // Base64 data URL
-              console.log('Successfully extracted image data, length:', imageData?.length || 0);
-              break;
-            } else {
-              console.error('Image object missing image_url.url:', image);
+            console.log('Found images array with', message.images.length, 'images');
+            const firstImage = message.images[0];
+
+            if (firstImage.type === 'image_url' && firstImage.image_url) {
+              const fullImageUrl = typeof firstImage.image_url === 'string'
+                ? firstImage.image_url
+                : firstImage.image_url.url;
+
+              if (fullImageUrl) {
+                // Extract base64 data without the data URL prefix
+                if (fullImageUrl.startsWith('data:image/')) {
+                  imageData = fullImageUrl.split(',')[1];
+                  console.log('✅ Successfully extracted image from message.images[0].image_url, length:', imageData?.length || 0);
+                } else {
+                  imageData = fullImageUrl;
+                  console.log('✅ Successfully extracted image from message.images[0].image_url (no prefix), length:', imageData?.length || 0);
+                }
+              }
             }
-          } else {
-            console.error('Message missing images array:', message);
+          }
+
+          if (!imageData) {
+            console.error('❌ Failed to extract image from message.images');
+            console.error('Full message:', JSON.stringify(message, null, 2));
           }
         } else {
-          console.error('Response missing choices array:', data);
+          console.error('❌ Response missing choices array');
         }
 
         if (!imageData) {
-          throw new Error('No image data in response');
+          throw new Error('No image data found in API response. Check console logs for details.');
         }
+
+        // Success! Break out of retry loop
+        console.log('✅ Successfully extracted image, breaking out of retry loop');
+        break;
+
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.error(`محاولة ${attempt}/${maxRetries} فشلت:`, lastError.message);

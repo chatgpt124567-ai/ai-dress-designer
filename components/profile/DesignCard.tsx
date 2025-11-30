@@ -77,7 +77,7 @@ export default function DesignCard({
           </div>
         )}
         <img
-          src={design.image_url}
+          src={design.thumbnail_url || design.image_url}
           alt="Design"
           className={cn(
             'w-full h-full object-cover transition-all duration-300',

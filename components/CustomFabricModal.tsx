@@ -49,17 +49,66 @@ export default function CustomFabricModal({
   }, [isOpen, customFabricImage, fabricPlacement, fabricPlacementDetails]);
 
   const handleFileChange = (file: File | null) => {
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-        return;
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+
+    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert(direction === 'rtl' ? 'يرجى اختيار ملف صورة' : 'Please select an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onloadstart = () => {
+      console.log('Starting to read file...');
+    };
+
+    reader.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percentLoaded = Math.round((e.loaded / e.total) * 100);
+        console.log(`Loading: ${percentLoaded}%`);
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setTempImage(reader.result as string); // Save to temp state only
+    };
+
+    reader.onload = () => {
+      console.log('File loaded successfully');
+      const result = reader.result as string;
+      if (result) {
+        console.log('Setting temp image, length:', result.length);
+        setTempImage(result);
         setStep('placement');
-      };
+      } else {
+        console.error('Reader result is empty');
+        alert(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('FileReader error:', error);
+      alert(direction === 'rtl' ? 'حدث خطأ أثناء قراءة الصورة. يرجى المحاولة مرة أخرى' : 'Error reading image. Please try again');
+    };
+
+    reader.onabort = () => {
+      console.warn('FileReader aborted');
+      alert(direction === 'rtl' ? 'تم إلغاء قراءة الصورة' : 'Image reading was cancelled');
+    };
+
+    try {
       reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error starting FileReader:', error);
+      alert(direction === 'rtl' ? 'فشل في بدء قراءة الصورة' : 'Failed to start reading image');
     }
   };
 

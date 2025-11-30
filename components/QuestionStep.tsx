@@ -57,7 +57,7 @@ export default function QuestionStep({
     // Auto-advance to next question for single-choice (radio) questions
     // But NOT if the selected value is 'other' (which requires custom input)
     // Also NOT if the value is in the disableAutoAdvanceFor list
-    const shouldNotAutoAdvance = selectedValue === 'other' || disableAutoAdvanceFor.includes(selectedValue);
+    const shouldNotAutoAdvance = selectedValue === 'other' || (disableAutoAdvanceFor && disableAutoAdvanceFor.includes(selectedValue));
 
     if (onAutoAdvance && !shouldNotAutoAdvance) {
       // Small delay to show the selection before advancing

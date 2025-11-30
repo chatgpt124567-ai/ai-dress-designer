@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { GenerateImageRequest, GenerateImageResponse } from '@/types';
+import type { GenerateImageRequest, GenerateImageResponse, GeminiImageModel } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body: GenerateImageRequest = await request.json();
-    const { prompt, fabricImage } = body;
+    const {
+      prompt,
+      fabricImage,
+      primaryFabricImage,
+      secondaryFabricImage,
+      model = 'google/gemini-2.5-flash-image'
+    } = body;
 
     if (!prompt || prompt.trim().length === 0) {
       return NextResponse.json(
@@ -22,7 +28,40 @@ export async function POST(request: NextRequest) {
 
     // Build custom fabric instruction if fabric image is provided
     let customFabricInstruction = '';
-    if (fabricImage) {
+
+    // Own Fabric Workflow (new)
+    if (primaryFabricImage) {
+      if (secondaryFabricImage) {
+        customFabricInstruction = `
+
+FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
+• The client has provided TWO custom fabric images (attached below)
+• PRIMARY FABRIC: You MUST use the EXACT fabric pattern, texture, colors, and design from the first attached fabric image
+• SECONDARY FABRIC: You MUST use the EXACT fabric pattern, texture, colors, and design from the second attached fabric image
+• Apply both fabrics EXACTLY as specified in the dress description above
+• Do NOT modify, recolor, or alter either fabric pattern in ANY way
+• Do NOT change the pattern repeat, print, texture, or any visual characteristic
+• Maintain photorealistic accuracy when applying both fabrics to the dress
+• The fabrics should drape naturally and realistically on the dress with proper folds and textile behavior
+• Ensure the fabric patterns align correctly and look professionally tailored
+• The custom fabrics are the PRIMARY design elements - treat them with utmost precision`;
+      } else {
+        customFabricInstruction = `
+
+FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
+• A custom fabric image has been provided by the client (attached below)
+• You MUST use the EXACT fabric pattern, texture, colors, and design from the attached custom fabric image
+• Apply this fabric EXACTLY as specified in the dress description above
+• Do NOT modify, recolor, or alter the fabric pattern in ANY way
+• Do NOT change the pattern repeat, print, texture, or any visual characteristic
+• Maintain photorealistic accuracy when applying the fabric to the dress
+• The fabric should drape naturally and realistically on the dress with proper folds and textile behavior
+• Ensure the fabric pattern aligns correctly and looks professionally tailored
+• The custom fabric is the PRIMARY design element - treat it with utmost precision`;
+      }
+    }
+    // Old Custom Fabric Workflow (from questionnaire)
+    else if (fabricImage) {
       customFabricInstruction = `
 
 FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
@@ -98,12 +137,54 @@ A full-body mannequin wearing the complete dress, centered, with the "yasmin-als
     const maxRetries = 3;
     const retryDelay = 3000;
 
+    console.log(`🎨 Using AI model: ${model}`);
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        // استخدام OpenRouter API مع Gemini 2.5 Flash Image لتوليد الصور
-        // Build message content based on whether fabric image is provided
+        console.log(`Attempt ${attempt}/${maxRetries}: Calling OpenRouter API with model: ${model}...`);
+        // Build message content based on whether fabric images are provided
         let messageContent: any;
-        if (fabricImage) {
+
+        // Own Fabric Workflow (new)
+        if (primaryFabricImage) {
+          if (secondaryFabricImage) {
+            // Multimodal request: text + 2 fabric images
+            messageContent = [
+              {
+                type: 'text',
+                text: imagePrompt,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: primaryFabricImage, // Base64 data URL
+                },
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: secondaryFabricImage, // Base64 data URL
+                },
+              },
+            ];
+          } else {
+            // Multimodal request: text + 1 fabric image
+            messageContent = [
+              {
+                type: 'text',
+                text: imagePrompt,
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: primaryFabricImage, // Base64 data URL
+                },
+              },
+            ];
+          }
+        }
+        // Old Custom Fabric Workflow (from questionnaire)
+        else if (fabricImage) {
           // Multimodal request: text + image
           messageContent = [
             {
@@ -117,7 +198,9 @@ A full-body mannequin wearing the complete dress, centered, with the "yasmin-als
               },
             },
           ];
-        } else {
+        }
+        // No fabric images
+        else {
           // Text-only request
           messageContent = imagePrompt;
         }
@@ -131,7 +214,7 @@ A full-body mannequin wearing the complete dress, centered, with the "yasmin-als
             'X-Title': 'Yasmine Al-Sham Smart Designer',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-image', // نموذج Gemini لتوليد الصور
+            model: model, // Use selected model (gemini-2.5-flash-image or gemini-3-pro-image-preview)
             messages: [
               {
                 role: 'user',

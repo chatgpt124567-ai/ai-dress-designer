@@ -1,11 +1,4 @@
 {
-  "common": {
-    "close": "Close",
-    "cancel": "Cancel",
-    "save": "Save",
-    "delete": "Delete",
-    "loading": "Loading..."
-  },
   "header": {
     "home": "Home",
     "designs": "Designs",
@@ -120,10 +113,37 @@
       "historyPlaceholder": "Design history will appear here",
       "feedbackPlaceholder": "Feedback options will appear here",
       "placeholder": "Your design will appear here",
-      "requestEdit": "Request Edit"
+      "requestInitialEdit": "Request Edit",
+      "requestEdit": "Request Another Edit on This Version",
+      "newAttemptOnOriginal": "New Attempt on Previous Version"
     },
     "edit": {
       "title": "Request Design Edit",
+      "locationSelection": {
+        "title": "Select Modification Location",
+        "subtitle": "Choose the part(s) of the dress you would like to modify (you can select multiple locations)",
+        "locations": {
+          "bodice": "Bodice/Chest",
+          "sleeves": "Sleeves",
+          "skirt": "Skirt",
+          "neckline": "Neckline",
+          "waist": "Waist",
+          "back": "Back",
+          "fullBody": "Full Body",
+          "other": "Other"
+        },
+        "otherPlaceholder": "Please specify the location...",
+        "next": "Next",
+        "selectAtLeastOne": "Please select at least one location"
+      },
+      "descriptionStep": {
+        "title": "Describe Your Modification",
+        "subtitle": "The more detailed your description, the better the results will be. Take your time to describe the modification precisely to achieve your perfect design.",
+        "label": "Modification Description",
+        "placeholder": "Example: I want to change the sleeve color to shimmering gold with small beaded embroidery along the edges...",
+        "back": "Back",
+        "submit": "Apply Modification"
+      },
       "description": "Describe the modification you would like to make to the current design. Only the requested change will be applied while preserving all other details.",
       "label": "What modification would you like?",
       "placeholder": "Example: Change the sleeve color to gold, add sequin embroidery on the bodice, change the neckline to V-shape...",
@@ -133,6 +153,108 @@
         "example1": "Change the sleeve color to gold",
         "example2": "Add sequin embroidery on the bodice",
         "example3": "Change the neckline to V-shape"
+      }
+    },
+    "modeSelection": {
+      "title": "Choose Your Design Mode",
+      "subtitle": "How would you like to start your design journey?",
+      "scratch": {
+        "title": "Design from Scratch",
+        "description": "Answer a few questions and let our AI create a unique dress design tailored to your preferences"
+      },
+      "external": {
+        "title": "Edit Existing Design",
+        "description": "Upload your own dress image and modify it using AI to achieve your perfect look"
+      },
+      "ownFabric": {
+        "title": "Design a Dress Using Your Own Fabric",
+        "description": "Upload your own fabric image and let our AI design a stunning dress using it"
+      },
+      "selectButton": "Choose this option"
+    },
+    "ownFabric": {
+      "upload": {
+        "title": "Upload Your Primary Fabric Image",
+        "subtitle": "Upload a clear image of the fabric you want to use in your dress design",
+        "takePhoto": "Take Photo",
+        "chooseFromGallery": "Choose from Gallery",
+        "imageUploaded": "Image Uploaded",
+        "changeImage": "Change Image",
+        "removeImage": "Remove Image",
+        "continue": "Continue"
+      },
+      "secondaryFabric": {
+        "question": "Would you like to add a secondary fabric?",
+        "uploadOption": "Upload secondary fabric image",
+        "selectOption": "Select secondary fabric type",
+        "uploadTitle": "Upload Secondary Fabric Image",
+        "selectTitle": "Select Secondary Fabric Type",
+        "fabricTypes": {
+          "satin": "Satin",
+          "silk": "Silk",
+          "chiffon": "Chiffon",
+          "tulle": "Tulle",
+          "lace": "Lace",
+          "velvet": "Velvet",
+          "organza": "Organza",
+          "crepe": "Crepe",
+          "taffeta": "Taffeta",
+          "brocade": "Brocade",
+          "other": "Other"
+        }
+      },
+      "placement": {
+        "title": "Where do you want to use each fabric?",
+        "subtitle": "Specify precisely where each fabric type will be used in the design",
+        "primaryLabel": "Primary Fabric",
+        "secondaryLabel": "Secondary Fabric",
+        "primaryPlaceholder": "Example: bodice and skirt",
+        "secondaryPlaceholder": "Example: sleeves and neckline",
+        "continue": "Continue to Questionnaire"
+      },
+      "questionnaire": {
+        "title": "Design Questionnaire",
+        "subtitle": "Answer the following questions to design your dream dress with your own fabric"
+      }
+    },
+    "external": {
+      "upload": {
+        "title": "Upload Your Dress Image",
+        "subtitle": "Upload a photo of the dress you want to modify",
+        "selectImage": "Select Dress Image",
+        "dragDrop": "Drag and drop your image here",
+        "formats": "JPG, PNG, WebP (Max 10MB)",
+        "chooseFile": "Choose from Gallery",
+        "takePhoto": "Take Photo",
+        "changeImage": "Change",
+        "removeImage": "Remove",
+        "previewHint": "Preview your image. Click Continue when ready.",
+        "errors": {
+          "invalidFormat": "Invalid file format. Please upload JPG, PNG, or WebP",
+          "fileTooLarge": "File too large. Maximum size is 10MB",
+          "readFailed": "Failed to read image file"
+        }
+      },
+      "result": {
+        "title": "Your Modified Design",
+        "subtitle": "Your design has been successfully modified",
+        "subtitleFirst": "Ready to modify your design",
+        "processing": "Processing your modification..."
+      },
+      "actions": {
+        "applyAnother": "Apply Another Modification",
+        "tryAgain": "Try Again on Previous Version",
+        "save": "Save Design",
+        "startOver": "Start Over"
+      },
+      "history": {
+        "title": "Modification History"
+      },
+      "errors": {
+        "noImageData": "No image data received from AI",
+        "modificationFailed": "Failed to modify design",
+        "saveFailed": "Failed to save design",
+        "notAuthenticated": "Please log in to save designs"
       }
     },
     "toast": {
@@ -155,6 +277,7 @@
     "error": "An error occurred",
     "retry": "Retry",
     "cancel": "Cancel",
+    "confirm": "Confirm",
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
@@ -168,7 +291,9 @@
     "submit": "Submit",
     "done": "Done",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "continue": "Continue",
+    "back": "Back"
   },
   "questionnaire": {
     "title": "Design Questionnaire",
@@ -176,6 +301,7 @@
     "progress": "Step {{current}} of {{total}}",
     "goToStep": "Go to question",
     "customPlaceholder": "Please specify...",
+    "submit": "Submit",
     "review": {
       "title": "Review Your Answers",
       "subtitle": "Please review your answers before submitting the questionnaire. You can edit or confirm to proceed.",
@@ -201,6 +327,15 @@
           "long": "Long",
           "floor": "Floor-length",
           "train": "With train",
+          "other": "Other"
+        }
+      },
+      "q3": {
+        "question": "What dress length would you prefer?",
+        "options": {
+          "knee": "Medium (Knee Length)",
+          "floor": "Floor Length",
+          "train": "Train",
           "other": "Other"
         }
       }
@@ -282,7 +417,15 @@
           "sleeves": "Sleeves Only",
           "custom": "Specific Details (Please Specify)"
         },
-        "placementDetailsPlaceholder": "Example: Use the fabric on the upper part of the skirt only"
+        "placementDetailsPlaceholder": "Example: Use the fabric on the upper part of the skirt only",
+        "secondaryFabricQuestion": "Would you like to use a secondary fabric?",
+        "secondaryFabricType": "Secondary Fabric Type",
+        "secondaryFabricPlacement": "Where would you like to use the secondary fabric?",
+        "secondaryFabricPlaceholder": "Example: sleeves and neckline",
+        "multiSelectHint": "You can select multiple fabric types at the same time",
+        "fabricPlacementModalTitle": "Specify Fabric Placement",
+        "fabricPlacementModalDescription": "You've selected multiple fabric types. Please describe where you'd like to use each fabric.",
+        "fabricPlacementPlaceholder": "Example: bodice and sleeves"
       },
       "q9": {
         "question": "Would you like transparent parts in the design?",
@@ -293,6 +436,7 @@
       "title": "Embellishments & Size",
       "q9": {
         "question": "What embellishments would you like?",
+        "multiSelectHint": "You can select more than one",
         "options": {
           "handEmbroidery": "Hand embroidery",
           "beads": "Beads",
@@ -300,24 +444,37 @@
           "decorativeLace": "Decorative lace",
           "3dFlowers": "3D flowers",
           "stones": "Rhinestones",
+          "pearls": "Pearls",
           "belt": "Belt",
           "embroideredFabric": "Pre-embroidered fabric",
           "none": "No embellishments",
           "other": "Other"
         },
         "placementLabel": "Where would you like to place the embellishments?",
-        "placementPlaceholder": "Example: on the bodice and sleeves"
+        "placementPlaceholder": "Example: on the bodice and sleeves",
+        "embellishmentPlacementModalTitle": "Specify Embellishment Placements",
+        "embellishmentPlacementModalDescription": "Describe where each embellishment type should be placed",
+        "embellishmentPlacementPlaceholder": "Example: on the bodice, around the waist..."
       },
       "q10": {
         "question": "What is your body size?",
         "options": {
-          "xs": "XS (Extra Small)",
-          "s": "S (Small)",
-          "m": "M (Medium)",
-          "l": "L (Large)",
-          "xl": "XL (Extra Large)",
-          "xxl": "XXL (Extra Extra Large)"
+          "petite": "Petite",
+          "average": "Average",
+          "plusSize": "Plus Size",
+          "tall": "Tall",
+          "xs": "XS",
+          "s": "S",
+          "m": "M",
+          "l": "L",
+          "xl": "XL",
+          "xxl": "XXL",
+          "other": "Other"
         }
+      },
+      "q11": {
+        "question": "Do you have any additional details you'd like to mention?",
+        "placeholder": "Any additional notes or details you'd like to add to the design..."
       }
     },
     "section7": {

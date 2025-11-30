@@ -9,6 +9,8 @@ import Button from './Button';
 import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
 import CustomFabricModal from './CustomFabricModal';
+import MultiFabricPlacementModal from './MultiFabricPlacementModal';
+import MultiEmbellishmentPlacementModal from './MultiEmbellishmentPlacementModal';
 
 interface QuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -38,6 +40,12 @@ export default function QuestionnaireWizard({
   // Custom Fabric Modal state
   const [customFabricModalOpen, setCustomFabricModalOpen] = useState(false);
 
+  // Multi-Fabric Placement Modal state
+  const [multiFabricModalOpen, setMultiFabricModalOpen] = useState(false);
+
+  // Multi-Embellishment Placement Modal state
+  const [multiEmbellishmentModalOpen, setMultiEmbellishmentModalOpen] = useState(false);
+
   // Load saved step from localStorage after component mounts (client-side only)
   // This runs after hydration is complete, avoiding hydration mismatch
   useEffect(() => {
@@ -50,12 +58,14 @@ export default function QuestionnaireWizard({
         const step = parseInt(saved, 10);
         if (step >= 1 && step <= totalSteps) {
           setCurrentStep(step);
-          setHasLoadedSavedStep(true);
           console.log('✅ Restored saved step:', step);
         }
       }
+      // Always mark as loaded to prevent race conditions with auto-advance
+      setHasLoadedSavedStep(true);
     } catch (error) {
       console.error('Error loading saved step:', error);
+      setHasLoadedSavedStep(true);
     }
   }, [hasLoadedSavedStep, totalSteps]); // Dependencies to ensure it runs correctly
 
@@ -66,26 +76,89 @@ export default function QuestionnaireWizard({
     skirtShape: '',
     necklineType: '',
     sleeveType: '',
-    fabricType: '',
+    fabricType: [], // Changed to array for multi-select
+    fabricPlacements: {}, // Placements for each selected fabric
     hasTransparentParts: '',
     embellishments: [],
+    embellishmentPlacements: {}, // Placements for each selected embellishment
     bodySize: '',
     primaryColor: '',
     hasAdditionalColors: '',
   });
 
-  // Save current step to localStorage whenever it changes
+  // Track if initial answers have been applied
+  const [hasAppliedInitialAnswers, setHasAppliedInitialAnswers] = useState(false);
+
+  // Apply initialAnswers when they become available (e.g., loaded from localStorage async)
   useEffect(() => {
+    if (initialAnswers && !hasAppliedInitialAnswers) {
+      // Check if initialAnswers has any meaningful data
+      const hasData = initialAnswers.dressType || initialAnswers.dressLength ||
+                      initialAnswers.skirtShape || initialAnswers.necklineType;
+      if (hasData) {
+        setAnswers(initialAnswers);
+        setHasAppliedInitialAnswers(true);
+        console.log('✅ Applied initial answers:', initialAnswers);
+      }
+    }
+  }, [initialAnswers, hasAppliedInitialAnswers]);
+
+  // Save current step to localStorage whenever it changes
+  // Only save AFTER we've loaded the saved step to avoid overwriting it with the default value
+  useEffect(() => {
+    // Don't save until we've loaded the saved step from localStorage
+    if (!hasLoadedSavedStep) return;
+
     try {
       localStorage.setItem(STORAGE_STEP_KEY, currentStep.toString());
       console.log('💾 Saved current step:', currentStep);
     } catch (error) {
       console.error('Error saving current step:', error);
     }
-  }, [currentStep]);
+  }, [currentStep, hasLoadedSavedStep]);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
+      // Check if we're on fabric step (step 2) and multiple fabrics are selected
+      if (currentStep === 2) {
+        const selectedFabrics = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);
+        // Filter out customFabric - it has its own modal
+        const standardFabrics = selectedFabrics.filter(f => f !== 'customFabric' && f !== 'other');
+
+        // If more than 1 standard fabric is selected and placements not all filled, show modal
+        if (standardFabrics.length > 1) {
+          const allPlacementsFilled = standardFabrics.every(
+            (fabric) => answers.fabricPlacements?.[fabric] && answers.fabricPlacements[fabric].trim() !== ''
+          );
+
+          if (!allPlacementsFilled) {
+            setMultiFabricModalOpen(true);
+            return; // Don't advance until modal is completed
+          }
+        }
+      }
+
+      // Check if we're on embellishments step (step 9) and multiple embellishments are selected
+      if (currentStep === 9) {
+        const selectedEmbs = Array.isArray(answers.embellishments)
+          ? answers.embellishments
+          : (answers.embellishments ? [answers.embellishments] : []);
+        // Filter out 'none' and 'other' - they don't need placement
+        const activeEmbs = selectedEmbs.filter(e => e !== 'none' && e !== 'other');
+
+        // If more than 1 embellishment is selected and placements not all filled, show modal
+        if (activeEmbs.length > 1) {
+          const allPlacementsFilled = activeEmbs.every(
+            (emb) => answers.embellishmentPlacements?.[emb] && answers.embellishmentPlacements[emb].trim() !== ''
+          );
+
+          if (!allPlacementsFilled) {
+            setMultiEmbellishmentModalOpen(true);
+            return; // Don't advance until modal is completed
+          }
+        }
+      }
+
       setCurrentStep(currentStep + 1);
       // Smooth scroll to top of the page
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,11 +194,50 @@ export default function QuestionnaireWizard({
   };
 
   const updateAnswer = (field: keyof QuestionnaireAnswers, value: string | string[], customValue?: string) => {
-    const updatedAnswers = {
+    let updatedAnswers = {
       ...answers,
       [field]: value,
       ...(customValue !== undefined && { [`${field}Custom`]: customValue }),
     };
+
+    // When fabricType changes, clean up fabricPlacements for removed fabrics
+    if (field === 'fabricType' && Array.isArray(value)) {
+      const currentFabrics = value as string[];
+      const existingPlacements = answers.fabricPlacements || {};
+
+      // Only keep placements for fabrics that are still selected
+      const cleanedPlacements: { [key: string]: string } = {};
+      currentFabrics.forEach(fabric => {
+        if (existingPlacements[fabric]) {
+          cleanedPlacements[fabric] = existingPlacements[fabric];
+        }
+      });
+
+      updatedAnswers = {
+        ...updatedAnswers,
+        fabricPlacements: cleanedPlacements
+      };
+    }
+
+    // When embellishments changes, clean up embellishmentPlacements for removed embellishments
+    if (field === 'embellishments' && Array.isArray(value)) {
+      const currentEmbellishments = value as string[];
+      const existingPlacements = answers.embellishmentPlacements || {};
+
+      // Only keep placements for embellishments that are still selected
+      const cleanedPlacements: { [key: string]: string } = {};
+      currentEmbellishments.forEach(emb => {
+        if (existingPlacements[emb]) {
+          cleanedPlacements[emb] = existingPlacements[emb];
+        }
+      });
+
+      updatedAnswers = {
+        ...updatedAnswers,
+        embellishmentPlacements: cleanedPlacements
+      };
+    }
+
     setAnswers(updatedAnswers);
 
     // Auto-save to localStorage via callback
@@ -157,13 +269,21 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 2: // Section 5: Fabric - Q8 (Fabric Type - MOVED TO POSITION 2)
+      case 2: // Section 5: Fabric - Q8 (Fabric Type - MOVED TO POSITION 2) - Now multi-select
+        const selectedFabrics = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);
+        const hasCustomFabricSelected = selectedFabrics.includes('customFabric');
+
         return (
           <div className="space-y-6">
+            {/* Hint about multi-select */}
+            <div className="text-sm text-accent-gold bg-accent-gold/10 px-4 py-2 rounded-lg">
+              {t('questionnaire.section5.q8.multiSelectHint')}
+            </div>
+
             <QuestionStep
               sectionTitle={t('questionnaire.section5.title')}
               questionText={t('questionnaire.section5.q8.question')}
-              questionType="radio"
+              questionType="checkbox"
               options={[
                 { value: 'customFabric', labelKey: 'questionnaire.section5.q8.options.customFabric' },
                 { value: 'satin', labelKey: 'questionnaire.section5.q8.options.satin' },
@@ -176,21 +296,21 @@ export default function QuestionnaireWizard({
                 { value: 'crepe', labelKey: 'questionnaire.section5.q8.options.crepe' },
                 { value: 'other', labelKey: 'questionnaire.section5.q8.options.other', hasCustomInput: true },
               ]}
-              value={answers.fabricType}
+              value={selectedFabrics}
               customValue={answers.fabricTypeCustom}
               onChange={(value, customValue) => {
-                updateAnswer('fabricType', value as string, customValue);
+                const fabrics = Array.isArray(value) ? value : [value];
+                updateAnswer('fabricType', fabrics, customValue);
                 // Open modal when customFabric is selected
-                if (value === 'customFabric') {
+                if (fabrics.includes('customFabric') && !hasCustomFabricSelected) {
                   setCustomFabricModalOpen(true);
                 }
               }}
-              onAutoAdvance={handleNext}
-              disableAutoAdvanceFor={['customFabric']}
+              // No auto-advance for multi-select - user must click Next
             />
 
             {/* Show custom fabric summary if configured */}
-            {answers.fabricType === 'customFabric' && answers.customFabricImage && (
+            {hasCustomFabricSelected && answers.customFabricImage && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -221,6 +341,24 @@ export default function QuestionnaireWizard({
                 </div>
               </motion.div>
             )}
+
+            {/* Show fabric placements summary if multiple fabrics selected */}
+            {selectedFabrics.length > 1 && answers.fabricPlacements && Object.keys(answers.fabricPlacements).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-green-50 border-2 border-green-500 rounded-lg space-y-2"
+              >
+                <p className="font-medium text-green-700">{t('questionnaire.section5.q8.fabricPlacementModalTitle')}</p>
+                {selectedFabrics.filter(f => f !== 'customFabric').map((fabric) => (
+                  answers.fabricPlacements?.[fabric] && (
+                    <p key={fabric} className="text-sm text-gray-600">
+                      <span className="font-medium">{t(`questionnaire.section5.q8.options.${fabric}`)}:</span> {answers.fabricPlacements[fabric]}
+                    </p>
+                  )
+                ))}
+              </motion.div>
+            )}
           </div>
         );
 
@@ -232,7 +370,7 @@ export default function QuestionnaireWizard({
               sectionTitle={t('questionnaire.section7.title')}
               questionText={t('questionnaire.section7.q12.question')}
               questionType="text"
-              value={answers.primaryColor}
+              value={answers.primaryColor || ''}
               onChange={(value) => updateAnswer('primaryColor', value as string)}
               placeholder={t('questionnaire.section7.q12.placeholder')}
             />
@@ -242,7 +380,7 @@ export default function QuestionnaireWizard({
               sectionTitle=""
               questionText={t('questionnaire.section7.q13.question')}
               questionType="yesno"
-              value={answers.hasAdditionalColors}
+              value={answers.hasAdditionalColors || ''}
               onChange={(value) => updateAnswer('hasAdditionalColors', value as string)}
             />
 
@@ -363,7 +501,7 @@ export default function QuestionnaireWizard({
               sectionTitle={t('questionnaire.section5.title')}
               questionText={t('questionnaire.section5.q9.question')}
               questionType="yesno"
-              value={answers.hasTransparentParts}
+              value={answers.hasTransparentParts || ''}
               onChange={(value) => updateAnswer('hasTransparentParts', value as string)}
               onAutoAdvance={handleNext}
             />
@@ -387,8 +525,18 @@ export default function QuestionnaireWizard({
         );
 
       case 9: // Section 6: Embellishments - Q9 (Embellishments)
+        const selectedEmbellishments = Array.isArray(answers.embellishments)
+          ? answers.embellishments
+          : (answers.embellishments ? [answers.embellishments] : []);
+        const activeEmbellishments = selectedEmbellishments.filter(e => e !== 'none' && e !== 'other');
+
         return (
           <div className="space-y-6">
+            {/* Hint about multi-select */}
+            <div className="text-sm text-accent-gold bg-accent-gold/10 px-4 py-2 rounded-lg">
+              {t('questionnaire.section6.q9.multiSelectHint')}
+            </div>
+
             <QuestionStep
               sectionTitle={t('questionnaire.section6.title')}
               questionText={t('questionnaire.section6.q9.question')}
@@ -400,41 +548,49 @@ export default function QuestionnaireWizard({
                 { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
                 { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
                 { value: 'stones', labelKey: 'questionnaire.section6.q9.options.stones' },
+                { value: 'pearls', labelKey: 'questionnaire.section6.q9.options.pearls' },
                 { value: 'belt', labelKey: 'questionnaire.section6.q9.options.belt' },
                 { value: 'embroideredFabric', labelKey: 'questionnaire.section6.q9.options.embroideredFabric' },
                 { value: 'none', labelKey: 'questionnaire.section6.q9.options.none' },
                 { value: 'other', labelKey: 'questionnaire.section6.q9.options.other', hasCustomInput: true },
               ]}
-              value={answers.embellishments}
+              value={selectedEmbellishments}
               customValue={answers.embellishmentsCustom}
               onChange={(value, customValue) => updateAnswer('embellishments', value, customValue)}
+              // No auto-advance for multi-select - user must click Next
             />
-            {/* Show embellishment placement field if any embellishment is selected (except 'none') */}
-            {Array.isArray(answers.embellishments) &&
-             answers.embellishments.length > 0 &&
-             !answers.embellishments.includes('none') && (
+
+            {/* Show placements summary if any embellishment has placement defined */}
+            {activeEmbellishments.length > 0 &&
+             Object.keys(answers.embellishmentPlacements || {}).length > 0 && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-accent-gold/10 border-2 border-accent-gold rounded-lg space-y-2"
               >
-                <label className="block text-sm font-medium text-primary mb-2">
-                  {t('questionnaire.section6.q9.placementLabel')}
-                </label>
-                <input
-                  type="text"
-                  value={answers.embellishmentPlacement || ''}
-                  onChange={(e) => updateAnswer('embellishmentPlacement' as any, e.target.value)}
-                  placeholder={t('questionnaire.section6.q9.placementPlaceholder')}
-                  className={cn(
-                    'w-full px-4 py-3 border-2 border-gray-200 rounded-lg',
-                    'focus:border-accent-gold focus:outline-none',
-                    'transition-colors',
-                    direction === 'rtl' ? 'text-right' : 'text-left'
-                  )}
-                  dir={direction}
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-primary text-sm">
+                    {direction === 'rtl' ? 'أماكن الإضافات:' : 'Embellishment Placements:'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMultiEmbellishmentModalOpen(true)}
+                    className="text-xs"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                </div>
+                {activeEmbellishments.map(emb => (
+                  answers.embellishmentPlacements?.[emb] && (
+                    <p key={emb} className="text-sm text-gray-600">
+                      <span className="font-medium text-accent-gold">
+                        {t(`questionnaire.section6.q9.options.${emb}`)}:
+                      </span>{' '}
+                      {answers.embellishmentPlacements[emb]}
+                    </p>
+                  )
+                ))}
               </motion.div>
             )}
           </div>
@@ -454,7 +610,7 @@ export default function QuestionnaireWizard({
               { value: 'xl', labelKey: 'questionnaire.section6.q10.options.xl' },
               { value: 'xxl', labelKey: 'questionnaire.section6.q10.options.xxl' },
             ]}
-            value={answers.bodySize}
+            value={answers.bodySize || ''}
             onChange={(value) => updateAnswer('bodySize', value as string)}
             onAutoAdvance={handleNext}
           />
@@ -553,6 +709,62 @@ export default function QuestionnaireWizard({
           updateAnswer('customFabricImage' as any, '');
           updateAnswer('fabricPlacement' as any, '');
           updateAnswer('fabricPlacementDetails' as any, '');
+        }}
+      />
+
+      {/* Multi-Fabric Placement Modal */}
+      <MultiFabricPlacementModal
+        isOpen={multiFabricModalOpen}
+        onClose={() => setMultiFabricModalOpen(false)}
+        selectedFabrics={
+          (Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []))
+            .filter(f => f !== 'customFabric' && f !== 'other')
+        }
+        fabricPlacements={answers.fabricPlacements || {}}
+        onPlacementsChange={(placements) => {
+          setAnswers(prev => ({
+            ...prev,
+            fabricPlacements: placements
+          }));
+          if (onAnswersChange) {
+            onAnswersChange({
+              ...answers,
+              fabricPlacements: placements
+            });
+          }
+        }}
+        onConfirm={() => {
+          // After confirming placements, advance to next step
+          setCurrentStep(currentStep + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      />
+
+      {/* Multi-Embellishment Placement Modal */}
+      <MultiEmbellishmentPlacementModal
+        isOpen={multiEmbellishmentModalOpen}
+        onClose={() => setMultiEmbellishmentModalOpen(false)}
+        selectedEmbellishments={
+          (Array.isArray(answers.embellishments) ? answers.embellishments : (answers.embellishments ? [answers.embellishments] : []))
+            .filter(e => e !== 'none' && e !== 'other')
+        }
+        embellishmentPlacements={answers.embellishmentPlacements || {}}
+        onPlacementsChange={(placements) => {
+          setAnswers(prev => ({
+            ...prev,
+            embellishmentPlacements: placements
+          }));
+          if (onAnswersChange) {
+            onAnswersChange({
+              ...answers,
+              embellishmentPlacements: placements
+            });
+          }
+        }}
+        onConfirm={() => {
+          // After confirming placements, advance to next step
+          setCurrentStep(currentStep + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       />
     </div>

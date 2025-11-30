@@ -27,16 +27,28 @@ export default function DesignDetailsModal({
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(design.image_url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `design-${design.id}.png`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Check if it's a base64 data URL
+      if (design.image_url.startsWith('data:image/')) {
+        // Direct download for base64 data URLs
+        const a = document.createElement('a');
+        a.href = design.image_url;
+        a.download = `design-${design.id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        // Fetch and download for HTTP URLs
+        const response = await fetch(design.image_url);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `design-${design.id}.png`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
     } catch (error) {
       console.error('Download failed:', error);
     }
@@ -65,12 +77,23 @@ export default function DesignDetailsModal({
     const answers = design.questionnaire_answers;
     const formatted: { label: string; value: string }[] = [];
 
-    const addAnswer = (questionKey: string, value: string | undefined, customValue?: string) => {
+    const addAnswer = (questionKey: string, value: string | string[] | undefined, customValue?: string) => {
       if (value) {
-        formatted.push({
-          label: t(`${questionKey}.question`),
-          value: customValue || t(`${questionKey}.options.${value}`) || value
-        });
+        // Handle array values (like fabricType which can be multiple selections)
+        if (Array.isArray(value)) {
+          if (value.length > 0) {
+            const translatedValues = value.map(v => t(`${questionKey}.options.${v}`) || v);
+            formatted.push({
+              label: t(`${questionKey}.question`),
+              value: translatedValues.join(', ') + (customValue ? ` (${customValue})` : '')
+            });
+          }
+        } else {
+          formatted.push({
+            label: t(`${questionKey}.question`),
+            value: customValue || t(`${questionKey}.options.${value}`) || value
+          });
+        }
       }
     };
 
@@ -82,6 +105,17 @@ export default function DesignDetailsModal({
     addAnswer('questionnaire.section3.q5', answers.necklineType, answers.necklineTypeCustom);
     addAnswer('questionnaire.section3.q6', answers.sleeveType, answers.sleeveTypeCustom);
     addAnswer('questionnaire.section5.q8', answers.fabricType, answers.fabricTypeCustom);
+
+    // Add fabric placements if available
+    if (answers.fabricPlacements && Object.keys(answers.fabricPlacements).length > 0) {
+      const placements = Object.entries(answers.fabricPlacements)
+        .map(([fabric, placement]) => `${t(`questionnaire.section5.q8.options.${fabric}`) || fabric}: ${placement}`)
+        .join('; ');
+      formatted.push({
+        label: t('questionnaire.section5.q8.fabricPlacementModalTitle') || 'Fabric Placements',
+        value: placements
+      });
+    }
 
     // Transparent parts (yes/no question)
     if (answers.hasTransparentParts) {
@@ -261,7 +295,7 @@ export default function DesignDetailsModal({
                 className="flex-1 text-sm sm:text-base py-2 sm:py-3"
               >
                 <Edit className={`w-4 h-4 sm:w-5 sm:h-5 ${direction === 'rtl' ? 'ml-2' : 'mr-2'}`} />
-                {direction === 'rtl' ? 'طلب تعديل' : 'Request Edit'}
+                {t('design.results.requestEdit')}
               </Button>
             )}
             <Button

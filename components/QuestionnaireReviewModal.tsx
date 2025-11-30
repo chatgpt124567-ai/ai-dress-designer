@@ -74,16 +74,22 @@ export default function QuestionnaireReviewModal({
     },
     {
       question: getTranslation('questionnaire.section5.q8.question', 'نوع القماش'),
-      answer: answers.fabricType
-        ? getTranslation(`questionnaire.section5.q8.options.${answers.fabricType}`, answers.fabricType)
-        : '-',
+      answer: (() => {
+        if (!answers.fabricType) return '-';
+        const fabrics = Array.isArray(answers.fabricType) ? answers.fabricType : [answers.fabricType];
+        if (fabrics.length === 0) return '-';
+        return fabrics.map(f =>
+          getTranslation(`questionnaire.section5.q8.options.${f}`, f)
+        ).join(direction === 'rtl' ? '، ' : ', ');
+      })(),
       custom: answers.fabricTypeCustom,
+      placements: answers.fabricPlacements,
     },
     {
       question: getTranslation('questionnaire.section5.q9.question', 'أجزاء شفافة'),
       answer: answers.hasTransparentParts
         ? getTranslation(`common.${answers.hasTransparentParts}`, answers.hasTransparentParts)
-        : '-',
+        : (answers.transparentParts || '-'),
       custom: answers.transparentPartsLocation,
     },
     {
@@ -98,9 +104,10 @@ export default function QuestionnaireReviewModal({
     },
     {
       question: getTranslation('questionnaire.section6.q10.question', 'مقاس الجسم'),
-      answer: answers.bodySize
-        ? getTranslation(`questionnaire.section6.q10.options.${answers.bodySize}`, answers.bodySize.toUpperCase())
+      answer: (answers.bodySize || answers.bodyType)
+        ? getTranslation(`questionnaire.section6.q10.options.${answers.bodySize || answers.bodyType}`, (answers.bodySize || answers.bodyType || '').toUpperCase())
         : '-',
+      custom: answers.bodyTypeCustom,
     },
     {
       question: getTranslation('questionnaire.section7.q12.question', 'اللون الأساسي'),
@@ -108,7 +115,7 @@ export default function QuestionnaireReviewModal({
     },
     {
       question: getTranslation('questionnaire.section9.q16.question', 'ملاحظات إضافية'),
-      answer: answers.additionalNotes || '-',
+      answer: answers.additionalNotes || answers.additionalDetails || '-',
     },
   ];
 
@@ -181,6 +188,19 @@ export default function QuestionnaireReviewModal({
                           {getTranslation('questionnaire.section6.q10.placementLabel', 'موضع الزينة')}:
                         </span> {item.placement}
                       </p>
+                    )}
+                    {/* Display fabric placements for multiple fabrics */}
+                    {item.placements && Object.keys(item.placements).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs font-medium text-neutral-600">
+                          {getTranslation('questionnaire.section5.q8.fabricPlacementModalTitle', 'مكان استخدام كل قماش')}:
+                        </p>
+                        {Object.entries(item.placements).map(([fabric, placement]) => (
+                          <p key={fabric} className="text-xs text-neutral-500">
+                            • {getTranslation(`questionnaire.section5.q8.options.${fabric}`, fabric)}: {placement}
+                          </p>
+                        ))}
+                      </div>
                     )}
                   </div>
                 ))}
