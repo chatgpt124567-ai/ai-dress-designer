@@ -6,6 +6,7 @@ import { Upload, Camera, X, Image as ImageIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import Button from './Button';
+import Lightbox from './Lightbox';
 
 interface ImageUploadStepProps {
   onImageSelected: (imageData: string) => void;
@@ -20,6 +21,7 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,7 +173,8 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
                 <img
                   src={preview}
                   alt="Preview"
-                  className="w-full h-64 object-cover"
+                  className="w-full h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setLightboxOpen(true)}
                 />
                 <div className={cn(
                   "absolute top-2 flex gap-2",
@@ -234,6 +237,14 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
           </Button>
         </div>
       </motion.div>
+
+      {/* Lightbox for fullscreen image preview */}
+      <Lightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        imageSrc={preview || ''}
+        imageAlt={direction === 'rtl' ? 'معاينة الصورة' : 'Image Preview'}
+      />
     </div>
   );
 }

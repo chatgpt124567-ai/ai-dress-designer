@@ -16,6 +16,8 @@ interface SimplifiedQuestionnaireWizardProps {
   onAnswersChange?: (answers: QuestionnaireAnswers) => void;
 }
 
+const STORAGE_STEP_KEY = 'ai_dress_designer_simplified_current_step';
+
 export default function SimplifiedQuestionnaireWizard({
   onSubmit,
   loading = false,
@@ -26,7 +28,43 @@ export default function SimplifiedQuestionnaireWizard({
   const totalSteps = 9; // 9 questions for own fabric workflow
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Initialize with default value (1) to avoid hydration mismatch
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Track if we've loaded the saved step to prevent unnecessary updates
+  const [hasLoadedSavedStep, setHasLoadedSavedStep] = useState(false);
+
+  // Load saved step from localStorage after component mounts (client-side only)
+  useEffect(() => {
+    if (hasLoadedSavedStep) return;
+
+    try {
+      const saved = localStorage.getItem(STORAGE_STEP_KEY);
+      if (saved) {
+        const step = parseInt(saved, 10);
+        if (step >= 1 && step <= totalSteps) {
+          setCurrentStep(step);
+          console.log('✅ Restored saved simplified step:', step);
+        }
+      }
+      setHasLoadedSavedStep(true);
+    } catch (error) {
+      console.error('Error loading saved simplified step:', error);
+      setHasLoadedSavedStep(true);
+    }
+  }, [hasLoadedSavedStep, totalSteps]);
+
+  // Save current step to localStorage whenever it changes
+  useEffect(() => {
+    if (!hasLoadedSavedStep) return;
+
+    try {
+      localStorage.setItem(STORAGE_STEP_KEY, currentStep.toString());
+      console.log('💾 Saved simplified current step:', currentStep);
+    } catch (error) {
+      console.error('Error saving simplified current step:', error);
+    }
+  }, [currentStep, hasLoadedSavedStep]);
 
   const [answers, setAnswers] = useState<QuestionnaireAnswers>(
     initialAnswers || {
@@ -97,6 +135,13 @@ export default function SimplifiedQuestionnaireWizard({
   };
 
   const handleSubmit = () => {
+    // Clear saved step when submitting
+    try {
+      localStorage.removeItem(STORAGE_STEP_KEY);
+      console.log('✅ Cleared saved simplified step on submit');
+    } catch (error) {
+      console.error('Error clearing saved simplified step:', error);
+    }
     onSubmit(answers);
   };
 

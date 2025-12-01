@@ -327,6 +327,7 @@ export default function DesignPage() {
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(STORAGE_STEP_KEY); // Also clear saved step
+      localStorage.removeItem('ai_dress_designer_simplified_current_step'); // Also clear simplified wizard step
       setSavedAnswers(null);
       console.log('✅ Cleared saved answers and step from localStorage and state');
     } catch (error) {
@@ -576,6 +577,7 @@ export default function DesignPage() {
     // Clear all saved state from localStorage
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STORAGE_STEP_KEY);
+    localStorage.removeItem('ai_dress_designer_simplified_current_step'); // Also clear simplified wizard step
     localStorage.removeItem(STORAGE_DESIGN_MODE_KEY);
     localStorage.removeItem(STORAGE_PAGE_STEP_KEY);
     localStorage.removeItem(STORAGE_IMAGE_URL_KEY);
@@ -599,6 +601,13 @@ export default function DesignPage() {
   };
 
   const handleEditDesign = async (editRequest: string, model: string) => {
+    // Check authentication before proceeding
+    if (!isAuthenticated) {
+      setEditModalOpen(false);
+      setAuthModalOpen(true);
+      return;
+    }
+
     // Close the edit modal immediately
     setEditModalOpen(false);
 
@@ -1074,7 +1083,7 @@ export default function DesignPage() {
             </motion.div>
           )}
 
-          {/* Show title only for scratch mode or when mode is selected */}
+          {/* Show dynamic title based on current mode */}
           {designMode !== 'selection' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1082,10 +1091,14 @@ export default function DesignPage() {
               className="mb-8 md:mb-12"
             >
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-headline font-bold text-primary mb-3 md:mb-4">
-                {t('design.title')}
+                {designMode === 'scratch' && (direction === 'rtl' ? 'تصميم من الصفر' : 'Design from Scratch')}
+                {designMode === 'ownFabric' && (direction === 'rtl' ? 'تصميم بقماشك الخاص' : 'Design with Your Fabric')}
+                {designMode === 'external' && (direction === 'rtl' ? 'تعديل تصميم موجود' : 'Edit Existing Design')}
               </h1>
               <p className="text-base md:text-lg lg:text-xl text-neutral-500">
-                {t('design.subtitle')}
+                {designMode === 'scratch' && (direction === 'rtl' ? 'أجيبي على بعض الأسئلة وسنصمم لك فستان أحلامك' : 'Answer a few questions and we\'ll design your dream dress')}
+                {designMode === 'ownFabric' && (direction === 'rtl' ? 'ارفعي صورة قماشك وسنصمم لك فستاناً مميزاً' : 'Upload your fabric and we\'ll create a unique design')}
+                {designMode === 'external' && (direction === 'rtl' ? 'ارفعي صورة فستان وعدّليه حسب رغبتك' : 'Upload a dress image and modify it as you wish')}
               </p>
             </motion.div>
           )}
@@ -1171,36 +1184,48 @@ export default function DesignPage() {
                         />
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="space-y-3 md:space-y-4">
-                        <div className="grid grid-cols-1 gap-3 md:gap-4">
-                          <Button
-                            variant="outline"
-                            size="lg"
+                      {/* Action Buttons - Luxurious compact design */}
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2 md:gap-3">
+                          {/* Button 1: New Design */}
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleReset}
-                            className="w-full text-sm md:text-base bg-white border-2 border-gray-300 text-primary hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-white border border-gray-200 hover:border-accent-gold/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                           >
-                            {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                              {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
+                            </span>
+                          </motion.button>
 
-                          <Button
-                            variant="outline"
-                            size="lg"
+                          {/* Button 2: Request Modification */}
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleRequestIterativeEdit}
                             disabled={editingDesign}
-                            className="w-full text-sm md:text-base bg-white border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all shadow-sm"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30 hover:border-accent-gold shadow-sm hover:shadow-md hover:shadow-accent-gold/20 transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {direction === 'rtl' ? 'طلب تعديل' : 'Request Modification'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-accent-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-accent-gold group-hover:text-accent-gold transition-colors">
+                              {direction === 'rtl' ? 'طلب تعديل' : 'Modify'}
+                            </span>
+                          </motion.button>
 
-                          <Button
-                            variant="primary"
-                            size="lg"
+                          {/* Button 3: Save Image */}
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleDownload}
-                            className="w-full text-sm md:text-base"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold to-amber-500 border border-accent-gold shadow-sm hover:shadow-lg hover:shadow-accent-gold/30 transition-all duration-300 overflow-hidden"
                           >
-                            {direction === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-accent-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-white">
+                              {direction === 'rtl' ? 'حفظ' : 'Save'}
+                            </span>
+                          </motion.button>
                         </div>
                       </div>
 
@@ -1416,39 +1441,48 @@ export default function DesignPage() {
                         />
                       </div>
 
-                      <div className="space-y-3 md:space-y-4">
-                        {/* Action Buttons - Only 3 buttons as per requirements */}
-                        <div className="grid grid-cols-1 gap-3 md:gap-4">
+                      <div className="space-y-3">
+                        {/* Action Buttons - Luxurious compact design */}
+                        <div className="grid grid-cols-3 gap-2 md:gap-3">
                           {/* Button 1: New Design */}
-                          <Button
-                            variant="outline"
-                            size="lg"
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleReset}
-                            className="w-full text-sm md:text-base bg-white border-2 border-gray-300 text-primary hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-white border border-gray-200 hover:border-accent-gold/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
                           >
-                            {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                              {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
+                            </span>
+                          </motion.button>
 
                           {/* Button 2: Request Modification */}
-                          <Button
-                            variant="outline"
-                            size="lg"
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleRequestIterativeEdit}
                             disabled={editingDesign}
-                            className="w-full text-sm md:text-base bg-white border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all shadow-sm"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30 hover:border-accent-gold shadow-sm hover:shadow-md hover:shadow-accent-gold/20 transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {direction === 'rtl' ? 'طلب تعديل' : 'Request Modification'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-accent-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-accent-gold group-hover:text-accent-gold transition-colors">
+                              {direction === 'rtl' ? 'طلب تعديل' : 'Modify'}
+                            </span>
+                          </motion.button>
 
                           {/* Button 3: Save Image */}
-                          <Button
-                            variant="primary"
-                            size="lg"
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
                             onClick={handleDownload}
-                            className="w-full text-sm md:text-base"
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold to-amber-500 border border-accent-gold shadow-sm hover:shadow-lg hover:shadow-accent-gold/30 transition-all duration-300 overflow-hidden"
                           >
-                            {direction === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
-                          </Button>
+                            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-accent-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-white">
+                              {direction === 'rtl' ? 'حفظ' : 'Save'}
+                            </span>
+                          </motion.button>
                         </div>
                       </div>
 

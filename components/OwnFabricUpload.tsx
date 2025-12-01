@@ -6,6 +6,7 @@ import { Camera, Image as ImageIcon, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import Button from './Button';
+import Lightbox from './Lightbox';
 
 interface OwnFabricUploadProps {
   onComplete: (data: {
@@ -18,12 +19,13 @@ interface OwnFabricUploadProps {
 
 export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadProps) {
   const { t, direction } = useLanguage();
-  
+
   const [primaryFabricImage, setPrimaryFabricImage] = useState<string | undefined>();
   const [hasSecondaryFabric, setHasSecondaryFabric] = useState<boolean>(false);
   const [secondaryFabricMode, setSecondaryFabricMode] = useState<'upload' | 'select' | null>(null);
   const [secondaryFabricImage, setSecondaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   const handleFileChange = (file: File | null, isPrimary: boolean) => {
     if (!file) {
@@ -168,7 +170,8 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                 <img
                   src={primaryFabricImage}
                   alt="Primary Fabric"
-                  className="w-full h-64 object-cover"
+                  className="w-full h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setLightboxImage(primaryFabricImage)}
                 />
                 <div className={cn(
                   "absolute top-2 flex gap-2",
@@ -332,7 +335,8 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                         <img
                           src={secondaryFabricImage}
                           alt="Secondary Fabric"
-                          className="w-full h-48 object-cover"
+                          className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxImage(secondaryFabricImage)}
                         />
                         <button
                           onClick={() => setSecondaryFabricImage(undefined)}
@@ -406,6 +410,14 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
           </Button>
         </div>
       </motion.div>
+
+      {/* Lightbox for fullscreen image preview */}
+      <Lightbox
+        isOpen={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        imageSrc={lightboxImage || ''}
+        imageAlt={direction === 'rtl' ? 'معاينة القماش' : 'Fabric Preview'}
+      />
     </div>
   );
 }

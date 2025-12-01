@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LogIn, User } from 'lucide-react';
@@ -19,6 +19,31 @@ export default function Header() {
   const { t, direction } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMobileMenuOpen &&
+        mobileMenuRef.current &&
+        menuButtonRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node) &&
+        !menuButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   // Check if we're on pages that should have white header always
   const isWhiteHeaderPage = pathname === '/design' || pathname === '/profile';
@@ -167,6 +192,7 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
+            ref={menuButtonRef}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={cn(
               "lg:hidden p-2 flex-shrink-0 transition-colors duration-300",
@@ -185,6 +211,7 @@ export default function Header() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
+            ref={mobileMenuRef}
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}

@@ -62,6 +62,7 @@ export default function ExternalEditWorkflow({
   const [imageHistory, setImageHistory] = useState<ImageHistoryItem[]>([]);
   const [historyLightboxImage, setHistoryLightboxImage] = useState<string | null>(null);
   const [editingHistoryImage, setEditingHistoryImage] = useState<string | null>(null);
+  const [mainLightboxOpen, setMainLightboxOpen] = useState(false);
 
   // UI state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -179,6 +180,12 @@ export default function ExternalEditWorkflow({
   };
 
   const handleEditDesign = async (editRequest: string, model: string) => {
+    // Check authentication before proceeding
+    if (!isAuthenticated) {
+      onAuthRequired();
+      return;
+    }
+
     // Determine which image to edit (from history or current)
     const imageToEdit = editingHistoryImage || currentImage;
 
@@ -379,9 +386,7 @@ export default function ExternalEditWorkflow({
                 <ImageCard
                   src={currentImage}
                   alt={direction === 'rtl' ? 'التصميم المعدل' : 'Modified Design'}
-                  onView={() => {
-                    // Could implement lightbox here
-                  }}
+                  onView={() => setMainLightboxOpen(true)}
                   onDownload={() => {
                     const link = document.createElement('a');
                     link.href = currentImage;
@@ -397,38 +402,54 @@ export default function ExternalEditWorkflow({
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-1 gap-3">
-                  <Button
-                    variant="outline"
-                    size="lg"
+                {/* Action Buttons - Luxurious compact design */}
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
+                  {/* Button 1: New Design */}
+                  <motion.button
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleStartOver}
                     disabled={loading || saving}
-                    className="w-full bg-white border-2 border-gray-300 text-primary hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm"
+                    className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-white border border-gray-200 hover:border-accent-gold/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
-                  </Button>
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative text-xs md:text-sm font-medium text-gray-700 group-hover:text-primary transition-colors">
+                      {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
+                    </span>
+                  </motion.button>
 
-                  <Button
-                    variant="outline"
-                    size="lg"
+                  {/* Button 2: Request Modification */}
+                  <motion.button
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleApplyAnotherModification}
                     disabled={loading || saving}
-                    className="w-full bg-white border-2 border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white transition-all shadow-sm"
+                    className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30 hover:border-accent-gold shadow-sm hover:shadow-md hover:shadow-accent-gold/20 transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {direction === 'rtl' ? 'طلب تعديل' : 'Request Edit'}
-                  </Button>
+                    <div className="absolute inset-0 bg-gradient-to-r from-accent-gold/20 to-accent-gold/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="relative text-xs md:text-sm font-medium text-accent-gold group-hover:text-accent-gold transition-colors">
+                      {direction === 'rtl' ? 'طلب تعديل' : 'Modify'}
+                    </span>
+                  </motion.button>
 
-                  <Button
-                    variant="primary"
-                    size="lg"
+                  {/* Button 3: Save Image */}
+                  <motion.button
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleSaveDesign}
-                    loading={saving}
-                    disabled={loading}
-                    className="w-full"
+                    disabled={loading || saving}
+                    className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold to-amber-500 border border-accent-gold shadow-sm hover:shadow-lg hover:shadow-accent-gold/30 transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {direction === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
-                  </Button>
+                    {saving ? (
+                      <div className="relative flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <span className="relative text-xs md:text-sm font-medium text-white">
+                        {direction === 'rtl' ? 'حفظ' : 'Save'}
+                      </span>
+                    )}
+                  </motion.button>
                 </div>
 
                 {/* Previous Versions History */}
@@ -524,6 +545,14 @@ export default function ExternalEditWorkflow({
         onClose={() => setHistoryLightboxImage(null)}
         imageSrc={historyLightboxImage || ''}
         imageAlt={direction === 'rtl' ? 'إصدار سابق' : 'Previous Version'}
+      />
+
+      {/* Main Result Lightbox */}
+      <Lightbox
+        isOpen={mainLightboxOpen}
+        onClose={() => setMainLightboxOpen(false)}
+        imageSrc={currentImage}
+        imageAlt={direction === 'rtl' ? 'التصميم المعدل' : 'Modified Design'}
       />
     </div>
   );
