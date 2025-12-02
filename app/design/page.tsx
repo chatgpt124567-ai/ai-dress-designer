@@ -1069,39 +1069,49 @@ export default function DesignPage() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4"
+              className="mb-6 flex justify-center"
             >
-              <button
+              <motion.button
                 onClick={handleBackToModeSelection}
-                className={`inline-flex items-center gap-2 px-3 py-2 md:px-4 md:py-2.5 bg-white/90 backdrop-blur-sm border-2 border-gray-200 rounded-full shadow-sm hover:shadow-md hover:border-accent-gold hover:bg-white transition-all text-primary hover:text-accent-gold`}
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className={cn(
+                  'group relative overflow-hidden',
+                  'inline-flex items-center gap-2.5 md:gap-3',
+                  'px-5 py-2.5 md:px-6 md:py-3',
+                  'bg-gradient-to-r from-white via-white to-amber-50/30',
+                  'border-2 border-amber-100/50',
+                  'rounded-2xl',
+                  'shadow-lg shadow-amber-900/5',
+                  'hover:shadow-xl hover:shadow-accent-gold/20',
+                  'hover:border-accent-gold/40',
+                  'transition-all duration-300',
+                  'text-primary'
+                )}
               >
-                <Home className="w-4 h-4 md:w-5 md:h-5" />
-                <span className="text-sm md:text-base font-medium">
+                {/* Shimmer Effect */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-accent-gold/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                </div>
+
+                {/* Icon with Glow */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-accent-gold/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <Home className="relative w-5 h-5 md:w-6 md:h-6 text-accent-gold group-hover:text-amber-500 transition-colors duration-300" />
+                </div>
+
+                {/* Text */}
+                <span className="relative text-sm md:text-base font-semibold tracking-wide group-hover:text-accent-gold transition-colors duration-300">
                   {direction === 'rtl' ? 'اختيار الوضع' : 'Mode Selection'}
                 </span>
-              </button>
+
+                {/* Bottom Gradient Line */}
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-accent-gold to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </motion.button>
             </motion.div>
           )}
 
-          {/* Show dynamic title based on current mode */}
-          {designMode !== 'selection' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-8 md:mb-12"
-            >
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-headline font-bold text-primary mb-3 md:mb-4">
-                {designMode === 'scratch' && (direction === 'rtl' ? 'تصميم من الصفر' : 'Design from Scratch')}
-                {designMode === 'ownFabric' && (direction === 'rtl' ? 'تصميم بقماشك الخاص' : 'Design with Your Fabric')}
-                {designMode === 'external' && (direction === 'rtl' ? 'تعديل تصميم موجود' : 'Edit Existing Design')}
-              </h1>
-              <p className="text-base md:text-lg lg:text-xl text-neutral-500">
-                {designMode === 'scratch' && (direction === 'rtl' ? 'أجيبي على بعض الأسئلة وسنصمم لك فستان أحلامك' : 'Answer a few questions and we\'ll design your dream dress')}
-                {designMode === 'ownFabric' && (direction === 'rtl' ? 'ارفعي صورة قماشك وسنصمم لك فستاناً مميزاً' : 'Upload your fabric and we\'ll create a unique design')}
-                {designMode === 'external' && (direction === 'rtl' ? 'ارفعي صورة فستان وعدّليه حسب رغبتك' : 'Upload a dress image and modify it as you wish')}
-              </p>
-            </motion.div>
-          )}
+
 
           {/* Mode Selection Screen */}
           {designMode === 'selection' && (

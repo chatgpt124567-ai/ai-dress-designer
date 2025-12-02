@@ -98,15 +98,7 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        {/* Header */}
-        <div className="text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-            {t('design.external.upload.title')}
-          </h2>
-          <p className="text-neutral-600">
-            {t('design.external.upload.subtitle')}
-          </p>
-        </div>
+
 
         {/* Upload Card - matching OwnFabricUpload design */}
         <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">

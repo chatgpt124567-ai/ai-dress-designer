@@ -356,19 +356,16 @@ export default function ExternalEditWorkflow({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="max-w-4xl mx-auto px-4 py-8"
+            className="max-w-4xl mx-auto px-4 py-4"
           >
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-                {t('design.external.result.title')}
-              </h2>
-              <p className="text-neutral-600">
-                {modificationHistory.length > 0
-                  ? t('design.external.result.subtitle')
-                  : t('design.external.result.subtitleFirst')}
-              </p>
-            </div>
+            {/* Header - Only show title when there's a result */}
+            {!loading && currentImage && (
+              <div className="text-center mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-primary">
+                  {t('design.external.result.title')}
+                </h2>
+              </div>
+            )}
 
             {/* Loading State - matching scratch section design */}
             {loading && (
@@ -382,7 +379,7 @@ export default function ExternalEditWorkflow({
 
             {/* Result Image */}
             {!loading && currentImage && (
-              <div className="space-y-6">
+              <div className="space-y-3">
                 <ImageCard
                   src={currentImage}
                   alt={direction === 'rtl' ? 'التصميم المعدل' : 'Modified Design'}

@@ -59,15 +59,7 @@ export default function FabricPlacementStep({
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        {/* Header */}
-        <div className="text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-primary mb-2">
-            {t('design.ownFabric.placement.title')}
-          </h2>
-          <p className="text-neutral-600">
-            {t('design.ownFabric.placement.subtitle')}
-          </p>
-        </div>
+
 
         {/* Primary Fabric Placement */}
         <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">

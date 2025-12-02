@@ -325,53 +325,63 @@ export default function SimplifiedQuestionnaireWizard({
   };
 
   return (
-    <div ref={containerRef} className="max-w-3xl mx-auto">
-      {/* Progress Bar */}
-      <ProgressBar currentStep={currentStep} totalSteps={totalSteps} onStepClick={handleStepClick} />
+    <div ref={containerRef} className="luxury-card p-4 md:p-6 lg:p-8">
+      <div className="mb-6 md:mb-8">
+        <h2 className="text-xl md:text-2xl font-headline font-bold text-primary mb-2">
+          {t('questionnaire.title')}
+        </h2>
+        <p className="text-sm md:text-base text-neutral-600">
+          {t('questionnaire.subtitle')}
+        </p>
+      </div>
 
-      {/* Question */}
+      {/* Progress Bar */}
+      <ProgressBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        onStepClick={handleStepClick}
+      />
+
+      {/* Question Content */}
       <AnimatePresence mode="wait">
-        <motion.div
-          key={currentStep}
-          initial={{ opacity: 0, x: direction === 'rtl' ? -50 : 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: direction === 'rtl' ? 50 : -50 }}
-          transition={{ duration: 0.3 }}
-        >
+        <div key={currentStep} className="min-h-[300px] md:min-h-[400px]">
           {renderQuestion()}
-        </motion.div>
+        </div>
       </AnimatePresence>
 
       {/* Navigation Buttons */}
-      <div className="flex gap-4 mt-8">
+      <div className={cn('flex gap-3 md:gap-4 mt-6 md:mt-8', direction === 'rtl' ? 'flex-row-reverse' : '')}>
         {currentStep > 1 && (
           <Button
-            variant="outline"
+            variant="ghost"
+            size="lg"
             onClick={handlePrevious}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 text-sm md:text-base"
           >
-            {t('common.back')}
+            {t('common.previous')}
           </Button>
         )}
 
         {currentStep < totalSteps ? (
           <Button
             variant="primary"
+            size="lg"
             onClick={handleNext}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 text-sm md:text-base"
           >
-            {t('common.continue')}
+            {t('common.next')}
           </Button>
         ) : (
           <Button
             variant="primary"
+            size="lg"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1"
+            className="flex-1 text-sm md:text-base"
           >
-            {loading ? t('design.form.generating') : t('questionnaire.submit')}
+            {loading ? t('design.prompt.generating') : t('common.submit')}
           </Button>
         )}
       </div>
