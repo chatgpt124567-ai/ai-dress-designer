@@ -35,7 +35,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} ${tajawal.variable}`} suppressHydrationWarning={true}>
+    <html lang="ar" dir="rtl" className={`${playfair.variable} ${inter.variable} ${tajawal.variable}`} suppressHydrationWarning={true}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var savedLang = localStorage.getItem('language');
+                  var lang = (savedLang === 'en' || savedLang === 'ar') ? savedLang : 'ar';
+                  var dir = lang === 'ar' ? 'rtl' : 'ltr';
+                  document.documentElement.lang = lang;
+                  document.documentElement.dir = dir;
+                } catch (e) {
+                  document.documentElement.lang = 'ar';
+                  document.documentElement.dir = 'rtl';
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <LanguageProvider>
           {children}

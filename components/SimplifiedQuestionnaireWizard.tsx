@@ -69,22 +69,15 @@ export default function SimplifiedQuestionnaireWizard({
   const [answers, setAnswers] = useState<QuestionnaireAnswers>(
     initialAnswers || {
       dressType: '',
-      dressTypeCustom: '',
       dressLength: '',
-      dressLengthCustom: '',
       skirtShape: '',
-      skirtShapeCustom: '',
       necklineType: '',
-      necklineTypeCustom: '',
       sleeveType: '',
-      sleeveTypeCustom: '',
-      fabricType: '', // Required field - not used in simplified wizard but needed for type
-      transparentParts: '',
+      fabricType: 'custom', // Required field - set to 'custom' for own fabric workflow
+      hasTransparentParts: 'no',
       embellishments: [],
-      embellishmentsCustom: '',
-      bodyType: '',
-      bodyTypeCustom: '',
-      additionalDetails: '',
+      primaryColor: '',
+      hasAdditionalColors: 'no',
     }
   );
 

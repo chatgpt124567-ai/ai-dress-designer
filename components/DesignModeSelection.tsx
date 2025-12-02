@@ -24,7 +24,7 @@ export default function DesignModeSelection({ onSelectMode }: DesignModeSelectio
     {
       id: 'external' as const,
       icon: Wand2,
-      titleAr: 'عدلي تصميك',
+      titleAr: 'عدلي تصميمك',
       titleEn: 'Elevate a Design',
       subtitleAr: 'إجراء تعديل على تصميمك الخاص',
       subtitleEn: 'Add your unique touch',

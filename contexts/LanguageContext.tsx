@@ -18,8 +18,24 @@ interface LanguageProviderProps {
   children: ReactNode;
 }
 
+// Helper function to get initial language (runs before React hydration)
+const getInitialLanguage = (): Language => {
+  if (typeof window === 'undefined') return 'ar'; // Server-side default
+
+  try {
+    const savedLanguage = localStorage.getItem('language') as Language;
+    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ar')) {
+      return savedLanguage;
+    }
+  } catch (error) {
+    console.error('Error reading language from localStorage:', error);
+  }
+
+  return 'ar'; // Default to Arabic
+};
+
 export function LanguageProvider({ children }: LanguageProviderProps) {
-  const [language, setLanguageState] = useState<Language>('ar'); // Changed default to Arabic
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
   const [translations, setTranslations] = useState<Record<string, any>>({});
 
   // Load translations
@@ -36,17 +52,6 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
 
     loadTranslations();
   }, [language]);
-
-  // Load language preference from localStorage on mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') as Language;
-    if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'ar')) {
-      setLanguageState(savedLanguage);
-    } else {
-      // If no saved language, set default to Arabic
-      setLanguageState('ar');
-    }
-  }, []);
 
   // Update localStorage and document direction when language changes
   useEffect(() => {
