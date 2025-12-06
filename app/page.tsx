@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import { Sparkles, Wand2, Download } from "lucide-react";
@@ -10,10 +11,13 @@ import { cn } from "@/lib/utils";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Button from "@/components/Button";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Home() {
   const { t, direction } = useLanguage();
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const { scrollY } = useScroll();
 
   // Scroll effects for mobile hero
@@ -30,6 +34,35 @@ export default function Home() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuth();
+
+    // Listen for auth changes
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session?.user);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Handle start design button click
+  const handleStartDesign = () => {
+    if (isAuthenticated) {
+      router.push('/design');
+    } else {
+      router.push('/auth/login?redirectTo=/design');
+    }
+  };
 
   const sampleDesigns = [
     { id: 1, alt: t('home.gallery.sample1') },
@@ -101,15 +134,14 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.7 }}
               >
-                <Link href="/design">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    className="w-full text-lg font-semibold shadow-2xl hover:shadow-3xl transition-all py-4 px-8"
-                  >
-                    {t('home.hero.cta')}
-                  </Button>
-                </Link>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleStartDesign}
+                  className="w-full text-lg font-semibold shadow-2xl hover:shadow-3xl transition-all py-4 px-8"
+                >
+                  {t('home.hero.cta')}
+                </Button>
               </motion.div>
             </motion.div>
           </div>
@@ -187,11 +219,9 @@ export default function Home() {
                 </div>
 
                 <div className="text-center mt-10">
-                  <Link href="/design">
-                    <Button variant="primary" size="lg" className="w-full text-lg py-4">
-                      {t('home.hero.cta')}
-                    </Button>
-                  </Link>
+                  <Button variant="primary" size="lg" onClick={handleStartDesign} className="w-full text-lg py-4">
+                    {t('home.hero.cta')}
+                  </Button>
                 </div>
               </div>
             </section>
@@ -215,11 +245,9 @@ export default function Home() {
                   {t('home.hero.subtitle')}
                 </p>
                 <div>
-                  <Link href="/design">
-                    <Button variant="primary" size="lg" className="w-full sm:w-auto text-base md:text-lg">
-                      {t('home.hero.cta')}
-                    </Button>
-                  </Link>
+                  <Button variant="primary" size="lg" onClick={handleStartDesign} className="w-full sm:w-auto text-base md:text-lg">
+                    {t('home.hero.cta')}
+                  </Button>
                 </div>
               </motion.div>
 
@@ -307,11 +335,9 @@ export default function Home() {
             </div>
 
             <div className="text-center mt-8 md:mt-12">
-              <Link href="/design">
-                <Button variant="primary" size="lg" className="w-full sm:w-auto text-base md:text-lg">
-                  {t('home.hero.cta')}
-                </Button>
-              </Link>
+              <Button variant="primary" size="lg" onClick={handleStartDesign} className="w-full sm:w-auto text-base md:text-lg">
+                {t('home.hero.cta')}
+              </Button>
             </div>
           </div>
         </section>

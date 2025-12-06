@@ -46,10 +46,10 @@ export default function Header() {
   }, [isMobileMenuOpen]);
 
   // Check if we're on pages that should have white header always
-  const isWhiteHeaderPage = pathname === '/design' || pathname === '/profile';
+  const isWhiteHeaderPage = pathname === '/design' || pathname === '/profile' || pathname === '/auth/login' || pathname === '/login' || pathname === '/privacy-policy' || pathname === '/terms-of-service' || pathname === '/contact' || pathname === '/how-it-works';
 
   // Check if we're on pages that should have white header on desktop only
-  const isWhiteHeaderDesktopPage = pathname === '/' || pathname === '/auth/login' || pathname === '/profile';
+  const isWhiteHeaderDesktopPage = pathname === '/' || pathname === '/auth/login' || pathname === '/profile' || pathname === '/privacy-policy' || pathname === '/terms-of-service' || pathname === '/contact' || pathname === '/how-it-works';
 
   // Check if we're on login page (for mobile white background)
   const isLoginPage = pathname === '/auth/login' || pathname === '/login';
@@ -145,16 +145,10 @@ export default function Header() {
             <Link href="/" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.home')}
             </Link>
-            <Link href="/design" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
-              {t('header.designs')}
-            </Link>
-            <Link href="#how-it-works" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="/how-it-works" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.howItWorks')}
             </Link>
-            <Link href="#pricing" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
-              {t('header.pricing')}
-            </Link>
-            <Link href="#contact" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
+            <Link href="/contact" className="text-sm lg:text-lg xl:text-xl font-medium text-primary hover:text-accent-gold transition-colors whitespace-nowrap">
               {t('header.contact')}
             </Link>
           </nav>
@@ -227,28 +221,14 @@ export default function Header() {
                 {t('header.home')}
               </Link>
               <Link
-                href="/design"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-medium text-primary hover:text-accent-gold transition-all hover:translate-x-1 py-2"
-              >
-                {t('header.designs')}
-              </Link>
-              <Link
-                href="#how-it-works"
+                href="/how-it-works"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="text-lg font-medium text-primary hover:text-accent-gold transition-all hover:translate-x-1 py-2"
               >
                 {t('header.howItWorks')}
               </Link>
               <Link
-                href="#pricing"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-medium text-primary hover:text-accent-gold transition-all hover:translate-x-1 py-2"
-              >
-                {t('header.pricing')}
-              </Link>
-              <Link
-                href="#contact"
+                href="/contact"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="text-lg font-medium text-primary hover:text-accent-gold transition-all hover:translate-x-1 py-2"
               >

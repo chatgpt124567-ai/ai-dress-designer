@@ -9,7 +9,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import type { EnhancePromptResponse, GenerateImageResponse, QuestionnaireAnswers, GeminiImageModel } from '@/types';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import Button from '@/components/Button';
 import QuestionnaireWizard from '@/components/QuestionnaireWizard';
 import ImageCard from '@/components/ImageCard';
@@ -1829,9 +1828,6 @@ export default function DesignPage() {
 
         </div>
       </main>
-
-      {/* Only show footer on mode selection screen, not inside design workflows */}
-      {designMode === 'selection' && <Footer />}
     </div>
   );
 }

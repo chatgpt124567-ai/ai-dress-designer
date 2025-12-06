@@ -92,11 +92,11 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-8"
+        className="space-y-6"
       >
 
 
