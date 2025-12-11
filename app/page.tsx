@@ -65,10 +65,26 @@ export default function Home() {
   };
 
   const sampleDesigns = [
-    { id: 1, alt: t('home.gallery.sample1') },
-    { id: 2, alt: t('home.gallery.sample2') },
-    { id: 3, alt: t('home.gallery.sample3') },
-    { id: 4, alt: t('home.gallery.sample4') },
+    {
+      id: 1,
+      image: '/design-7a5d5873-9923-491f-9225-c884296ec031.png',
+      alt: t('home.gallery.sample1')
+    },
+    {
+      id: 2,
+      image: '/dress-design-1763677095625.png',
+      alt: t('home.gallery.sample2')
+    },
+    {
+      id: 3,
+      image: '/Gemini_Generated_Image_r7ohaar7ohaar7oh.png',
+      alt: t('home.gallery.sample3')
+    },
+    {
+      id: 4,
+      image: '/Generated Image November 24, 2025 - 4_43PM.png',
+      alt: t('home.gallery.sample4')
+    },
   ];
 
   const processSteps = [
@@ -207,12 +223,16 @@ export default function Home() {
                       whileInView={{ opacity: 1, scale: 1 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.4, delay: index * 0.1 }}
-                      className="elegant-frame bg-white"
+                      className="elegant-frame bg-white overflow-hidden"
                     >
-                      <div className="aspect-[3/4] bg-gradient-to-br from-accent-gold/10 to-primary/5 flex items-center justify-center">
-                        <p className="text-neutral-500 text-xs text-center px-2">
-                          {design.alt}
-                        </p>
+                      <div className="aspect-[3/4] relative bg-gradient-to-br from-accent-gold/10 to-primary/5">
+                        <Image
+                          src={design.image}
+                          alt={design.alt}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                        />
                       </div>
                     </motion.div>
                   ))}
@@ -323,12 +343,16 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                   whileHover={{ y: -8, rotate: -1 }}
-                  className="elegant-frame"
+                  className="elegant-frame overflow-hidden"
                 >
-                  <div className="aspect-[3/4] bg-gradient-to-br from-accent-gold/10 to-primary/5 flex items-center justify-center">
-                    <p className="text-neutral-500 text-xs md:text-sm text-center px-3 md:px-4">
-                      {design.alt}
-                    </p>
+                  <div className="aspect-[3/4] relative bg-gradient-to-br from-accent-gold/10 to-primary/5">
+                    <Image
+                      src={design.image}
+                      alt={design.alt}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                    />
                   </div>
                 </motion.div>
               ))}

@@ -54,30 +54,15 @@ WHERE storage_path IS NOT NULL;
 --   auth.uid()::text = (storage.foldername(name))[1]
 -- );
 
--- 6. Create a function to clean up storage when design is deleted
-CREATE OR REPLACE FUNCTION delete_design_images()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Delete full-size image from storage
-  IF OLD.storage_path IS NOT NULL THEN
-    PERFORM storage.delete_object('design-images', OLD.storage_path);
-  END IF;
-  
-  -- Delete thumbnail from storage
-  IF OLD.thumbnail_storage_path IS NOT NULL THEN
-    PERFORM storage.delete_object('design-images', OLD.thumbnail_storage_path);
-  END IF;
-  
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 6. Storage cleanup is now handled by client-side code in DesignGallery.tsx
+-- The storage.delete_object function doesn't exist in Supabase by default
+-- So we handle deletion in the application code instead
 
--- 7. Create trigger to auto-delete images when design is deleted
+-- Drop existing trigger if it exists (it uses non-existent function)
 DROP TRIGGER IF EXISTS cleanup_design_images ON designs;
-CREATE TRIGGER cleanup_design_images
-  BEFORE DELETE ON designs
-  FOR EACH ROW
-  EXECUTE FUNCTION delete_design_images();
+
+-- Drop the function if it exists
+DROP FUNCTION IF EXISTS delete_design_images();
 
 -- ============================================
 -- Migration Complete!

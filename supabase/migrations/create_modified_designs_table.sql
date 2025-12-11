@@ -101,35 +101,17 @@ CREATE TRIGGER update_modified_designs_updated_at_trigger
   FOR EACH ROW
   EXECUTE FUNCTION update_modified_designs_updated_at();
 
--- 7. Create function to clean up storage when modified design is deleted
-CREATE OR REPLACE FUNCTION delete_modified_design_images()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- Delete modified full-size image from storage
-  IF OLD.modified_storage_path IS NOT NULL THEN
-    PERFORM storage.delete_object('design-images', OLD.modified_storage_path);
-  END IF;
-  
-  -- Delete modified thumbnail from storage
-  IF OLD.modified_thumbnail_storage_path IS NOT NULL THEN
-    PERFORM storage.delete_object('design-images', OLD.modified_thumbnail_storage_path);
-  END IF;
-  
-  -- Delete original image from storage if it was uploaded to our storage
-  IF OLD.original_storage_path IS NOT NULL THEN
-    PERFORM storage.delete_object('design-images', OLD.original_storage_path);
-  END IF;
-  
-  RETURN OLD;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 7. Storage cleanup is handled by client-side code
+-- The storage.delete_object function doesn't exist in Supabase by default
+-- So we handle deletion in the application code instead
 
--- 8. Create trigger to auto-delete images when modified design is deleted
+-- Drop existing trigger if it exists
 DROP TRIGGER IF EXISTS cleanup_modified_design_images ON modified_designs;
-CREATE TRIGGER cleanup_modified_design_images
-  BEFORE DELETE ON modified_designs
-  FOR EACH ROW
-  EXECUTE FUNCTION delete_modified_design_images();
+
+-- Drop the function if it exists
+DROP FUNCTION IF EXISTS delete_modified_design_images();
+
+-- 8. (Removed - trigger was using non-existent function)
 
 -- 9. Grant permissions
 GRANT ALL ON modified_designs TO authenticated;

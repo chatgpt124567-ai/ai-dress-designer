@@ -25,11 +25,12 @@ import ModelSelectionModal from '@/components/ModelSelectionModal';
 import OwnFabricUpload from '@/components/OwnFabricUpload';
 import FabricPlacementStep from '@/components/FabricPlacementStep';
 import SimplifiedQuestionnaireWizard from '@/components/SimplifiedQuestionnaireWizard';
+import RemoveModelWorkflow from '@/components/RemoveModelWorkflow';
 import { createClient } from '@/lib/supabase/client';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 import { processAndUploadDesignImage } from '@/lib/imageUtils';
 
-type DesignMode = 'selection' | 'scratch' | 'external' | 'ownFabric';
+type DesignMode = 'selection' | 'scratch' | 'external' | 'ownFabric' | 'removeModel';
 
 export default function DesignPage() {
   const { t, direction } = useLanguage();
@@ -985,7 +986,7 @@ export default function DesignPage() {
   };
 
   // Handle mode selection
-  const handleModeSelect = (mode: 'scratch' | 'external' | 'ownFabric') => {
+  const handleModeSelect = (mode: 'scratch' | 'external' | 'ownFabric' | 'removeModel') => {
     setDesignMode(mode);
     if (mode === 'ownFabric') {
       setOwnFabricStep('upload');
@@ -1101,7 +1102,7 @@ export default function DesignPage() {
 
                 {/* Text */}
                 <span className="relative text-sm md:text-base font-semibold tracking-wide group-hover:text-accent-gold transition-colors duration-300">
-                  {direction === 'rtl' ? 'اختيار الوضع' : 'Mode Selection'}
+                  {direction === 'rtl' ? 'العودة إلى القائمة الرئيسية' : 'Back to Main Menu'}
                 </span>
 
                 {/* Bottom Gradient Line */}
@@ -1122,6 +1123,15 @@ export default function DesignPage() {
             <ExternalEditWorkflow
               onBack={handleBackToModeSelection}
               onSaveDesign={saveExternalDesign}
+              isAuthenticated={isAuthenticated}
+              onAuthRequired={() => setAuthModalOpen(true)}
+            />
+          )}
+
+          {/* Remove Model Workflow */}
+          {designMode === 'removeModel' && (
+            <RemoveModelWorkflow
+              onBack={handleBackToModeSelection}
               isAuthenticated={isAuthenticated}
               onAuthRequired={() => setAuthModalOpen(true)}
             />
