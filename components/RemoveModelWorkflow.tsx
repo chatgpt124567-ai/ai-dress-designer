@@ -189,7 +189,7 @@ export default function RemoveModelWorkflow({
     } catch (err) {
       console.error('Error processing image:', err);
       setError(err instanceof Error ? err.message : direction === 'rtl' ? 'حدث خطأ أثناء معالجة الصورة' : 'Error processing image');
-      setStep('selectModel');
+      setStep('upload');
     } finally {
       setLoading(false);
     }
