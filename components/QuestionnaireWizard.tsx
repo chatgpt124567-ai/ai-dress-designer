@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -8,9 +8,10 @@ import type { QuestionnaireAnswers } from '@/types';
 import Button from './Button';
 import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
-import CustomFabricModal from './CustomFabricModal';
 import MultiFabricPlacementModal from './MultiFabricPlacementModal';
 import MultiEmbellishmentPlacementModal from './MultiEmbellishmentPlacementModal';
+import FabricPreviewModal from './FabricPreviewModal';
+import SkirtPreviewModal from './SkirtPreviewModal';
 
 interface QuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -28,7 +29,7 @@ export default function QuestionnaireWizard({
   onAnswersChange
 }: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  const totalSteps = 11; // 11 questions total (Q2 combines Primary Color + Additional Colors)
+  const totalSteps = 11; // 11 questions total (added design style question)
 
   // Initialize with default value (1) to avoid hydration mismatch
   // The saved step will be loaded in useEffect after hydration
@@ -37,14 +38,19 @@ export default function QuestionnaireWizard({
   // Track if we've loaded the saved step to prevent unnecessary updates
   const [hasLoadedSavedStep, setHasLoadedSavedStep] = useState(false);
 
-  // Custom Fabric Modal state
-  const [customFabricModalOpen, setCustomFabricModalOpen] = useState(false);
-
   // Multi-Fabric Placement Modal state
   const [multiFabricModalOpen, setMultiFabricModalOpen] = useState(false);
 
   // Multi-Embellishment Placement Modal state
   const [multiEmbellishmentModalOpen, setMultiEmbellishmentModalOpen] = useState(false);
+
+  // Fabric Preview Modal state
+  const [fabricPreviewModalOpen, setFabricPreviewModalOpen] = useState(false);
+  const [selectedFabricForPreview, setSelectedFabricForPreview] = useState<string>('');
+
+  // Skirt Preview Modal state
+  const [skirtPreviewModalOpen, setSkirtPreviewModalOpen] = useState(false);
+  const [selectedSkirtForPreview, setSelectedSkirtForPreview] = useState<string>('');
 
   // Load saved step from localStorage after component mounts (client-side only)
   // This runs after hydration is complete, avoiding hydration mismatch
@@ -138,16 +144,16 @@ export default function QuestionnaireWizard({
         }
       }
 
-      // Check if we're on embellishments step (step 9) and multiple embellishments are selected
-      if (currentStep === 9) {
+      // Check if we're on embellishments step (step 8) and embellishments are selected
+      if (currentStep === 8) {
         const selectedEmbs = Array.isArray(answers.embellishments)
           ? answers.embellishments
           : (answers.embellishments ? [answers.embellishments] : []);
-        // Filter out 'none' and 'other' - they don't need placement
-        const activeEmbs = selectedEmbs.filter(e => e !== 'none' && e !== 'other');
+        // Filter out 'other' and 'belt' - they don't need placement
+        const activeEmbs = selectedEmbs.filter(e => e !== 'other' && e !== 'belt');
 
-        // If more than 1 embellishment is selected and placements not all filled, show modal
-        if (activeEmbs.length > 1) {
+        // If any embellishment is selected (even just 1) and placements not all filled, show modal
+        if (activeEmbs.length >= 1) {
           const allPlacementsFilled = activeEmbs.every(
             (emb) => answers.embellishmentPlacements?.[emb] && answers.embellishmentPlacements[emb].trim() !== ''
           );
@@ -191,6 +197,16 @@ export default function QuestionnaireWizard({
       console.error('Error clearing saved step:', error);
     }
     onSubmit(answers);
+  };
+
+  const handleFabricPreview = (fabricType: string) => {
+    setSelectedFabricForPreview(fabricType);
+    setFabricPreviewModalOpen(true);
+  };
+
+  const handleSkirtPreview = (skirtType: string) => {
+    setSelectedSkirtForPreview(skirtType);
+    setSkirtPreviewModalOpen(true);
   };
 
   const updateAnswer = (field: keyof QuestionnaireAnswers, value: string | string[], customValue?: string) => {
@@ -246,6 +262,36 @@ export default function QuestionnaireWizard({
     }
   };
 
+  // Check if current step has an answer (reactive with useMemo)
+  const hasAnswer = useMemo(() => {
+    switch (currentStep) {
+      case 1: // Dress Type
+        return !!answers.dressType;
+      case 2: // Fabric Type (multi-select)
+        return Array.isArray(answers.fabricType) && answers.fabricType.length > 0;
+      case 3: // Colors
+        return !!answers.primaryColor;
+      case 4: // Dress Length
+        return !!answers.dressLength;
+      case 5: // Skirt Shape
+        return !!answers.skirtShape;
+      case 6: // Neckline
+        return !!answers.necklineType;
+      case 7: // Sleeves
+        return !!answers.sleeveType;
+      case 8: // Embellishments (multi-select)
+        return Array.isArray(answers.embellishments) && answers.embellishments.length > 0;
+      case 9: // Design Style
+        return !!answers.designStyle;
+      case 10: // Body Size
+        return !!answers.bodySize;
+      case 11: // Additional Notes (optional - always considered as having answer)
+        return true;
+      default:
+        return false;
+    }
+  }, [currentStep, answers]);
+
   // Define question configurations
   const getStepContent = () => {
     switch (currentStep) {
@@ -271,7 +317,6 @@ export default function QuestionnaireWizard({
 
       case 2: // Section 5: Fabric - Q8 (Fabric Type - MOVED TO POSITION 2) - Now multi-select
         const selectedFabrics = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);
-        const hasCustomFabricSelected = selectedFabrics.includes('customFabric');
 
         return (
           <div className="space-y-6">
@@ -285,10 +330,9 @@ export default function QuestionnaireWizard({
               questionText={t('questionnaire.section5.q8.question')}
               questionType="checkbox"
               options={[
-                { value: 'customFabric', labelKey: 'questionnaire.section5.q8.options.customFabric' },
                 { value: 'satin', labelKey: 'questionnaire.section5.q8.options.satin' },
-                { value: 'silk', labelKey: 'questionnaire.section5.q8.options.silk' },
                 { value: 'chiffon', labelKey: 'questionnaire.section5.q8.options.chiffon' },
+                { value: 'silk', labelKey: 'questionnaire.section5.q8.options.silk' },
                 { value: 'tulle', labelKey: 'questionnaire.section5.q8.options.tulle' },
                 { value: 'lace', labelKey: 'questionnaire.section5.q8.options.lace' },
                 { value: 'velvet', labelKey: 'questionnaire.section5.q8.options.velvet' },
@@ -301,46 +345,11 @@ export default function QuestionnaireWizard({
               onChange={(value, customValue) => {
                 const fabrics = Array.isArray(value) ? value : [value];
                 updateAnswer('fabricType', fabrics, customValue);
-                // Open modal when customFabric is selected
-                if (fabrics.includes('customFabric') && !hasCustomFabricSelected) {
-                  setCustomFabricModalOpen(true);
-                }
               }}
+              enableFabricPreview={true}
+              onFabricPreview={handleFabricPreview}
               // No auto-advance for multi-select - user must click Next
             />
-
-            {/* Show custom fabric summary if configured */}
-            {hasCustomFabricSelected && answers.customFabricImage && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-accent-gold/10 border-2 border-accent-gold rounded-lg space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border-2 border-accent-gold">
-                      <img src={answers.customFabricImage} alt="Custom Fabric" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-primary">{t('questionnaire.section5.q8.imageUploaded')}</p>
-                      {answers.fabricPlacement && (
-                        <p className="text-sm text-gray-600">
-                          {t(`questionnaire.section5.q8.placementOptions.${answers.fabricPlacement}`)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCustomFabricModalOpen(true)}
-                    className="text-sm"
-                  >
-                    {t('common.edit')}
-                  </Button>
-                </div>
-              </motion.div>
-            )}
 
             {/* Show fabric placements summary if multiple fabrics selected */}
             {selectedFabrics.length > 1 && answers.fabricPlacements && Object.keys(answers.fabricPlacements).length > 0 && (
@@ -413,7 +422,6 @@ export default function QuestionnaireWizard({
             options={[
               { value: 'knee', labelKey: 'questionnaire.section1.q2.options.knee' },
               { value: 'long', labelKey: 'questionnaire.section1.q2.options.long' },
-              { value: 'floor', labelKey: 'questionnaire.section1.q2.options.floor' },
               { value: 'train', labelKey: 'questionnaire.section1.q2.options.train' },
               { value: 'other', labelKey: 'questionnaire.section1.q2.options.other', hasCustomInput: true },
             ]}
@@ -431,19 +439,24 @@ export default function QuestionnaireWizard({
             questionText={t('questionnaire.section2.q4.question')}
             questionType="radio"
             options={[
-              { value: 'wide', labelKey: 'questionnaire.section2.q4.options.wide' },
+              { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
               { value: 'tight', labelKey: 'questionnaire.section2.q4.options.tight' },
-              { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' },
               { value: 'pleated', labelKey: 'questionnaire.section2.q4.options.pleated' },
               { value: 'puffy', labelKey: 'questionnaire.section2.q4.options.puffy' },
-              { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
+              { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' }, // Moved after puffy
               { value: 'mermaidTail', labelKey: 'questionnaire.section2.q4.options.mermaidTail' },
+              { value: 'overskirt', labelKey: 'questionnaire.section2.q4.options.overskirt' },
+              { value: 'peplum', labelKey: 'questionnaire.section2.q4.options.peplum' },
+              { value: 'sideDrape', labelKey: 'questionnaire.section2.q4.options.sideDrape' },
               { value: 'other', labelKey: 'questionnaire.section2.q4.options.other', hasCustomInput: true },
             ]}
             value={answers.skirtShape}
             customValue={answers.skirtShapeCustom}
             onChange={(value, customValue) => updateAnswer('skirtShape', value as string, customValue)}
             onAutoAdvance={handleNext}
+            enableSkirtPreview={true}
+            onSkirtPreview={handleSkirtPreview}
+            skirtPreviewOptions={['sideDrape', 'peplum', 'overskirt', 'mermaidTail', 'layered']}
           />
         );
 
@@ -484,7 +497,6 @@ export default function QuestionnaireWizard({
               { value: 'sheer', labelKey: 'questionnaire.section3.q6.options.sheer' },
               { value: 'puff', labelKey: 'questionnaire.section3.q6.options.puff' },
               { value: 'offShoulder', labelKey: 'questionnaire.section3.q6.options.offShoulder' },
-              { value: 'lace', labelKey: 'questionnaire.section3.q6.options.lace' },
               { value: 'other', labelKey: 'questionnaire.section3.q6.options.other', hasCustomInput: true },
             ]}
             value={answers.sleeveType}
@@ -494,41 +506,11 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 8: // Section 5: Fabric - Q9 (Transparent parts)
-        return (
-          <div className="space-y-6">
-            <QuestionStep
-              sectionTitle={t('questionnaire.section5.title')}
-              questionText={t('questionnaire.section5.q9.question')}
-              questionType="yesno"
-              value={answers.hasTransparentParts || ''}
-              onChange={(value) => updateAnswer('hasTransparentParts', value as string)}
-              onAutoAdvance={handleNext}
-            />
-            {answers.hasTransparentParts === 'yes' && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-              >
-                <input
-                  type="text"
-                  value={answers.transparentPartsLocation || ''}
-                  onChange={(e) => updateAnswer('transparentPartsLocation' as any, e.target.value)}
-                  placeholder={t('questionnaire.section5.q9.placeholder')}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20 transition-all text-sm md:text-base"
-                  dir={direction}
-                />
-              </motion.div>
-            )}
-          </div>
-        );
-
-      case 9: // Section 6: Embellishments - Q9 (Embellishments)
+      case 8: // Section 6: Embellishments - Q9 (Embellishments)
         const selectedEmbellishments = Array.isArray(answers.embellishments)
           ? answers.embellishments
           : (answers.embellishments ? [answers.embellishments] : []);
-        const activeEmbellishments = selectedEmbellishments.filter(e => e !== 'none' && e !== 'other');
+        const activeEmbellishments = selectedEmbellishments.filter(e => e !== 'other' && e !== 'belt');
 
         return (
           <div className="space-y-6">
@@ -542,16 +524,16 @@ export default function QuestionnaireWizard({
               questionText={t('questionnaire.section6.q9.question')}
               questionType="checkbox"
               options={[
-                { value: 'handEmbroidery', labelKey: 'questionnaire.section6.q9.options.handEmbroidery' },
-                { value: 'beads', labelKey: 'questionnaire.section6.q9.options.beads' },
                 { value: 'sequins', labelKey: 'questionnaire.section6.q9.options.sequins' },
-                { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
-                { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
                 { value: 'stones', labelKey: 'questionnaire.section6.q9.options.stones' },
                 { value: 'pearls', labelKey: 'questionnaire.section6.q9.options.pearls' },
+                { value: 'embroideryBeads', labelKey: 'questionnaire.section6.q9.options.embroideryBeads' },
+                { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
+                { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
+                { value: 'feathers', labelKey: 'questionnaire.section6.q9.options.feathers' },
+                { value: 'bow', labelKey: 'questionnaire.section6.q9.options.bow' },
+                { value: 'ruffles', labelKey: 'questionnaire.section6.q9.options.ruffles' },
                 { value: 'belt', labelKey: 'questionnaire.section6.q9.options.belt' },
-                { value: 'embroideredFabric', labelKey: 'questionnaire.section6.q9.options.embroideredFabric' },
-                { value: 'none', labelKey: 'questionnaire.section6.q9.options.none' },
                 { value: 'other', labelKey: 'questionnaire.section6.q9.options.other', hasCustomInput: true },
               ]}
               value={selectedEmbellishments}
@@ -596,6 +578,29 @@ export default function QuestionnaireWizard({
           </div>
         );
 
+      case 9: // Section 8: Design Style - NEW QUESTION
+        return (
+          <QuestionStep
+            sectionTitle={t('questionnaire.section8.title')}
+            questionText={t('questionnaire.section8.q14.question')}
+            questionType="radio"
+            options={[
+              { value: 'classic', labelKey: 'questionnaire.section8.q14.options.classic' },
+              { value: 'modern', labelKey: 'questionnaire.section8.q14.options.modern' },
+              { value: 'romantic', labelKey: 'questionnaire.section8.q14.options.romantic' },
+              { value: 'glamorous', labelKey: 'questionnaire.section8.q14.options.glamorous' },
+              { value: 'boho', labelKey: 'questionnaire.section8.q14.options.boho' },
+              { value: 'dramatic', labelKey: 'questionnaire.section8.q14.options.dramatic' },
+              { value: 'minimalist', labelKey: 'questionnaire.section8.q14.options.minimalist' },
+              { value: 'other', labelKey: 'questionnaire.section8.q14.options.other', hasCustomInput: true },
+            ]}
+            value={answers.designStyle || ''}
+            customValue={answers.designStyleCustom}
+            onChange={(value, customValue) => updateAnswer('designStyle', value as string, customValue)}
+            onAutoAdvance={handleNext}
+          />
+        );
+
       case 10: // Section 6: Body Size - Q10 (Body Size)
         return (
           <QuestionStep
@@ -635,15 +640,6 @@ export default function QuestionnaireWizard({
 
   return (
     <div className="luxury-card p-4 md:p-6 lg:p-8">
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-xl md:text-2xl font-headline font-bold text-primary mb-2">
-          {t('questionnaire.title')}
-        </h2>
-        <p className="text-sm md:text-base text-neutral-600">
-          {t('questionnaire.subtitle')}
-        </p>
-      </div>
-
       {/* Progress Bar */}
       <ProgressBar
         currentStep={currentStep}
@@ -680,7 +676,7 @@ export default function QuestionnaireWizard({
             disabled={loading}
             className="flex-1 text-sm md:text-base"
           >
-            {t('common.next')}
+            {hasAnswer ? t('common.next') : t('common.skip')}
           </Button>
         ) : (
           <Button
@@ -694,23 +690,6 @@ export default function QuestionnaireWizard({
           </Button>
         )}
       </div>
-
-      {/* Custom Fabric Modal */}
-      <CustomFabricModal
-        isOpen={customFabricModalOpen}
-        onClose={() => setCustomFabricModalOpen(false)}
-        customFabricImage={answers.customFabricImage}
-        fabricPlacement={answers.fabricPlacement}
-        fabricPlacementDetails={answers.fabricPlacementDetails}
-        onImageChange={(imageData) => updateAnswer('customFabricImage' as any, imageData)}
-        onPlacementChange={(placement) => updateAnswer('fabricPlacement' as any, placement)}
-        onPlacementDetailsChange={(details) => updateAnswer('fabricPlacementDetails' as any, details)}
-        onRemoveImage={() => {
-          updateAnswer('customFabricImage' as any, '');
-          updateAnswer('fabricPlacement' as any, '');
-          updateAnswer('fabricPlacementDetails' as any, '');
-        }}
-      />
 
       {/* Multi-Fabric Placement Modal */}
       <MultiFabricPlacementModal
@@ -746,7 +725,7 @@ export default function QuestionnaireWizard({
         onClose={() => setMultiEmbellishmentModalOpen(false)}
         selectedEmbellishments={
           (Array.isArray(answers.embellishments) ? answers.embellishments : (answers.embellishments ? [answers.embellishments] : []))
-            .filter(e => e !== 'none' && e !== 'other')
+            .filter(e => e !== 'other' && e !== 'belt')
         }
         embellishmentPlacements={answers.embellishmentPlacements || {}}
         onPlacementsChange={(placements) => {
@@ -766,6 +745,24 @@ export default function QuestionnaireWizard({
           setCurrentStep(currentStep + 1);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+      />
+
+      {/* Fabric Preview Modal */}
+      <FabricPreviewModal
+        isOpen={fabricPreviewModalOpen}
+        onClose={() => setFabricPreviewModalOpen(false)}
+        fabricType={selectedFabricForPreview}
+        fabricNameAr={selectedFabricForPreview ? t(`questionnaire.section5.q8.options.${selectedFabricForPreview}`) : ''}
+        fabricNameEn={selectedFabricForPreview ? t(`questionnaire.section5.q8.options.${selectedFabricForPreview}`) : ''}
+      />
+
+      {/* Skirt Preview Modal */}
+      <SkirtPreviewModal
+        isOpen={skirtPreviewModalOpen}
+        onClose={() => setSkirtPreviewModalOpen(false)}
+        skirtType={selectedSkirtForPreview}
+        skirtNameAr={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
+        skirtNameEn={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
       />
     </div>
   );

@@ -8,6 +8,8 @@ import type { QuestionnaireAnswers } from '@/types';
 import Button from './Button';
 import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
+import SkirtPreviewModal from './SkirtPreviewModal';
+import MultiEmbellishmentPlacementModal from './MultiEmbellishmentPlacementModal';
 
 interface SimplifiedQuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -25,14 +27,22 @@ export default function SimplifiedQuestionnaireWizard({
   onAnswersChange
 }: SimplifiedQuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  const totalSteps = 9; // 9 questions for own fabric workflow
+  // تم تحديث عدد الأسئلة إلى 10 بعد إضافة سؤال أسلوب التصميم
+  const totalSteps = 10; // 10 أسئلة لقسم تصميم باستخدام قماشك الخاص
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize with default value (1) to avoid hydration mismatch
+  // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Track if we've loaded the saved step to prevent unnecessary updates
+  // متابعة ما إذا تم تحميل الخطوة المحفوظة لمنع التحديثات غير الضرورية
   const [hasLoadedSavedStep, setHasLoadedSavedStep] = useState(false);
+
+  // حالة نافذة معاينة شكل التنورة
+  const [skirtPreviewModalOpen, setSkirtPreviewModalOpen] = useState(false);
+  const [selectedSkirtForPreview, setSelectedSkirtForPreview] = useState<string>('');
+
+  // حالة نافذة تحديد أماكن الزينة المتعددة
+  const [multiEmbellishmentModalOpen, setMultiEmbellishmentModalOpen] = useState(false);
 
   // Load saved step from localStorage after component mounts (client-side only)
   useEffect(() => {
@@ -108,8 +118,35 @@ export default function SimplifiedQuestionnaireWizard({
     }
   };
 
+  // دالة فتح نافذة معاينة شكل التنورة
+  const handleSkirtPreview = (skirtType: string) => {
+    setSelectedSkirtForPreview(skirtType);
+    setSkirtPreviewModalOpen(true);
+  };
+
   const handleNext = () => {
     if (currentStep < totalSteps) {
+      // التحقق من الزينة المتعددة في السؤال 7 (الإضافات والزينة)
+      if (currentStep === 7) {
+        const selectedEmbs = Array.isArray(answers.embellishments)
+          ? answers.embellishments
+          : (answers.embellishments ? [answers.embellishments] : []);
+        // استبعاد 'other' و 'belt' و 'none' - لا تحتاج لتحديد مكان
+        const activeEmbs = selectedEmbs.filter(e => e !== 'other' && e !== 'belt' && e !== 'none');
+
+        // إذا تم اختيار أي زينة وأماكنها غير محددة، عرض نافذة التحديد
+        if (activeEmbs.length >= 1) {
+          const allPlacementsFilled = activeEmbs.every(
+            (emb) => answers.embellishmentPlacements?.[emb] && answers.embellishmentPlacements[emb].trim() !== ''
+          );
+
+          if (!allPlacementsFilled) {
+            setMultiEmbellishmentModalOpen(true);
+            return; // لا تنتقل حتى يتم إكمال النافذة
+          }
+        }
+      }
+
       setCurrentStep(currentStep + 1);
       scrollToTop();
     }
@@ -179,26 +216,32 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 3: // Skirt Shape
+      case 3: // شكل التنورة - نسخة من السؤال 5 في قسم ابتكري تصميمك
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section2.title')}
             questionText={t('questionnaire.section2.q4.question')}
             questionType="radio"
             options={[
-              { value: 'wide', labelKey: 'questionnaire.section2.q4.options.wide' },
+              // خيارات محدثة من قسم ابتكري تصميمك الخاص (السؤال 5)
+              { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
               { value: 'tight', labelKey: 'questionnaire.section2.q4.options.tight' },
-              { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' },
               { value: 'pleated', labelKey: 'questionnaire.section2.q4.options.pleated' },
               { value: 'puffy', labelKey: 'questionnaire.section2.q4.options.puffy' },
-              { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
+              { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' },
               { value: 'mermaidTail', labelKey: 'questionnaire.section2.q4.options.mermaidTail' },
+              { value: 'overskirt', labelKey: 'questionnaire.section2.q4.options.overskirt' },
+              { value: 'peplum', labelKey: 'questionnaire.section2.q4.options.peplum' },
+              { value: 'sideDrape', labelKey: 'questionnaire.section2.q4.options.sideDrape' },
               { value: 'other', labelKey: 'questionnaire.section2.q4.options.other', hasCustomInput: true },
             ]}
             value={answers.skirtShape}
             customValue={answers.skirtShapeCustom}
             onChange={(value, customValue) => updateAnswer('skirtShape', value as string, customValue)}
             onAutoAdvance={handleNext}
+            enableSkirtPreview={true}
+            onSkirtPreview={handleSkirtPreview}
+            skirtPreviewOptions={['sideDrape', 'peplum', 'overskirt', 'mermaidTail', 'layered']}
           />
         );
 
@@ -262,30 +305,105 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 7: // Embellishments
+      case 7: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
+        // استخراج الإضافات المحددة
+        const selectedEmbellishments = Array.isArray(answers.embellishments)
+          ? answers.embellishments
+          : (answers.embellishments ? [answers.embellishments] : []);
+        const activeEmbellishments = selectedEmbellishments.filter(e => e !== 'other' && e !== 'belt' && e !== 'none');
+
+        return (
+          <div className="space-y-6">
+            {/* تلميح حول الاختيار المتعدد */}
+            <div className="text-sm text-accent-gold bg-accent-gold/10 px-4 py-2 rounded-lg">
+              {t('questionnaire.section6.q9.multiSelectHint')}
+            </div>
+
+            <QuestionStep
+              sectionTitle={t('questionnaire.section6.title')}
+              questionText={t('questionnaire.section6.q9.question')}
+              questionType="checkbox"
+              options={[
+                // خيارات محدثة من قسم ابتكري تصميمك الخاص (السؤال 8)
+                { value: 'sequins', labelKey: 'questionnaire.section6.q9.options.sequins' },
+                { value: 'stones', labelKey: 'questionnaire.section6.q9.options.stones' },
+                { value: 'pearls', labelKey: 'questionnaire.section6.q9.options.pearls' },
+                { value: 'embroideryBeads', labelKey: 'questionnaire.section6.q9.options.embroideryBeads' },
+                { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
+                { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
+                { value: 'feathers', labelKey: 'questionnaire.section6.q9.options.feathers' },
+                { value: 'bow', labelKey: 'questionnaire.section6.q9.options.bow' },
+                { value: 'ruffles', labelKey: 'questionnaire.section6.q9.options.ruffles' },
+                { value: 'belt', labelKey: 'questionnaire.section6.q9.options.belt' },
+                { value: 'other', labelKey: 'questionnaire.section6.q9.options.other', hasCustomInput: true },
+              ]}
+              value={selectedEmbellishments}
+              customValue={answers.embellishmentsCustom}
+              onChange={(value, customValue) => updateAnswer('embellishments', value, customValue)}
+              // لا يوجد انتقال تلقائي للاختيار المتعدد - المستخدم يضغط التالي
+            />
+
+            {/* عرض ملخص الأماكن إذا تم تحديد أي إضافة */}
+            {activeEmbellishments.length > 0 &&
+             Object.keys(answers.embellishmentPlacements || {}).length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-accent-gold/10 border-2 border-accent-gold rounded-lg space-y-2"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-primary text-sm">
+                    {direction === 'rtl' ? 'أماكن الإضافات:' : 'Embellishment Placements:'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMultiEmbellishmentModalOpen(true)}
+                    className="text-xs"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                </div>
+                {activeEmbellishments.map(emb => (
+                  answers.embellishmentPlacements?.[emb] && (
+                    <p key={emb} className="text-sm text-gray-600">
+                      <span className="font-medium text-accent-gold">
+                        {t(`questionnaire.section6.q9.options.${emb}`)}:
+                      </span>{' '}
+                      {answers.embellishmentPlacements[emb]}
+                    </p>
+                  )
+                ))}
+              </motion.div>
+            )}
+          </div>
+        );
+
+      case 8: // أسلوب التصميم - نسخة من السؤال 9 في قسم ابتكري تصميمك
         return (
           <QuestionStep
-            sectionTitle={t('questionnaire.section6.title')}
-            questionText={t('questionnaire.section6.q9.question')}
-            questionType="checkbox"
+            sectionTitle={t('questionnaire.section8.title')}
+            questionText={t('questionnaire.section8.q14.question')}
+            questionType="radio"
             options={[
-              { value: 'handEmbroidery', labelKey: 'questionnaire.section6.q9.options.handEmbroidery' },
-              { value: 'beads', labelKey: 'questionnaire.section6.q9.options.beads' },
-              { value: 'sequins', labelKey: 'questionnaire.section6.q9.options.sequins' },
-              { value: 'decorativeLace', labelKey: 'questionnaire.section6.q9.options.decorativeLace' },
-              { value: '3dFlowers', labelKey: 'questionnaire.section6.q9.options.3dFlowers' },
-              { value: 'stones', labelKey: 'questionnaire.section6.q9.options.stones' },
-              { value: 'pearls', labelKey: 'questionnaire.section6.q9.options.pearls' },
-              { value: 'none', labelKey: 'questionnaire.section6.q9.options.none' },
-              { value: 'other', labelKey: 'questionnaire.section6.q9.options.other', hasCustomInput: true },
+              // خيارات مطابقة للسؤال 9 من قسم ابتكري تصميمك الخاص
+              { value: 'classic', labelKey: 'questionnaire.section8.q14.options.classic' },
+              { value: 'modern', labelKey: 'questionnaire.section8.q14.options.modern' },
+              { value: 'romantic', labelKey: 'questionnaire.section8.q14.options.romantic' },
+              { value: 'glamorous', labelKey: 'questionnaire.section8.q14.options.glamorous' },
+              { value: 'boho', labelKey: 'questionnaire.section8.q14.options.boho' },
+              { value: 'dramatic', labelKey: 'questionnaire.section8.q14.options.dramatic' },
+              { value: 'minimalist', labelKey: 'questionnaire.section8.q14.options.minimalist' },
+              { value: 'other', labelKey: 'questionnaire.section8.q14.options.other', hasCustomInput: true },
             ]}
-            value={answers.embellishments}
-            customValue={answers.embellishmentsCustom}
-            onChange={(value, customValue) => updateAnswer('embellishments', value as string[], customValue)}
+            value={answers.designStyle || ''}
+            customValue={answers.designStyleCustom}
+            onChange={(value, customValue) => updateAnswer('designStyle', value as string, customValue)}
+            onAutoAdvance={handleNext}
           />
         );
 
-      case 8: // Body Size
+      case 9: // مقاس الجسم
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
@@ -307,15 +425,15 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 9: // Additional Details
+      case 10: // تفاصيل إضافية
         return (
           <QuestionStep
-            sectionTitle={t('questionnaire.section6.title')}
-            questionText={t('questionnaire.section6.q11.question')}
+            sectionTitle={t('questionnaire.section9.title')}
+            questionText={t('questionnaire.section9.q16.question')}
             questionType="textarea"
             value={answers.additionalDetails || ''}
             onChange={(value) => updateAnswer('additionalDetails', value as string)}
-            placeholder={t('questionnaire.section6.q11.placeholder')}
+            placeholder={t('questionnaire.section9.q16.placeholder')}
           />
         );
 
@@ -326,15 +444,6 @@ export default function SimplifiedQuestionnaireWizard({
 
   return (
     <div ref={containerRef} className="luxury-card p-4 md:p-6 lg:p-8">
-      <div className="mb-6 md:mb-8">
-        <h2 className="text-xl md:text-2xl font-headline font-bold text-primary mb-2">
-          {t('questionnaire.title')}
-        </h2>
-        <p className="text-sm md:text-base text-neutral-600">
-          {t('questionnaire.subtitle')}
-        </p>
-      </div>
-
       {/* Progress Bar */}
       <ProgressBar
         currentStep={currentStep}
@@ -385,6 +494,43 @@ export default function SimplifiedQuestionnaireWizard({
           </Button>
         )}
       </div>
+
+      {/* نافذة تحديد أماكن الزينة المتعددة */}
+      <MultiEmbellishmentPlacementModal
+        isOpen={multiEmbellishmentModalOpen}
+        onClose={() => setMultiEmbellishmentModalOpen(false)}
+        selectedEmbellishments={
+          (Array.isArray(answers.embellishments) ? answers.embellishments : (answers.embellishments ? [answers.embellishments] : []))
+            .filter(e => e !== 'other' && e !== 'belt' && e !== 'none')
+        }
+        embellishmentPlacements={answers.embellishmentPlacements || {}}
+        onPlacementsChange={(placements) => {
+          setAnswers(prev => ({
+            ...prev,
+            embellishmentPlacements: placements
+          }));
+          if (onAnswersChange) {
+            onAnswersChange({
+              ...answers,
+              embellishmentPlacements: placements
+            });
+          }
+        }}
+        onConfirm={() => {
+          // بعد تأكيد الأماكن، الانتقال للخطوة التالية
+          setCurrentStep(currentStep + 1);
+          scrollToTop();
+        }}
+      />
+
+      {/* نافذة معاينة شكل التنورة */}
+      <SkirtPreviewModal
+        isOpen={skirtPreviewModalOpen}
+        onClose={() => setSkirtPreviewModalOpen(false)}
+        skirtType={selectedSkirtForPreview}
+        skirtNameAr={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
+        skirtNameEn={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
+      />
     </div>
   );
 }

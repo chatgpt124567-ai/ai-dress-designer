@@ -287,6 +287,7 @@
     "variation": "Create Variation",
     "favorite": "Favorite",
     "next": "Next",
+    "skip": "Skip",
     "previous": "Previous",
     "submit": "Submit",
     "done": "Done",
@@ -345,13 +346,15 @@
       "q4": {
         "question": "How would you like the skirt to be?",
         "options": {
-          "wide": "Wide",
+          "straight": "Straight",
           "tight": "Tight",
           "layered": "Layered",
           "pleated": "Pleated",
           "puffy": "Puffy",
-          "straight": "Straight",
           "mermaidTail": "Mermaid Tail",
+          "overskirt": "With Overskirt",
+          "peplum": "With Peplum at Waist",
+          "sideDrape": "Side Drape / Cascade",
           "other": "Other"
         }
       }
@@ -438,16 +441,16 @@
         "question": "What embellishments would you like?",
         "multiSelectHint": "You can select more than one",
         "options": {
-          "handEmbroidery": "Hand embroidery",
-          "beads": "Beads",
           "sequins": "Sequins",
+          "stones": "Rhinestones (Crystals)",
+          "pearls": "Pearls",
+          "embroideryBeads": "Embroidery & Beads",
           "decorativeLace": "Decorative lace",
           "3dFlowers": "3D flowers",
-          "stones": "Rhinestones",
-          "pearls": "Pearls",
+          "feathers": "Feathers",
+          "bow": "Bow",
+          "ruffles": "Ruffles",
           "belt": "Belt",
-          "embroideredFabric": "Pre-embroidered fabric",
-          "none": "No embellishments",
           "other": "Other"
         },
         "placementLabel": "Where would you like to place the embellishments?",
@@ -486,6 +489,22 @@
       "q13": {
         "question": "Would you like additional colors?",
         "placeholder": "Please specify the color and its location"
+      }
+    },
+    "section8": {
+      "title": "Design Style",
+      "q14": {
+        "question": "What overall style do you prefer for the design? 🎨",
+        "options": {
+          "classic": "Classic",
+          "modern": "Modern",
+          "romantic": "Romantic",
+          "glamorous": "Glamorous",
+          "boho": "Boho",
+          "dramatic": "Dramatic",
+          "minimalist": "Minimalist",
+          "other": "Other"
+        }
       }
     },
     "section9": {
@@ -616,6 +635,17 @@
         "networkError": "Network error. Please try again"
       }
     }
+  },
+  "fabricPreview": {
+    "title": "Fabric Preview",
+    "imageAlt": "{{fabricName}} fabric sample",
+    "close": "Close"
+  },
+  "skirtPreview": {
+    "title": "Skirt Shape Preview",
+    "imageAlt": "{{skirtName}} sample",
+    "disclaimer": "These are approximate examples. The final design may vary depending on the fabric type and overall dress design",
+    "close": "Close"
   },
   "profile": {
     "title": "My Profile",

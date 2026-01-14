@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,11 @@ interface QuestionStepProps {
   placeholder?: string;
   onAutoAdvance?: () => void; // New prop for auto-advancing to next question
   disableAutoAdvanceFor?: string[]; // Values that should NOT trigger auto-advance
+  enableFabricPreview?: boolean; // Enable fabric preview icons
+  onFabricPreview?: (fabricType: string) => void; // Callback when fabric preview is clicked
+  enableSkirtPreview?: boolean; // Enable skirt preview icons
+  onSkirtPreview?: (skirtType: string) => void; // Callback when skirt preview is clicked
+  skirtPreviewOptions?: string[]; // List of skirt options that have preview images
 }
 
 export default function QuestionStep({
@@ -35,6 +41,11 @@ export default function QuestionStep({
   placeholder,
   onAutoAdvance,
   disableAutoAdvanceFor = [],
+  enableFabricPreview = false,
+  onFabricPreview,
+  enableSkirtPreview = false,
+  onSkirtPreview,
+  skirtPreviewOptions = [],
 }: QuestionStepProps) {
   const { t, direction } = useLanguage();
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -101,59 +112,116 @@ export default function QuestionStep({
         {/* Radio Options */}
         {questionType === 'radio' && (
           <div className="space-y-3">
-            {options.map((option) => (
-              <label
-                key={option.value}
-                className={cn(
-                  'flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-accent-gold',
-                  value === option.value
-                    ? 'border-accent-gold bg-accent-gold/5'
-                    : 'border-gray-200 bg-white'
-                )}
-              >
-                <input
-                  type="radio"
-                  name="question"
-                  value={option.value}
-                  checked={value === option.value}
-                  onChange={() => handleRadioChange(option.value)}
-                  className="w-5 h-5 text-accent-gold focus:ring-accent-gold"
-                  dir={direction}
-                />
-                <span className={cn('text-sm md:text-base text-primary', direction === 'rtl' ? 'mr-3' : 'ml-3')}>
-                  {t(option.labelKey)}
-                </span>
-              </label>
-            ))}
+            {options.map((option) => {
+              // Check if this option should have a skirt preview icon
+              const showSkirtPreviewIcon = enableSkirtPreview &&
+                skirtPreviewOptions.includes(option.value);
+
+              return (
+                <div key={option.value} className="relative">
+                  <label
+                    className={cn(
+                      'flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-accent-gold',
+                      value === option.value
+                        ? 'border-accent-gold bg-accent-gold/5'
+                        : 'border-gray-200 bg-white',
+                      showSkirtPreviewIcon && (direction === 'rtl' ? 'pl-12' : 'pr-12')
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="question"
+                      value={option.value}
+                      checked={value === option.value}
+                      onChange={() => handleRadioChange(option.value)}
+                      className="w-5 h-5 text-accent-gold focus:ring-accent-gold"
+                      dir={direction}
+                    />
+                    <span className={cn('text-sm md:text-base text-primary flex-1', direction === 'rtl' ? 'mr-3' : 'ml-3')}>
+                      {t(option.labelKey)}
+                    </span>
+                  </label>
+
+                  {/* Skirt Preview Icon */}
+                  {showSkirtPreviewIcon && onSkirtPreview && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSkirtPreview(option.value);
+                      }}
+                      className={cn(
+                        'absolute top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-accent-gold/10 transition-colors group',
+                        direction === 'rtl' ? 'left-2' : 'right-2'
+                      )}
+                      aria-label={`${t('skirtPreview.title')}: ${t(option.labelKey)}`}
+                      title={`${t('skirtPreview.title')}: ${t(option.labelKey)}`}
+                    >
+                      <Info className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
         {/* Checkbox Options */}
         {questionType === 'checkbox' && (
           <div className="space-y-3">
-            {options.map((option) => (
-              <label
-                key={option.value}
-                className={cn(
-                  'flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-accent-gold',
-                  Array.isArray(value) && value.includes(option.value)
-                    ? 'border-accent-gold bg-accent-gold/5'
-                    : 'border-gray-200 bg-white'
-                )}
-              >
-                <input
-                  type="checkbox"
-                  value={option.value}
-                  checked={Array.isArray(value) && value.includes(option.value)}
-                  onChange={() => handleCheckboxChange(option.value)}
-                  className="w-5 h-5 text-accent-gold focus:ring-accent-gold rounded"
-                  dir={direction}
-                />
-                <span className={cn('text-sm md:text-base text-primary', direction === 'rtl' ? 'mr-3' : 'ml-3')}>
-                  {t(option.labelKey)}
-                </span>
-              </label>
-            ))}
+            {options.map((option) => {
+              // Check if this option should have a fabric preview icon
+              const showPreviewIcon = enableFabricPreview &&
+                option.value !== 'other' &&
+                option.value !== 'customFabric';
+
+              return (
+                <div key={option.value} className="relative">
+                  <label
+                    className={cn(
+                      'flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-accent-gold',
+                      Array.isArray(value) && value.includes(option.value)
+                        ? 'border-accent-gold bg-accent-gold/5'
+                        : 'border-gray-200 bg-white',
+                      showPreviewIcon && (direction === 'rtl' ? 'pl-12' : 'pr-12')
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      checked={Array.isArray(value) && value.includes(option.value)}
+                      onChange={() => handleCheckboxChange(option.value)}
+                      className="w-5 h-5 text-accent-gold focus:ring-accent-gold rounded"
+                      dir={direction}
+                    />
+                    <span className={cn('text-sm md:text-base text-primary flex-1', direction === 'rtl' ? 'mr-3' : 'ml-3')}>
+                      {t(option.labelKey)}
+                    </span>
+                  </label>
+
+                  {/* Fabric Preview Icon */}
+                  {showPreviewIcon && onFabricPreview && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onFabricPreview(option.value);
+                      }}
+                      className={cn(
+                        'absolute top-1/2 -translate-y-1/2 p-2 rounded-full hover:bg-accent-gold/10 transition-colors group',
+                        direction === 'rtl' ? 'left-2' : 'right-2'
+                      )}
+                      aria-label={`${t('fabricPreview.title')}: ${t(option.labelKey)}`}
+                      title={`${t('fabricPreview.title')}: ${t(option.labelKey)}`}
+                    >
+                      <Info className="w-5 h-5 text-accent-gold group-hover:scale-110 transition-transform" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

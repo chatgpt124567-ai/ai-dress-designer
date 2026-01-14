@@ -287,6 +287,7 @@
     "variation": "نسخة مختلفة",
     "favorite": "المفضلة",
     "next": "التالي",
+    "skip": "تخطي",
     "previous": "السابق",
     "submit": "إرسال",
     "done": "تم",
@@ -345,13 +346,15 @@
       "q4": {
         "question": "كيف ترغبين بشكل التنورة؟",
         "options": {
-          "wide": "واسعة",
+          "straight": "مستقيمة",
           "tight": "ضيقة",
           "layered": "طبقات متعددة",
           "pleated": "مكسّرة",
           "puffy": "منفوشة",
-          "straight": "مستقيمة",
           "mermaidTail": "ذيل السمكة",
+          "overskirt": "مع تنورة إضافية",
+          "peplum": "ببيبلوم عند الخصر",
+          "sideDrape": "درابيه جانبي",
           "other": "وصف آخر"
         }
       }
@@ -438,16 +441,16 @@
         "question": "ما الإضافات التي ترغبين بها؟",
         "multiSelectHint": "يمكنك اختيار أكثر من إضافة",
         "options": {
-          "handEmbroidery": "تطريز يدوي",
-          "beads": "خرز",
           "sequins": "ترتر",
+          "stones": "أحجار لامعة (كريستال)",
+          "pearls": "لؤلؤ",
+          "embroideryBeads": "تطريز وخرز",
           "decorativeLace": "دانتيل زخرفي",
           "3dFlowers": "ورود ثلاثية الأبعاد",
-          "stones": "أحجار لامعة",
-          "pearls": "لؤلؤ",
+          "feathers": "ريش",
+          "bow": "فيونكة",
+          "ruffles": "كشاكش",
           "belt": "حزام",
-          "embroideredFabric": "قماش مطرز جاهز",
-          "none": "بدون إضافات",
           "other": "وصف آخر"
         },
         "placementLabel": "أين تريدين وضع الزينة؟",
@@ -486,6 +489,22 @@
       "q13": {
         "question": "هل ترغبين بوجود ألوان إضافية؟",
         "placeholder": "يرجى اختيار اللون ومكان تواجده"
+      }
+    },
+    "section8": {
+      "title": "الأسلوب العام",
+      "q14": {
+        "question": "ما الأسلوب العام الذي تفضلينه للتصميم؟ ",
+        "options": {
+          "classic": "كلاسيكي",
+          "modern": "عصري",
+          "romantic": "رومانسي",
+          "glamorous": "فخم/ملكي",
+          "boho": "طبيعي",
+          "dramatic": "جريء",
+          "minimalist": "بسيط/أنيق",
+          "other": "وصف آخر"
+        }
       }
     },
     "section9": {
@@ -616,6 +635,17 @@
         "networkError": "خطأ في الاتصال. يرجى المحاولة مرة أخرى"
       }
     }
+  },
+  "fabricPreview": {
+    "title": "معاينة القماش",
+    "imageAlt": "صورة قماش {{fabricName}}",
+    "close": "إغلاق"
+  },
+  "skirtPreview": {
+    "title": "معاينة شكل التنورة",
+    "imageAlt": "صورة {{skirtName}}",
+    "disclaimer": "هذه مجرد أمثلة تقريبية قد يختلف التصميم النهائي على حسب نوع القماش والتصميم العام للفستان",
+    "close": "إغلاق"
   },
   "profile": {
     "title": "الملف الشخصي",

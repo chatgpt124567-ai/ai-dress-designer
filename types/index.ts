@@ -107,10 +107,57 @@ export interface QuestionnaireAnswers {
   hasAdditionalColors?: string;
   additionalColors?: string;
 
-  // Section 9: Additional Notes (Q13 Design Style removed)
+  // Section 8: Design Style
+  designStyle?: string;
+  designStyleCustom?: string;
+
+  // Section 9: Additional Notes
   additionalNotes?: string; // Full questionnaire
   additionalDetails?: string; // Simplified questionnaire (own fabric workflow)
 }
+
+// ===== أنواع ميزة توليد 5 تصاميم دفعة واحدة =====
+
+// طلب توليد 5 برومبتات مختلفة
+export interface GenerateMultiplePromptsRequest {
+  primaryFabricImage: string; // صورة القماش الأساسي (Base64)
+  secondaryFabricImage?: string; // صورة القماش الثانوي (اختياري)
+  primaryFabricPlacement?: string; // موضع القماش الأساسي
+  secondaryFabricPlacement?: string; // موضع القماش الثانوي
+}
+
+// استجابة توليد 5 برومبتات
+export interface GenerateMultiplePromptsResponse {
+  prompts?: string[]; // مصفوفة البرومبتات الخمسة
+  error?: string;
+}
+
+// طلب توليد 5 صور دفعة واحدة
+export interface GenerateMultipleImagesRequest {
+  prompts: string[]; // مصفوفة البرومبتات (5 برومبتات)
+  primaryFabricImage: string; // صورة القماش الأساسي (Base64)
+  secondaryFabricImage?: string; // صورة القماش الثانوي (اختياري)
+  model?: GeminiImageModel; // نموذج الذكاء الاصطناعي
+}
+
+// نتيجة توليد صورة واحدة
+export interface SingleImageResult {
+  index: number; // رقم التصميم (0-4)
+  prompt: string; // البرومبت المستخدم
+  imageData?: string; // بيانات الصورة (Base64)
+  imageUrl?: string; // رابط الصورة
+  error?: string; // الخطأ إن وجد
+  success: boolean;
+}
+
+// استجابة توليد 5 صور
+export interface GenerateMultipleImagesResponse {
+  results?: SingleImageResult[]; // نتائج الصور الخمسة
+  successCount?: number; // عدد الصور الناجحة
+  error?: string;
+}
+
+// ===== نهاية أنواع ميزة 5 تصاميم =====
 
 // Design Type (for saved designs from database)
 export interface Design {

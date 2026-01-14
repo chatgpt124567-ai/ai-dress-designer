@@ -101,7 +101,7 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
   };
 
   const fabricTypes = [
-    'satin', 'silk', 'chiffon', 'tulle', 'lace', 
+    'satin', 'chiffon', 'silk', 'tulle', 'lace',
     'velvet', 'organza', 'crepe', 'taffeta', 'brocade', 'other'
   ];
 

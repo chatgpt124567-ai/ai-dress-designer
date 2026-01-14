@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shirt, Home } from 'lucide-react';
+import { Shirt, Home, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import type { EnhancePromptResponse, GenerateImageResponse, QuestionnaireAnswers, GeminiImageModel } from '@/types';
+import type { EnhancePromptResponse, GenerateImageResponse, QuestionnaireAnswers, GeminiImageModel, GenerateMultiplePromptsResponse } from '@/types';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import QuestionnaireWizard from '@/components/QuestionnaireWizard';
@@ -26,6 +26,8 @@ import OwnFabricUpload from '@/components/OwnFabricUpload';
 import FabricPlacementStep from '@/components/FabricPlacementStep';
 import SimplifiedQuestionnaireWizard from '@/components/SimplifiedQuestionnaireWizard';
 import RemoveModelWorkflow from '@/components/RemoveModelWorkflow';
+import MultiDesignChoice from '@/components/MultiDesignChoice';
+import MultiDesignResults from '@/components/MultiDesignResults';
 import { createClient } from '@/lib/supabase/client';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 import { processAndUploadDesignImage } from '@/lib/imageUtils';
@@ -69,12 +71,28 @@ export default function DesignPage() {
   const [pendingGenerationAnswers, setPendingGenerationAnswers] = useState<QuestionnaireAnswers | null>(null); // Track answers pending model selection
 
   // Own Fabric Workflow State
-  const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'placement' | 'questionnaire'>('upload');
+  const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'choice' | 'placement' | 'questionnaire' | 'multiDesign'>('upload');
   const [primaryFabricImage, setPrimaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricImage, setSecondaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
   const [primaryFabricPlacement, setPrimaryFabricPlacement] = useState<string | undefined>();
   const [secondaryFabricPlacement, setSecondaryFabricPlacement] = useState<string | undefined>();
+
+  // Multi Design State (5 designs at once)
+  interface MultiDesignResult {
+    id: string;
+    prompt: string;
+    imageUrl?: string;
+    error?: string;
+    status: 'pending' | 'generating' | 'complete' | 'error' | 'editing';
+  }
+  const [multiDesigns, setMultiDesigns] = useState<MultiDesignResult[]>([]);
+  const [multiDesignLoading, setMultiDesignLoading] = useState(false);
+  const [multiDesignModelModalOpen, setMultiDesignModelModalOpen] = useState(false);
+
+  // Multi-design edit state
+  const [editingMultiDesignId, setEditingMultiDesignId] = useState<string | null>(null);
+  const [editingMultiDesignModal, setEditingMultiDesignModal] = useState(false);
 
   // Image History State - to track previous versions after modifications
   interface ImageHistoryItem {
@@ -1027,12 +1045,345 @@ export default function DesignPage() {
     setSecondaryFabricImage(data.secondaryFabricImage);
     setSecondaryFabricType(data.secondaryFabricType);
 
-    // If there's a secondary fabric, go to placement step
-    // Otherwise, skip to questionnaire
+    // إذا كان هناك قماش ثانوي، اذهب للاختيار ثم placement
+    // وإلا اذهب مباشرة لخطوة الاختيار
     if (data.secondaryFabricImage || data.secondaryFabricType) {
+      // حالة القماش المزدوج - نحتاج للـ placement أولاً
       setOwnFabricStep('placement');
     } else {
-      setOwnFabricStep('questionnaire');
+      // قماش واحد فقط - اذهب لخطوة الاختيار بين 5 تصاميم أو الاستبيان
+      setOwnFabricStep('choice');
+    }
+  };
+
+  // Handle multi-design choice - user wants 5 designs
+  const handleChooseMultipleDesigns = () => {
+    setMultiDesignModelModalOpen(true);
+  };
+
+  // Handle traditional questionnaire choice
+  const handleChooseTraditional = () => {
+    setOwnFabricStep('questionnaire');
+  };
+
+  // Process multiple designs (5 at once)
+  const processMultipleDesigns = async (selectedModel: GeminiImageModel) => {
+    setMultiDesignModelModalOpen(false);
+    setOwnFabricStep('multiDesign');
+    setMultiDesignLoading(true);
+    setMultiDesigns([]);
+
+    try {
+      // Step 1: Generate 5 prompts from fabric analysis
+      console.log('🎨 جاري توليد 5 برومبتات...');
+      const promptsResponse = await fetch('/api/generate-multiple-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          primaryFabricImage,
+          secondaryFabricImage,
+          primaryFabricPlacement,
+          secondaryFabricPlacement,
+        }),
+      });
+
+      const promptsData: GenerateMultiplePromptsResponse = await promptsResponse.json();
+
+      if (!promptsResponse.ok || promptsData.error || !promptsData.prompts) {
+        throw new Error(promptsData.error || 'فشل في توليد البرومبتات');
+      }
+
+      console.log(`✅ تم توليد ${promptsData.prompts.length} برومبتات`);
+
+      // Initialize designs with pending status
+      const initialDesigns: MultiDesignResult[] = promptsData.prompts.map((prompt, index) => ({
+        id: `design-${index + 1}-${Date.now()}`,
+        prompt,
+        status: 'pending' as const,
+      }));
+      setMultiDesigns(initialDesigns);
+
+      // Step 2: Generate images in parallel
+      console.log('🖼️ جاري توليد 5 صور بالتوازي...');
+
+      const generateImage = async (designIndex: number, prompt: string) => {
+        // Update status to generating
+        setMultiDesigns(prev => prev.map((d, i) =>
+          i === designIndex ? { ...d, status: 'generating' as const } : d
+        ));
+
+        try {
+          const response = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt,
+              model: selectedModel,
+              primaryFabricImage,
+              secondaryFabricImage,
+            }),
+          });
+
+          const data: GenerateImageResponse = await response.json();
+
+          if (!response.ok || data.error) {
+            throw new Error(data.error || 'فشل في توليد الصورة');
+          }
+
+          const imageUrl = data.imageUrl || data.imageData;
+
+          // Update with success
+          setMultiDesigns(prev => prev.map((d, i) =>
+            i === designIndex ? { ...d, status: 'complete' as const, imageUrl } : d
+          ));
+
+          // الحفظ التلقائي للتصميم المكتمل
+          if (imageUrl && isAuthenticated) {
+            // إنشاء answers افتراضية للتصاميم المتعددة
+            const multiDesignAnswers: QuestionnaireAnswers = {
+              dressType: 'فستان',
+              dressLength: 'طويل',
+              skirtShape: 'مستقيم',
+              necklineType: 'دائري',
+              sleeveType: 'بدون أكمام',
+              fabricType: 'custom',
+              embellishments: [],
+              designStyle: 'عصري',
+            };
+
+            try {
+              await autoSaveDesign(
+                currentAnswers || multiDesignAnswers,
+                prompt,
+                imageUrl,
+                selectedModel
+              );
+              console.log(`✅ تم حفظ التصميم ${designIndex + 1} تلقائياً`);
+            } catch (saveError) {
+              console.error(`⚠️ فشل حفظ التصميم ${designIndex + 1}:`, saveError);
+              // لا نوقف العملية إذا فشل الحفظ
+            }
+          }
+
+          return { success: true, imageUrl };
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+
+          // Update with error
+          setMultiDesigns(prev => prev.map((d, i) =>
+            i === designIndex ? { ...d, status: 'error' as const, error: errorMsg } : d
+          ));
+
+          return { success: false, error: errorMsg };
+        }
+      };
+
+      // Execute all image generations in parallel
+      await Promise.all(
+        promptsData.prompts.map((prompt, index) => generateImage(index, prompt))
+      );
+
+      console.log('✅ تم الانتهاء من توليد جميع الصور');
+
+    } catch (error) {
+      console.error('❌ خطأ في توليد التصاميم المتعددة:', error);
+      showToast(
+        error instanceof Error ? error.message : 'حدث خطأ أثناء توليد التصاميم',
+        'error'
+      );
+    } finally {
+      setMultiDesignLoading(false);
+    }
+  };
+
+  // Retry a single design
+  const handleRetryDesign = async (designId: string) => {
+    const design = multiDesigns.find(d => d.id === designId);
+    if (!design) return;
+
+    const designIndex = multiDesigns.findIndex(d => d.id === designId);
+
+    // Update to generating
+    setMultiDesigns(prev => prev.map(d =>
+      d.id === designId ? { ...d, status: 'generating' as const, error: undefined } : d
+    ));
+
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: design.prompt,
+          model: selectedModel,
+          primaryFabricImage,
+          secondaryFabricImage,
+        }),
+      });
+
+      const data: GenerateImageResponse = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'فشل في توليد الصورة');
+      }
+
+      const imageUrl = data.imageUrl || data.imageData;
+
+      setMultiDesigns(prev => prev.map(d =>
+        d.id === designId ? { ...d, status: 'complete' as const, imageUrl } : d
+      ));
+
+      // الحفظ التلقائي للتصميم بعد إعادة المحاولة الناجحة
+      if (imageUrl && isAuthenticated) {
+        const multiDesignAnswers: QuestionnaireAnswers = {
+          dressType: 'فستان',
+          dressLength: 'طويل',
+          skirtShape: 'مستقيم',
+          necklineType: 'دائري',
+          sleeveType: 'بدون أكمام',
+          fabricType: 'custom',
+          embellishments: [],
+          designStyle: 'عصري',
+        };
+
+        try {
+          await autoSaveDesign(
+            currentAnswers || multiDesignAnswers,
+            design.prompt,
+            imageUrl,
+            selectedModel
+          );
+          console.log(`✅ تم حفظ التصميم ${designIndex + 1} تلقائياً بعد إعادة المحاولة`);
+        } catch (saveError) {
+          console.error(`⚠️ فشل حفظ التصميم ${designIndex + 1}:`, saveError);
+        }
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
+      setMultiDesigns(prev => prev.map(d =>
+        d.id === designId ? { ...d, status: 'error' as const, error: errorMsg } : d
+      ));
+    }
+  };
+
+  // Handle new design from multi-design results
+  const handleNewMultiDesign = () => {
+    setMultiDesigns([]);
+    setOwnFabricStep('upload');
+  };
+
+  // Handle edit request for multi-design
+  const handleMultiDesignEdit = (designId: string, imageUrl: string, prompt: string) => {
+    // حفظ معرف التصميم للتعديل
+    setEditingMultiDesignId(designId);
+    // فتح نافذة التعديل
+    setEditingMultiDesignModal(true);
+    // حفظ معلومات التصميم للتعديل (نستخدم editingHistoryDesign للتوافق مع handleEditDesign)
+    setEditingHistoryDesign({
+      id: designId,
+      image_url: imageUrl,
+      enhanced_prompt: prompt,
+      questionnaire_answers: currentAnswers
+    });
+  };
+
+  // Handle multi-design edit submission
+  const handleMultiDesignEditSubmit = async (editRequest: string, model: string) => {
+    if (!editingMultiDesignId) return;
+
+    // حفظ المعرف في متغير محلي قبل المسح لتجنب مشاكل closure
+    const targetDesignId = editingMultiDesignId;
+
+    // إغلاق نافذة التعديل ومسح المعرف مباشرة
+    setEditingMultiDesignModal(false);
+    setEditingMultiDesignId(null);
+    setEditingHistoryDesign(null);
+
+    const design = multiDesigns.find(d => d.id === targetDesignId);
+    if (!design || !design.imageUrl) {
+      showToast(direction === 'rtl' ? 'لم يتم العثور على التصميم' : 'Design not found', 'error');
+      return;
+    }
+
+    console.log('🔧 بدء تعديل التصميم:', { targetDesignId, originalImageUrl: design.imageUrl?.substring(0, 50) });
+
+    // تحديث حالة التصميم إلى "editing"
+    setMultiDesigns(prev => prev.map(d =>
+      d.id === targetDesignId ? { ...d, status: 'editing' as const } : d
+    ));
+
+    try {
+      // استخدام نفس منطق handleEditDesign
+      const response = await fetch('/api/edit-design', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          originalImageUrl: design.imageUrl,
+          editRequest: editRequest,
+          model: model as 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview',
+        } as EditDesignRequest),
+      });
+
+      const data: EditDesignResponse = await response.json();
+
+      console.log('📥 استجابة API التعديل:', {
+        ok: response.ok,
+        hasImageData: !!data.imageData,
+        imageDataLength: data.imageData?.length,
+        error: data.error
+      });
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'فشل في تعديل التصميم');
+      }
+
+      if (!data.imageData) {
+        throw new Error(direction === 'rtl' ? 'لم يتم إرجاع صورة معدلة' : 'No edited image returned');
+      }
+
+      // تحديث التصميم بالصورة الجديدة
+      console.log('✅ تحديث التصميم بالصورة الجديدة:', targetDesignId);
+      setMultiDesigns(prev => {
+        const updated = prev.map(d =>
+          d.id === targetDesignId ? {
+            ...d,
+            status: 'complete' as const,
+            imageUrl: data.imageData,
+            prompt: `${d.prompt}\n\n[تعديل]: ${editRequest}`
+          } : d
+        );
+        console.log('📊 حالة التصاميم بعد التحديث:', updated.map(d => ({ id: d.id, status: d.status, hasImage: !!d.imageUrl })));
+        return updated;
+      });
+
+      // حفظ التصميم المعدل تلقائياً
+      if (isAuthenticated && currentAnswers) {
+        await autoSaveDesign(
+          currentAnswers,
+          `${design.prompt}\n\n[تعديل]: ${editRequest}`,
+          data.imageData,
+          model as GeminiImageModel
+        );
+      }
+
+      showToast(
+        direction === 'rtl' ? 'تم تعديل التصميم بنجاح!' : 'Design edited successfully!',
+        'success'
+      );
+
+    } catch (error) {
+      console.error('❌ Error editing multi-design:', error);
+
+      // إعادة الحالة إلى complete مع الصورة الأصلية
+      setMultiDesigns(prev => prev.map(d =>
+        d.id === targetDesignId ? { ...d, status: 'complete' as const } : d
+      ));
+
+      showToast(
+        error instanceof Error ? error.message : (direction === 'rtl' ? 'فشل في تعديل التصميم' : 'Failed to edit design'),
+        'error'
+      );
     }
   };
 
@@ -1043,7 +1394,8 @@ export default function DesignPage() {
   }) => {
     setPrimaryFabricPlacement(data.primaryFabricPlacement);
     setSecondaryFabricPlacement(data.secondaryFabricPlacement);
-    setOwnFabricStep('questionnaire');
+    // بعد الـ placement اذهب لخطوة الاختيار
+    setOwnFabricStep('choice');
   };
 
   // Handle back from fabric placement
@@ -1147,6 +1499,16 @@ export default function DesignPage() {
                 />
               )}
 
+              {/* خطوة الاختيار بين 5 تصاميم أو الاستبيان التقليدي */}
+              {ownFabricStep === 'choice' && (
+                <MultiDesignChoice
+                  fabricPreview={primaryFabricImage}
+                  onChooseMultiple={handleChooseMultipleDesigns}
+                  onChooseTraditional={handleChooseTraditional}
+                  onBack={() => setOwnFabricStep('upload')}
+                />
+              )}
+
               {ownFabricStep === 'placement' && (
                 <FabricPlacementStep
                   hasSecondaryFabric={!!(secondaryFabricImage || secondaryFabricType)}
@@ -1154,6 +1516,18 @@ export default function DesignPage() {
                   initialSecondaryPlacement={secondaryFabricPlacement}
                   onComplete={handleFabricPlacementComplete}
                   onBack={handleBackFromFabricPlacement}
+                />
+              )}
+
+              {/* عرض نتائج 5 تصاميم */}
+              {ownFabricStep === 'multiDesign' && (
+                <MultiDesignResults
+                  designs={multiDesigns}
+                  loading={multiDesignLoading}
+                  onRetry={handleRetryDesign}
+                  onNewDesign={handleNewMultiDesign}
+                  onEdit={handleMultiDesignEdit}
+                  editingDesignId={editingMultiDesignId}
                 />
               )}
 
@@ -1367,26 +1741,8 @@ export default function DesignPage() {
           {step !== 'input' && (
             <div className="lg:col-span-5">
             <div className="luxury-card p-4 md:p-6">
-              {/* Tabs */}
-              <div className={cn("flex border-b border-gray-200 mb-4 md:mb-6", direction === 'rtl' ? 'space-x-reverse space-x-2 md:space-x-4' : 'space-x-2 md:space-x-4')}>
-                {(['results', 'history'] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`pb-2 md:pb-3 px-2 md:px-4 text-sm md:text-base font-medium capitalize transition-colors ${
-                      activeTab === tab
-                        ? 'border-b-2 border-accent-gold text-primary'
-                        : 'text-neutral-500 hover:text-primary'
-                    }`}
-                  >
-                    {t(`design.tabs.${tab}`)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Results Tab */}
-              {activeTab === 'results' && (
-                <div>
+              {/* Results Section - No tabs anymore */}
+              <div>
                   {/* Enhanced Prompt Display removed - showing image only */}
 
                   {!imageUrl && !loading && (
@@ -1461,8 +1817,8 @@ export default function DesignPage() {
                       </div>
 
                       <div className="space-y-3">
-                        {/* Action Buttons - Luxurious compact design */}
-                        <div className="grid grid-cols-3 gap-2 md:gap-3">
+                        {/* Action Buttons - Only 2 buttons now */}
+                        <div className="grid grid-cols-2 gap-2 md:gap-3">
                           {/* Button 1: New Design */}
                           <motion.button
                             whileHover={{ scale: 1.02, y: -2 }}
@@ -1489,19 +1845,6 @@ export default function DesignPage() {
                               {direction === 'rtl' ? 'طلب تعديل' : 'Modify'}
                             </span>
                           </motion.button>
-
-                          {/* Button 3: Save Image */}
-                          <motion.button
-                            whileHover={{ scale: 1.02, y: -2 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={handleDownload}
-                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-gradient-to-r from-accent-gold to-amber-500 border border-accent-gold shadow-sm hover:shadow-lg hover:shadow-accent-gold/30 transition-all duration-300 overflow-hidden"
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-accent-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                            <span className="relative text-xs md:text-sm font-medium text-white">
-                              {direction === 'rtl' ? 'حفظ' : 'Save'}
-                            </span>
-                          </motion.button>
                         </div>
                       </div>
 
@@ -1521,8 +1864,8 @@ export default function DesignPage() {
                                 className="bg-gray-50 rounded-xl border-2 border-gray-200 p-4"
                               >
                                 <div className="flex flex-col md:flex-row gap-4">
-                                  {/* Square Image */}
-                                  <div className="w-full md:w-40 flex-shrink-0">
+                                  {/* Square Image with Save Icon */}
+                                  <div className="w-full md:w-40 flex-shrink-0 relative group">
                                     <div className="aspect-square w-full">
                                       <img
                                         src={item.imageUrl}
@@ -1531,9 +1874,29 @@ export default function DesignPage() {
                                         onClick={() => setHistoryLightboxImage(item.imageUrl)}
                                       />
                                     </div>
+                                    {/* Small Save Icon - Bottom Right Corner */}
+                                    <motion.button
+                                      whileHover={{ scale: 1.1 }}
+                                      whileTap={{ scale: 0.9 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const link = document.createElement('a');
+                                        link.href = item.imageUrl;
+                                        link.download = `dress-design-v${imageHistory.length - index}-${Date.now()}.png`;
+                                        link.click();
+                                        showToast(t('design.toast.downloaded'), 'success');
+                                      }}
+                                      className={cn(
+                                        "absolute bottom-2 z-10 p-2 rounded-full bg-accent-gold/90 hover:bg-accent-gold shadow-lg hover:shadow-xl transition-all duration-300",
+                                        direction === 'rtl' ? 'left-2' : 'right-2'
+                                      )}
+                                      title={direction === 'rtl' ? 'حفظ' : 'Save'}
+                                    >
+                                      <Download className="w-3.5 h-3.5 text-white" />
+                                    </motion.button>
                                   </div>
 
-                                  {/* Info & Buttons */}
+                                  {/* Info & Button */}
                                   <div className="flex-1 flex flex-col justify-between">
                                     <div>
                                       <span className={cn(
@@ -1548,8 +1911,8 @@ export default function DesignPage() {
                                       </span>
                                     </div>
 
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-2 mt-3">
+                                    {/* Action Button - Only Request Edit */}
+                                    <div className="mt-3">
                                       <Button
                                         variant="outline"
                                         size="sm"
@@ -1562,23 +1925,9 @@ export default function DesignPage() {
                                           });
                                           setEditModalOpen(true);
                                         }}
-                                        className="flex-1 text-xs border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white"
+                                        className="w-full text-xs border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white"
                                       >
                                         {direction === 'rtl' ? 'طلب تعديل على هذا التصميم' : 'Request Edit on This Design'}
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                          const link = document.createElement('a');
-                                          link.href = item.imageUrl;
-                                          link.download = `dress-design-v${imageHistory.length - index}-${Date.now()}.png`;
-                                          link.click();
-                                          showToast(t('design.toast.downloaded'), 'success');
-                                        }}
-                                        className="flex-1 text-xs border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white"
-                                      >
-                                        {direction === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
                                       </Button>
                                     </div>
                                   </div>
@@ -1588,76 +1937,27 @@ export default function DesignPage() {
                           </div>
                         </div>
                       )}
+
+                      {/* View Previous Designs Button */}
+                      {isAuthenticated && (
+                        <div className="mt-6 md:mt-8">
+                          <Link href="/profile?tab=designs">
+                            <motion.button
+                              whileHover={{ scale: 1.02, y: -2 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="w-full group relative px-4 py-3 rounded-xl bg-white border border-gray-200 hover:border-accent-gold/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-r from-gray-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                              <span className="relative text-sm md:text-base font-medium text-gray-700 group-hover:text-primary transition-colors">
+                                {direction === 'rtl' ? 'عرض التصاميم السابقة' : 'View Previous Designs'}
+                              </span>
+                            </motion.button>
+                          </Link>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </div>
-              )}
-
-              {/* History Tab */}
-              {activeTab === 'history' && (
-                <div className="space-y-4 min-h-[500px] md:min-h-[600px]">
-                  {!isAuthenticated ? (
-                    <div className="text-center py-12">
-                      <p className="text-neutral-500 mb-4">
-                        {direction === 'rtl'
-                          ? 'يجب تسجيل الدخول لعرض تصاميمك السابقة'
-                          : 'Please login to view your previous designs'}
-                      </p>
-                      <Link href="/auth/login">
-                        <Button variant="primary">
-                          {direction === 'rtl' ? 'تسجيل الدخول' : 'Login'}
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : loadingHistory ? (
-                    <div className="text-center py-12">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-accent-gold"></div>
-                      <p className="text-neutral-500 mt-4">
-                        {direction === 'rtl' ? 'جارٍ التحميل...' : 'Loading...'}
-                      </p>
-                    </div>
-                  ) : previousDesigns.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="text-5xl mb-4">👗</div>
-                      <p className="text-neutral-500">
-                        {direction === 'rtl'
-                          ? 'لا توجد تصاميم سابقة بعد. ابدئي بإنشاء تصميمك الأول!'
-                          : 'No previous designs yet. Start creating your first design!'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {previousDesigns.map((design) => (
-                        <motion.div
-                          key={design.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                          onClick={() => {
-                            // Open modal instead of switching to results tab
-                            setSelectedHistoryDesign(design);
-                          }}
-                        >
-                          <div className="aspect-square relative bg-gray-100">
-                            {design.image_url ? (
-                              <img
-                                src={design.image_url}
-                                alt="Design"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Shirt className="w-16 h-16 text-gray-300" />
-                              </div>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
 
             </div>
           </div>
@@ -1813,6 +2113,18 @@ export default function DesignPage() {
           loading={editingDesign}
         />
 
+        {/* Edit Design Modal for Multi-Design mode */}
+        <EditDesignModal
+          isOpen={editingMultiDesignModal}
+          onClose={() => {
+            setEditingMultiDesignModal(false);
+            setEditingMultiDesignId(null);
+            setEditingHistoryDesign(null);
+          }}
+          onSubmit={handleMultiDesignEditSubmit}
+          loading={editingMultiDesignId !== null && multiDesigns.some(d => d.id === editingMultiDesignId && d.status === 'editing')}
+        />
+
         {/* Auth Modal - Outside scratch mode so it works for both modes */}
         <AuthModal
           isOpen={authModalOpen}
@@ -1833,6 +2145,24 @@ export default function DesignPage() {
           subtitle={direction === 'rtl'
             ? 'اختاري نموذج الذكاء الاصطناعي المناسب لتوليد تصميمك'
             : 'Choose the AI model to generate your design'
+          }
+        />
+
+        {/* Model Selection Modal - For multi-design generation (5 designs) */}
+        <ModelSelectionModal
+          isOpen={multiDesignModelModalOpen}
+          onClose={() => {
+            setMultiDesignModelModalOpen(false);
+          }}
+          onSelectModel={(model) => {
+            setSelectedModel(model);
+            processMultipleDesigns(model);
+          }}
+          loading={multiDesignLoading}
+          title={direction === 'rtl' ? 'اختيار نموذج الذكاء الاصطناعي' : 'Select AI Model'}
+          subtitle={direction === 'rtl'
+            ? 'سيتم استخدام هذا النموذج لتوليد 5 تصاميم مختلفة'
+            : 'This model will be used to generate 5 different designs'
           }
         />
 
