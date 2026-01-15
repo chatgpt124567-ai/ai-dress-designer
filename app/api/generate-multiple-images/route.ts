@@ -77,8 +77,8 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 
 **IMAGE LAYOUT:**
 • Create a SINGLE image showing TWO separate mannequins/dress forms side by side
-• LEFT SIDE: Front view of the dress (facing the viewer)
-• RIGHT SIDE: Back view of the SAME dress (showing the back to the viewer)
+• RIGHT SIDE: Front view of the dress (facing the viewer)
+• LEFT SIDE: Back view of the SAME dress (showing the back to the viewer)
 • Both mannequins should be identical in pose and height
 • Leave appropriate spacing between the two views
 
@@ -97,7 +97,8 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 
 **IMPORTANT - BOTH VIEWS MANDATORY:**
 • Do NOT show just the front view - BOTH front and back views are required
-• The back view must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind
+• The back view (LEFT) must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind
+• The front view (RIGHT) must clearly show: front neckline, bodice details, front embellishments
 
 ---
 
@@ -120,7 +121,7 @@ Background & Environment:
 
 Rendering Specifications:
 • 4K photorealistic output.
-• Centered view showing both mannequins (front and back views).
+• Centered view showing both mannequins (left: back view, right: front view).
 • Clean composition, sharp edges, editorial quality.
 • Strict consistency for mannequins, background, lighting, and logo.
 • Only the dress design changes based on the enhanced client description.
@@ -135,7 +136,7 @@ Hard Rules (must follow):
 • MUST show BOTH front and back views in the same image.
 
 Output:
-Two full-body mannequins side by side (left: front view, right: back view) wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above them.`;
+Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above them.`;
 
 
     // بناء محتوى الرسالة (نص + صور)
