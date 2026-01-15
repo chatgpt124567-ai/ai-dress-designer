@@ -10,6 +10,7 @@ import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
 import SkirtPreviewModal from './SkirtPreviewModal';
 import MultiEmbellishmentPlacementModal from './MultiEmbellishmentPlacementModal';
+import TransparentPartsPlacementModal from './TransparentPartsPlacementModal';
 
 interface SimplifiedQuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -43,6 +44,9 @@ export default function SimplifiedQuestionnaireWizard({
 
   // حالة نافذة تحديد أماكن الزينة المتعددة
   const [multiEmbellishmentModalOpen, setMultiEmbellishmentModalOpen] = useState(false);
+
+  // حالة نافذة تحديد أماكن الأجزاء الشفافة
+  const [transparentPartsModalOpen, setTransparentPartsModalOpen] = useState(false);
 
   // Load saved step from localStorage after component mounts (client-side only)
   useEffect(() => {
@@ -126,6 +130,18 @@ export default function SimplifiedQuestionnaireWizard({
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
+      // التحقق من الأجزاء الشفافة في السؤال 6
+      if (currentStep === 6) {
+        // إذا اختار المستخدم "نعم" للأجزاء الشفافة ولم يحدد المواقع بعد
+        if (answers.transparentParts === 'yes') {
+          const selectedLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
+          if (selectedLocations.length === 0) {
+            setTransparentPartsModalOpen(true);
+            return; // لا تنتقل حتى يتم تحديد المواقع
+          }
+        }
+      }
+
       // التحقق من الزينة المتعددة في السؤال 7 (الإضافات والزينة)
       if (currentStep === 7) {
         const selectedEmbs = Array.isArray(answers.embellishments)
@@ -293,16 +309,68 @@ export default function SimplifiedQuestionnaireWizard({
         );
 
       case 6: // Transparent Parts
+        const selectedTransparentLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
+        const transparentLocationLabels: { [key: string]: { ar: string; en: string } } = {
+          sleeves: { ar: 'الأكمام', en: 'Sleeves' },
+          back: { ar: 'الظهر', en: 'Back' },
+          chest: { ar: 'الصدر', en: 'Chest' },
+          sides: { ar: 'الجوانب', en: 'Sides' },
+          waist: { ar: 'الخصر', en: 'Waist' },
+          neckline: { ar: 'خط العنق', en: 'Neckline' },
+          skirt: { ar: 'التنورة', en: 'Skirt' },
+          hem: { ar: 'الذيل/الحاشية', en: 'Hem/Train' },
+        };
+
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section5.title')}
-            questionText={t('questionnaire.section5.q9.question')}
-            questionType="yesno"
-            value={answers.transparentParts || ''}
-            onChange={(value) => updateAnswer('transparentParts', value as string)}
-            placeholder={t('questionnaire.section5.q9.placeholder')}
-            onAutoAdvance={handleNext}
-          />
+          <div className="space-y-6">
+            <QuestionStep
+              sectionTitle={t('questionnaire.section5.title')}
+              questionText={t('questionnaire.section5.q9.question')}
+              questionType="yesno"
+              value={answers.transparentParts || ''}
+              onChange={(value) => {
+                updateAnswer('transparentParts', value as string);
+                // إذا اختار "لا"، امسح المواقع المحددة
+                if (value === 'no') {
+                  setAnswers(prev => ({ ...prev, transparentPartsLocation: '' }));
+                }
+              }}
+              placeholder={t('questionnaire.section5.q9.placeholder')}
+              onAutoAdvance={handleNext}
+            />
+
+            {/* عرض المواقع المختارة إذا كانت موجودة */}
+            {answers.transparentParts === 'yes' && selectedTransparentLocations.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-accent-gold/10 border-2 border-accent-gold rounded-lg"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-primary text-sm">
+                    {direction === 'rtl' ? 'أماكن الأجزاء الشفافة:' : 'Transparent Parts Locations:'}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTransparentPartsModalOpen(true)}
+                    className="text-xs"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTransparentLocations.map(loc => (
+                    <span key={loc} className="px-3 py-1 bg-accent-gold/20 text-primary rounded-full text-sm">
+                      {direction === 'rtl'
+                        ? transparentLocationLabels[loc]?.ar || loc
+                        : transparentLocationLabels[loc]?.en || loc}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </div>
         );
 
       case 7: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
@@ -530,6 +598,31 @@ export default function SimplifiedQuestionnaireWizard({
         skirtType={selectedSkirtForPreview}
         skirtNameAr={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
         skirtNameEn={selectedSkirtForPreview ? t(`questionnaire.section2.q4.options.${selectedSkirtForPreview}`) : ''}
+      />
+
+      {/* نافذة تحديد أماكن الأجزاء الشفافة */}
+      <TransparentPartsPlacementModal
+        isOpen={transparentPartsModalOpen}
+        onClose={() => setTransparentPartsModalOpen(false)}
+        selectedLocations={answers.transparentPartsLocation?.split(',').filter(Boolean) || []}
+        onLocationsChange={(locations) => {
+          const locationString = locations.join(',');
+          setAnswers(prev => ({
+            ...prev,
+            transparentPartsLocation: locationString
+          }));
+          if (onAnswersChange) {
+            onAnswersChange({
+              ...answers,
+              transparentPartsLocation: locationString
+            });
+          }
+        }}
+        onConfirm={() => {
+          // بعد تأكيد الأماكن، الانتقال للخطوة التالية
+          setCurrentStep(currentStep + 1);
+          scrollToTop();
+        }}
       />
     </div>
   );

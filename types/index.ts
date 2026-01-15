@@ -118,12 +118,21 @@ export interface QuestionnaireAnswers {
 
 // ===== أنواع ميزة توليد 5 تصاميم دفعة واحدة =====
 
+// إجابات استبيان 5 تصاميم المخصص
+export interface BatchDesignQuestionnaireAnswers {
+  dressTypes?: string[]; // أنواع الفساتين المختارة (حد أقصى 5)
+  dressLengths?: string[]; // أطوال الفساتين المختارة (حد أقصى 5)
+  embellishments?: string[]; // الزينة المختارة (حد أقصى 5)
+  designStyles?: string[]; // أساليب التصميم المختارة (حد أقصى 5)
+}
+
 // طلب توليد 5 برومبتات مختلفة
 export interface GenerateMultiplePromptsRequest {
   primaryFabricImage: string; // صورة القماش الأساسي (Base64)
   secondaryFabricImage?: string; // صورة القماش الثانوي (اختياري)
   primaryFabricPlacement?: string; // موضع القماش الأساسي
   secondaryFabricPlacement?: string; // موضع القماش الثانوي
+  batchQuestionnaireAnswers?: BatchDesignQuestionnaireAnswers; // إجابات الاستبيان المخصص
 }
 
 // استجابة توليد 5 برومبتات

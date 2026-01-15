@@ -16,29 +16,14 @@ async function generateSingleImage(
   model: string = 'google/gemini-2.5-flash-image'
 ): Promise<SingleImageResult> {
   try {
-    // بناء البرومبت النهائي مع تعليمات الخلفية ونسبة الأبعاد
+    // بناء البرومبت النهائي مع تعليمات الخلفية
     const imagePrompt = `${prompt}
 
-═══════════════════════════════════════════════════════════════════
-IMAGE SPECIFICATIONS - MANDATORY
-═══════════════════════════════════════════════════════════════════
-
-**ASPECT RATIO: 9:16 (Portrait orientation)**
-- Generate image in PORTRAIT format (taller than wide)
-- Aspect ratio must be exactly 9:16 (like a smartphone in portrait mode)
-- This ensures the full-length dress is displayed properly from neckline to hem
-
-**DRESS LENGTH REQUIREMENT:**
-- The dress MUST be at least KNEE-LENGTH or LONGER
-- Show the COMPLETE dress from top to bottom
-- NO mini dresses or short dresses allowed
-
-**BACKGROUND AND PRESENTATION:**
+BACKGROUND AND PRESENTATION:
 - Display the dress on an elegant neutral background
 - Professional fashion photography style
 - The fabric must match EXACTLY the attached image
-- Photorealistic rendering with natural fabric draping
-- Center the dress in the frame with appropriate margins`;
+- Photorealistic rendering with natural fabric draping`;
 
     // بناء محتوى الرسالة (نص + صور)
     let messageContent: any;

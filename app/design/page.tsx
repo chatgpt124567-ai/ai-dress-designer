@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Shirt, Home, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import type { EnhancePromptResponse, GenerateImageResponse, QuestionnaireAnswers, GeminiImageModel, GenerateMultiplePromptsResponse } from '@/types';
+import type { EnhancePromptResponse, GenerateImageResponse, QuestionnaireAnswers, GeminiImageModel, GenerateMultiplePromptsResponse, BatchDesignQuestionnaireAnswers } from '@/types';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import QuestionnaireWizard from '@/components/QuestionnaireWizard';
@@ -28,6 +28,7 @@ import SimplifiedQuestionnaireWizard from '@/components/SimplifiedQuestionnaireW
 import RemoveModelWorkflow from '@/components/RemoveModelWorkflow';
 import MultiDesignChoice from '@/components/MultiDesignChoice';
 import MultiDesignResults from '@/components/MultiDesignResults';
+import BatchDesignQuestionnaire from '@/components/BatchDesignQuestionnaire';
 import { createClient } from '@/lib/supabase/client';
 import type { EditDesignRequest, EditDesignResponse } from '@/app/api/edit-design/route';
 import { processAndUploadDesignImage } from '@/lib/imageUtils';
@@ -71,7 +72,8 @@ export default function DesignPage() {
   const [pendingGenerationAnswers, setPendingGenerationAnswers] = useState<QuestionnaireAnswers | null>(null); // Track answers pending model selection
 
   // Own Fabric Workflow State
-  const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'choice' | 'placement' | 'questionnaire' | 'multiDesign'>('upload');
+  const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'choice' | 'placement' | 'questionnaire' | 'batchQuestionnaire' | 'multiDesign'>('upload');
+  const [batchQuestionnaireAnswers, setBatchQuestionnaireAnswers] = useState<BatchDesignQuestionnaireAnswers | null>(null);
   const [primaryFabricImage, setPrimaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricImage, setSecondaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
@@ -1058,6 +1060,14 @@ export default function DesignPage() {
 
   // Handle multi-design choice - user wants 5 designs
   const handleChooseMultipleDesigns = () => {
+    // انتقل إلى استبيان الـ 5 تصاميم أولاً
+    setOwnFabricStep('batchQuestionnaire');
+  };
+
+  // Handle batch questionnaire completion
+  const handleBatchQuestionnaireComplete = (answers: BatchDesignQuestionnaireAnswers) => {
+    setBatchQuestionnaireAnswers(answers);
+    // بعد الانتهاء من الاستبيان، افتح modal اختيار الموديل
     setMultiDesignModelModalOpen(true);
   };
 
@@ -1074,8 +1084,11 @@ export default function DesignPage() {
     setMultiDesigns([]);
 
     try {
-      // Step 1: Generate 5 prompts from fabric analysis
+      // Step 1: Generate 5 prompts from fabric analysis + questionnaire answers
       console.log('🎨 جاري توليد 5 برومبتات...');
+      if (batchQuestionnaireAnswers) {
+        console.log('📋 مع إجابات الاستبيان:', batchQuestionnaireAnswers);
+      }
       const promptsResponse = await fetch('/api/generate-multiple-prompts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1084,6 +1097,7 @@ export default function DesignPage() {
           secondaryFabricImage,
           primaryFabricPlacement,
           secondaryFabricPlacement,
+          batchQuestionnaireAnswers,
         }),
       });
 
@@ -1506,6 +1520,14 @@ export default function DesignPage() {
                   onChooseMultiple={handleChooseMultipleDesigns}
                   onChooseTraditional={handleChooseTraditional}
                   onBack={() => setOwnFabricStep('upload')}
+                />
+              )}
+
+              {/* استبيان 5 تصاميم دفعة واحدة */}
+              {ownFabricStep === 'batchQuestionnaire' && (
+                <BatchDesignQuestionnaire
+                  onSubmit={handleBatchQuestionnaireComplete}
+                  onBack={() => setOwnFabricStep('choice')}
                 />
               )}
 

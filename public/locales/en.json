@@ -215,6 +215,14 @@
       "questionnaire": {
         "title": "Design Questionnaire",
         "subtitle": "Answer the following questions to design your dream dress with your own fabric"
+      },
+      "batchDesign": {
+        "title": "5 Designs at Once",
+        "subtitle": "Select up to 5 options per question, or skip to move on",
+        "selectionHint": "You can select up to {{max}} options ({{current}}/{{max}})",
+        "skip": "Skip",
+        "generateDesigns": "Generate Designs",
+        "generating": "Generating..."
       }
     },
     "external": {

@@ -67,11 +67,30 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   }
 
   // Support both full questionnaire (hasTransparentParts) and simplified (transparentParts)
+  // Map location codes to readable names
+  const transparentLocationNames: { [key: string]: string } = {
+    sleeves: 'sleeves',
+    back: 'back',
+    chest: 'chest/bodice',
+    sides: 'sides',
+    waist: 'waist',
+    neckline: 'neckline',
+    skirt: 'skirt',
+    hem: 'hem/train',
+  };
+
   if (answers.hasTransparentParts === 'yes' && answers.transparentPartsLocation) {
-    parts.push(`**Transparent Parts:** Yes, at ${answers.transparentPartsLocation}`);
-  } else if (answers.transparentParts) {
-    parts.push(`**Transparent Parts:** ${answers.transparentParts}`);
-  } else if (answers.hasTransparentParts === 'no') {
+    const locations = answers.transparentPartsLocation.split(',').filter(Boolean);
+    const readableLocations = locations.map(loc => transparentLocationNames[loc] || loc).join(', ');
+    parts.push(`**Transparent Parts:** Yes, at ${readableLocations}`);
+  } else if (answers.transparentParts === 'yes' && answers.transparentPartsLocation) {
+    // Simplified questionnaire with location selection
+    const locations = answers.transparentPartsLocation.split(',').filter(Boolean);
+    const readableLocations = locations.map(loc => transparentLocationNames[loc] || loc).join(', ');
+    parts.push(`**Transparent Parts:** Yes, at ${readableLocations}`);
+  } else if (answers.transparentParts === 'yes') {
+    parts.push(`**Transparent Parts:** Yes`);
+  } else if (answers.transparentParts === 'no' || answers.hasTransparentParts === 'no') {
     parts.push(`**Transparent Parts:** No`);
   }
 
