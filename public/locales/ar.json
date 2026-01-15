@@ -397,6 +397,25 @@
         }
       }
     },
+    "section4": {
+      "title": "تصميم الظهر",
+      "q7": {
+        "question": "ما شكل ظهر الفستان المطلوب؟",
+        "options": {
+          "covered": "مغطى بالكامل",
+          "openBack": "مفتوح",
+          "deepV": "فتحة V عميقة",
+          "keyhole": "فتحة صغيرة (Keyhole)",
+          "illusion": "شفاف مع تطريز (Illusion)",
+          "laceBack": "دانتيل",
+          "lowBack": "منخفض",
+          "crossBack": "متقاطع (Cross Back)",
+          "bowBack": "مع فيونكة",
+          "corsetBack": "ربطات كورسيه",
+          "other": "وصف آخر"
+        }
+      }
+    },
     "section5": {
       "title": "القماش والمواد",
       "q8": {

@@ -79,10 +79,16 @@ export interface QuestionnaireAnswers {
   // Section 3: Upper Body
   necklineType: string;
   necklineTypeCustom?: string;
+
+  // Section 4: Back Design
+  backStyle?: string;
+  backStyleCustom?: string;
+
+  // Section 5: Sleeves
   sleeveType: string;
   sleeveTypeCustom?: string;
 
-  // Section 5: Fabric & Materials (Section 4 removed: Back Design)
+  // Section 6: Fabric & Materials
   fabricType: string | string[]; // Can be single or multiple fabric types
   fabricTypeCustom?: string;
   fabricPlacements?: { [fabricType: string]: string }; // Description of where each fabric is used

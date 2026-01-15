@@ -28,8 +28,8 @@ export default function SimplifiedQuestionnaireWizard({
   onAnswersChange
 }: SimplifiedQuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  // تم تحديث عدد الأسئلة إلى 10 بعد إضافة سؤال أسلوب التصميم
-  const totalSteps = 10; // 10 أسئلة لقسم تصميم باستخدام قماشك الخاص
+  // تم تحديث عدد الأسئلة إلى 11 بعد إضافة سؤال تصميم الظهر
+  const totalSteps = 11; // 11 سؤال لقسم تصميم باستخدام قماشك الخاص
   const containerRef = useRef<HTMLDivElement>(null);
 
   // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
@@ -86,6 +86,7 @@ export default function SimplifiedQuestionnaireWizard({
       dressLength: '',
       skirtShape: '',
       necklineType: '',
+      backStyle: '', // Back design style
       sleeveType: '',
       fabricType: 'custom', // Required field - set to 'custom' for own fabric workflow
       hasTransparentParts: 'no',
@@ -130,8 +131,8 @@ export default function SimplifiedQuestionnaireWizard({
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
-      // التحقق من الأجزاء الشفافة في السؤال 6
-      if (currentStep === 6) {
+      // التحقق من الأجزاء الشفافة في السؤال 7 (بعد إضافة سؤال الظهر)
+      if (currentStep === 7) {
         // إذا اختار المستخدم "نعم" للأجزاء الشفافة ولم يحدد المواقع بعد
         if (answers.transparentParts === 'yes') {
           const selectedLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
@@ -142,8 +143,8 @@ export default function SimplifiedQuestionnaireWizard({
         }
       }
 
-      // التحقق من الزينة المتعددة في السؤال 7 (الإضافات والزينة)
-      if (currentStep === 7) {
+      // التحقق من الزينة المتعددة في السؤال 8 (الإضافات والزينة)
+      if (currentStep === 8) {
         const selectedEmbs = Array.isArray(answers.embellishments)
           ? answers.embellishments
           : (answers.embellishments ? [answers.embellishments] : []);
@@ -285,7 +286,33 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 5: // Sleeve Type
+      case 5: // Back Style
+        return (
+          <QuestionStep
+            sectionTitle={t('questionnaire.section4.title')}
+            questionText={t('questionnaire.section4.q7.question')}
+            questionType="radio"
+            options={[
+              { value: 'covered', labelKey: 'questionnaire.section4.q7.options.covered' },
+              { value: 'openBack', labelKey: 'questionnaire.section4.q7.options.openBack' },
+              { value: 'deepV', labelKey: 'questionnaire.section4.q7.options.deepV' },
+              { value: 'keyhole', labelKey: 'questionnaire.section4.q7.options.keyhole' },
+              { value: 'illusion', labelKey: 'questionnaire.section4.q7.options.illusion' },
+              { value: 'laceBack', labelKey: 'questionnaire.section4.q7.options.laceBack' },
+              { value: 'lowBack', labelKey: 'questionnaire.section4.q7.options.lowBack' },
+              { value: 'crossBack', labelKey: 'questionnaire.section4.q7.options.crossBack' },
+              { value: 'bowBack', labelKey: 'questionnaire.section4.q7.options.bowBack' },
+              { value: 'corsetBack', labelKey: 'questionnaire.section4.q7.options.corsetBack' },
+              { value: 'other', labelKey: 'questionnaire.section4.q7.options.other', hasCustomInput: true },
+            ]}
+            value={answers.backStyle || ''}
+            customValue={answers.backStyleCustom}
+            onChange={(value, customValue) => updateAnswer('backStyle', value as string, customValue)}
+            onAutoAdvance={handleNext}
+          />
+        );
+
+      case 6: // Sleeve Type
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -308,7 +335,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 6: // Transparent Parts
+      case 7: // Transparent Parts
         const selectedTransparentLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
         const transparentLocationLabels: { [key: string]: { ar: string; en: string } } = {
           sleeves: { ar: 'الأكمام', en: 'Sleeves' },
@@ -373,7 +400,7 @@ export default function SimplifiedQuestionnaireWizard({
           </div>
         );
 
-      case 7: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
+      case 8: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
         // استخراج الإضافات المحددة
         const selectedEmbellishments = Array.isArray(answers.embellishments)
           ? answers.embellishments
@@ -447,7 +474,7 @@ export default function SimplifiedQuestionnaireWizard({
           </div>
         );
 
-      case 8: // أسلوب التصميم - نسخة من السؤال 9 في قسم ابتكري تصميمك
+      case 9: // أسلوب التصميم
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section8.title')}
@@ -471,7 +498,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 9: // مقاس الجسم
+      case 10: // مقاس الجسم
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
@@ -493,7 +520,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 10: // تفاصيل إضافية
+      case 11: // تفاصيل إضافية
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}

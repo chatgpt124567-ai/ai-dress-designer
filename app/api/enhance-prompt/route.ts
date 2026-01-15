@@ -14,9 +14,16 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
 
   // Section 3: Upper Body
   parts.push(`**Neckline Type:** ${answers.necklineType}${answers.necklineTypeCustom ? ` (${answers.necklineTypeCustom})` : ''}`);
+
+  // Section 4: Back Design
+  if (answers.backStyle) {
+    parts.push(`**Back Style:** ${answers.backStyle}${answers.backStyleCustom ? ` (${answers.backStyleCustom})` : ''}`);
+  }
+
+  // Section 5: Sleeves
   parts.push(`**Sleeve Type:** ${answers.sleeveType}${answers.sleeveTypeCustom ? ` (${answers.sleeveTypeCustom})` : ''}`);
 
-  // Section 5: Fabric & Materials (Section 4 removed: Back Design)
+  // Section 6: Fabric & Materials
   const fabricTypes = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);
 
   if (fabricTypes.includes('customFabric') && answers.customFabricImage) {
@@ -244,13 +251,21 @@ Your output must be a single polished paragraph describing ONLY:
 • fabrics
 • materials
 • neckline
+• back design (style, closure, embellishments on back)
 • sleeves
 • skirt shape
-• embellishments
+• embellishments (both front and back placement)
 • transparency details
 • colors
 • movement & textile behavior
 • aesthetic style
+
+IMPORTANT - BACK DESIGN:
+You MUST describe the back of the dress in detail, including:
+- Back neckline style (open, covered, keyhole, illusion, deep V, etc.)
+- Closure type (hidden zipper, buttons, corset lacing, etc.)
+- Any embellishments or details on the back
+- How the back design complements the front
 
 Do NOT mention questionnaires, choices, user inputs, or any meta context.
 Write in the tone of an elite fashion designer describing a couture dress.

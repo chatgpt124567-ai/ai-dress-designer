@@ -91,35 +91,61 @@ Dress Rendering Requirements:
 • Accurate color reproduction.
 • The dress must fit the mannequin naturally and consistently.
 
-Mannequin (fixed for all generations):
+═══════════════════════════════════════════════════════════════════
+DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
+═══════════════════════════════════════════════════════════════════
+
+**IMAGE LAYOUT:**
+• Create a SINGLE image showing TWO separate mannequins/dress forms side by side
+• RIGHT SIDE: Front view of the dress (facing the viewer)
+• LEFT SIDE: Back view of the SAME dress (showing the back to the viewer)
+• Both mannequins should be identical in pose and height
+• Leave appropriate spacing between the two views
+
+**MANNEQUIN REQUIREMENTS (for BOTH views):**
 • Beige/cream fabric torso.
 • No arms.
-• Identical proportions and pose every time.
+• Identical proportions and pose for both mannequins.
 • Headless mannequin.
+• Full-length view showing the entire dress from neckline to hem.
+
+**VISUAL CONSISTENCY:**
+• SAME fabric pattern, color, and texture on both views
+• Identical embellishments placement (front and back as described)
+• Matching lighting and shadows on both mannequins
+• Same scale and proportion for both views
+
+**IMPORTANT - BOTH VIEWS MANDATORY:**
+• Do NOT show just the front view - BOTH front and back views are required
+• The back view (LEFT) must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind
+• The front view (RIGHT) must clearly show: front neckline, bodice details, front embellishments
+
+---
 
 Branding / Logo Requirements:
-• Logo on the wall behind the mannequin.
+• Logo on the wall behind the mannequins (centered between both).
 • Text: "yasmin-alsham"
 • Style: luxury, elegant, high-end.
 • Font: Playfair Display serif.
 • Color: metallic gold (#C9A85A).
-• Centered above the mannequin.
+• Centered above the mannequins.
 • Above the text: a small hand-drawn minimal couture dress sketch in soft black line-art.
 • Logo and sketch must remain identical across all images (size, placement, and styling).
 
 Background & Environment:
 • Minimal luxury fashion studio.
 • Soft beige/cream gradient background.
-• Clean soft shadows under the mannequin.
+• Clean soft shadows under both mannequins.
 • Consistent neutral lighting.
 • No extra props or clutter.
 
 Rendering Specifications:
 • 4K photorealistic output.
-• Centered full-body view of the mannequin.
+• Centered view showing both mannequins (left: back view, right: front view).
 • Clean composition, sharp edges, editorial quality.
-• Strict consistency for mannequin, background, lighting, and logo.
+• Strict consistency for mannequins, background, lighting, and logo.
 • Only the dress design changes based on the enhanced client description.
+• Photo size will be 9:16
 
 Hard Rules (must follow):
 • Do NOT crop the dress.
@@ -127,9 +153,10 @@ Hard Rules (must follow):
 • Do NOT distort proportions.
 • Dress must always be smooth, clean, symmetrical, and fully constructed.
 • The garment must look wearable and professionally tailored.
-  Photo siz will be 9:16
+• MUST show BOTH front and back views in the same image.
+
 Output:
-A full-body mannequin wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above it.`;
+Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above them.`;
 
     // نظام إعادة المحاولة
     let imageData: string | null = null;

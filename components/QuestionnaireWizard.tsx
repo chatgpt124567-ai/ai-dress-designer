@@ -29,7 +29,7 @@ export default function QuestionnaireWizard({
   onAnswersChange
 }: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  const totalSteps = 11; // 11 questions total (added design style question)
+  const totalSteps = 12; // 12 questions total (added back style question)
 
   // Initialize with default value (1) to avoid hydration mismatch
   // The saved step will be loaded in useEffect after hydration
@@ -81,6 +81,7 @@ export default function QuestionnaireWizard({
     dressLength: '',
     skirtShape: '',
     necklineType: '',
+    backStyle: '', // Back design style
     sleeveType: '',
     fabricType: [], // Changed to array for multi-select
     fabricPlacements: {}, // Placements for each selected fabric
@@ -277,15 +278,17 @@ export default function QuestionnaireWizard({
         return !!answers.skirtShape;
       case 6: // Neckline
         return !!answers.necklineType;
-      case 7: // Sleeves
+      case 7: // Back Style
+        return !!answers.backStyle;
+      case 8: // Sleeves
         return !!answers.sleeveType;
-      case 8: // Embellishments (multi-select)
+      case 9: // Embellishments (multi-select)
         return Array.isArray(answers.embellishments) && answers.embellishments.length > 0;
-      case 9: // Design Style
+      case 10: // Design Style
         return !!answers.designStyle;
-      case 10: // Body Size
+      case 11: // Body Size
         return !!answers.bodySize;
-      case 11: // Additional Notes (optional - always considered as having answer)
+      case 12: // Additional Notes (optional - always considered as having answer)
         return true;
       default:
         return false;
@@ -484,7 +487,33 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 7: // Section 3: Upper Body - Q6 (Sleeves - moved from case 6)
+      case 7: // Section 4: Back Design - Q7
+        return (
+          <QuestionStep
+            sectionTitle={t('questionnaire.section4.title')}
+            questionText={t('questionnaire.section4.q7.question')}
+            questionType="radio"
+            options={[
+              { value: 'covered', labelKey: 'questionnaire.section4.q7.options.covered' },
+              { value: 'openBack', labelKey: 'questionnaire.section4.q7.options.openBack' },
+              { value: 'deepV', labelKey: 'questionnaire.section4.q7.options.deepV' },
+              { value: 'keyhole', labelKey: 'questionnaire.section4.q7.options.keyhole' },
+              { value: 'illusion', labelKey: 'questionnaire.section4.q7.options.illusion' },
+              { value: 'laceBack', labelKey: 'questionnaire.section4.q7.options.laceBack' },
+              { value: 'lowBack', labelKey: 'questionnaire.section4.q7.options.lowBack' },
+              { value: 'crossBack', labelKey: 'questionnaire.section4.q7.options.crossBack' },
+              { value: 'bowBack', labelKey: 'questionnaire.section4.q7.options.bowBack' },
+              { value: 'corsetBack', labelKey: 'questionnaire.section4.q7.options.corsetBack' },
+              { value: 'other', labelKey: 'questionnaire.section4.q7.options.other', hasCustomInput: true },
+            ]}
+            value={answers.backStyle || ''}
+            customValue={answers.backStyleCustom}
+            onChange={(value, customValue) => updateAnswer('backStyle', value as string, customValue)}
+            onAutoAdvance={handleNext}
+          />
+        );
+
+      case 8: // Section 5: Sleeves - Q8
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -506,7 +535,7 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 8: // Section 6: Embellishments - Q9 (Embellishments)
+      case 9: // Section 6: Embellishments - Q9 (Embellishments)
         const selectedEmbellishments = Array.isArray(answers.embellishments)
           ? answers.embellishments
           : (answers.embellishments ? [answers.embellishments] : []);
@@ -578,7 +607,7 @@ export default function QuestionnaireWizard({
           </div>
         );
 
-      case 9: // Section 8: Design Style - NEW QUESTION
+      case 10: // Section 8: Design Style
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section8.title')}
@@ -601,7 +630,7 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 10: // Section 6: Body Size - Q10 (Body Size)
+      case 11: // Section 6: Body Size
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section6.title')}
@@ -621,7 +650,7 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 11: // Section 9: Additional Notes - Q16 (Additional Notes)
+      case 12: // Section 9: Additional Notes
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}
