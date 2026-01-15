@@ -286,6 +286,14 @@ Decide on decorative elements that enhance without overwhelming the fabric.
 **6. DESIGN STYLE**
 Choose an overall aesthetic direction that maximizes the fabric's potential.
 
+**7. BACK DESIGN (CRITICAL - Must complement the front)**
+Design the back of the dress to create a cohesive and stunning look:
+- Back neckline style (open back, keyhole, illusion, covered, etc.)
+- Closure type (hidden zipper, buttons, corset lacing, open back with straps)
+- Back embellishments and details (matching or contrasting with front)
+- Train/hem details as seen from behind
+- How the back design balances with the front (e.g., if front is modest, back can be dramatic)
+
 
 
 ═══════════════════════════════════════════════════════════════════
@@ -315,35 +323,47 @@ OUTPUT FORMAT - Follow this EXACT structure
 **Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
 **Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
 
-[Write 4-6 sentences of detailed couture-level description. Focus on: how the specific fabric will drape in this silhouette, the proportions, neckline details, sleeve construction, skirt shape and movement, embellishment placement if any, and overall aesthetic. Write as an elite fashion designer describing a masterpiece.]
+**Front Design:** [Write 3-4 sentences describing the front view in detail - neckline, bodice, skirt front, embellishments placement]
+
+**Back Design:** [Write 3-4 sentences describing the back view - back neckline style, closure type (zipper/buttons/lacing), back embellishments, how it complements the front]
+
+[Optional: 1-2 sentences on overall cohesion and movement]
 ===END_DESIGN_1===
 
 ===DESIGN_2===
 **Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
 **Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
 
-[Write 4-6 sentences - completely different design approach]
+**Front Design:** [3-4 sentences - completely different approach]
+
+**Back Design:** [3-4 sentences - complementary back design]
 ===END_DESIGN_2===
 
 ===DESIGN_3===
 **Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
 **Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
 
-[Write 4-6 sentences - another unique vision]
+**Front Design:** [3-4 sentences - another unique vision]
+
+**Back Design:** [3-4 sentences - matching back design]
 ===END_DESIGN_3===
 
 ===DESIGN_4===
 **Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
 **Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
 
-[Write 4-6 sentences - distinct design direction]
+**Front Design:** [3-4 sentences - distinct design direction]
+
+**Back Design:** [3-4 sentences - complementary back]
 ===END_DESIGN_4===
 
 ===DESIGN_5===
 **Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
 **Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
 
-[Write 4-6 sentences - final unique creation]
+**Front Design:** [3-4 sentences - final unique creation]
+
+**Back Design:** [3-4 sentences - stunning back design]
 ===END_DESIGN_5===
 
 ═══════════════════════════════════════════════════════════════════
@@ -351,12 +371,14 @@ IMPORTANT RULES
 ═══════════════════════════════════════════════════════════════════
 
 - ⚠️ YOU MUST OUTPUT ALL 5 DESIGNS - THIS IS MANDATORY
+- ⚠️ EACH DESIGN MUST INCLUDE BOTH **Front Design:** AND **Back Design:** SECTIONS
 - Describe the DRESS ONLY - no background, environment, mannequin, lighting, or camera
 - Write in the tone of an elite fashion designer describing couture masterpieces
 - Be precise and technical in fabric behavior and construction details
 - Each design must feel like a unique, complete vision optimized for THIS specific fabric
 - Do NOT repeat the same combinations between designs
 - The fabric's characteristics should influence every design decision
+- The back design must logically complement and enhance the front design
 - Use EXACTLY the format shown above with ===DESIGN_X=== and ===END_DESIGN_X=== markers
 
 ═══════════════════════════════════════════════════════════════════

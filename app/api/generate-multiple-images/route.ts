@@ -16,14 +16,43 @@ async function generateSingleImage(
   model: string = 'google/gemini-2.5-flash-image'
 ): Promise<SingleImageResult> {
   try {
-    // بناء البرومبت النهائي مع تعليمات الخلفية
+    // بناء البرومبت النهائي مع تعليمات عرض الأمام والخلف
     const imagePrompt = `${prompt}
 
-BACKGROUND AND PRESENTATION:
-- Display the dress on an elegant neutral background
-- Professional fashion photography style
-- The fabric must match EXACTLY the attached image
-- Photorealistic rendering with natural fabric draping`;
+═══════════════════════════════════════════════════════════════════
+DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
+═══════════════════════════════════════════════════════════════════
+
+**IMAGE LAYOUT:**
+- Create a SINGLE image showing TWO separate mannequins/dress forms side by side
+- LEFT SIDE: Front view of the dress (facing the viewer)
+- RIGHT SIDE: Back view of the SAME dress (showing the back to the viewer)
+- Both mannequins should be identical in pose and height
+- Leave appropriate spacing between the two views
+
+**MANNEQUIN REQUIREMENTS:**
+- Use elegant, headless dress forms or fashion mannequins
+- Both mannequins should be the same style and color (neutral white or beige)
+- Full-length view showing the entire dress from neckline to hem
+- Natural, symmetrical poses
+
+**VISUAL CONSISTENCY:**
+- SAME fabric pattern, color, and texture on both views
+- Identical embellishments placement (front and back as described)
+- Matching lighting and shadows on both mannequins
+- Same scale and proportion for both views
+
+**BACKGROUND AND PRESENTATION:**
+- Clean, elegant neutral gradient background (soft gray or beige)
+- Professional fashion catalog/lookbook photography style
+- Soft, even lighting that highlights fabric texture
+- The fabric must match EXACTLY the attached fabric image
+- Photorealistic rendering with natural fabric draping on both views
+
+**IMPORTANT:**
+- Do NOT show just the front view - BOTH views are mandatory
+- The back view must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind`;
+
 
     // بناء محتوى الرسالة (نص + صور)
     let messageContent: any;
