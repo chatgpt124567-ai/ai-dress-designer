@@ -74,8 +74,16 @@ STEP 2: DESIGN DECISIONS (Choose based on fabric analysis)
 
 For each design, you must decide on the following elements. Choose what works BEST with the analyzed fabric:
 
-**1. DRESS LENGTH**
-Choose the most suitable length based on fabric weight and drape.
+**1. DRESS LENGTH** ⚠️ CRITICAL REQUIREMENT
+The dress MUST be at least KNEE-LENGTH or LONGER. Choose from:
+- Knee-length (at the knee)
+- Below-knee / Midi (between knee and ankle)
+- Tea-length (mid-calf)
+- Ankle-length
+- Floor-length / Full-length
+- Chapel train / Cathedral train (for formal gowns)
+
+❌ ABSOLUTELY FORBIDDEN: Mini dresses, short dresses, above-knee lengths, micro dresses, or any dress that does not reach at least the knee.
 
 **2. SKIRT SHAPE**
 Choose a shape that complements the fabric's characteristics and movement.
@@ -161,6 +169,9 @@ IMPORTANT RULES
 - Each design must feel like a unique, complete vision optimized for THIS specific fabric
 - Do NOT repeat the same combinations between designs
 - The fabric's characteristics should influence every design decision
+- ⚠️ ALL DRESSES MUST BE KNEE-LENGTH OR LONGER - NO EXCEPTIONS
+- ⚠️ NEVER create mini dresses, short dresses, or above-knee designs
+- Each design description should explicitly mention the dress length
 
 Now analyze the attached fabric image and generate 5 unique designs:`;
 }
