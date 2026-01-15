@@ -1109,95 +1109,88 @@ export default function DesignPage() {
 
       console.log(`✅ تم توليد ${promptsData.prompts.length} برومبتات`);
 
-      // Initialize designs with pending status
+      // Initialize designs with generating status (all at once)
       const initialDesigns: MultiDesignResult[] = promptsData.prompts.map((prompt, index) => ({
         id: `design-${index + 1}-${Date.now()}`,
         prompt,
-        status: 'pending' as const,
+        status: 'generating' as const,
       }));
       setMultiDesigns(initialDesigns);
 
-      // Step 2: Generate images in parallel
-      console.log('🖼️ جاري توليد 5 صور بالتوازي...');
+      // Step 2: Generate all images using the dedicated multi-image API
+      console.log('🖼️ جاري توليد 5 صور مع عرض الأمام والخلف...');
 
-      const generateImage = async (designIndex: number, prompt: string) => {
-        // Update status to generating
-        setMultiDesigns(prev => prev.map((d, i) =>
-          i === designIndex ? { ...d, status: 'generating' as const } : d
-        ));
+      const imagesResponse = await fetch('/api/generate-multiple-images', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompts: promptsData.prompts,
+          primaryFabricImage,
+          secondaryFabricImage,
+          model: selectedModel,
+        }),
+      });
 
-        try {
-          const response = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              prompt,
-              model: selectedModel,
-              primaryFabricImage,
-              secondaryFabricImage,
-            }),
-          });
+      const imagesData = await imagesResponse.json();
 
-          const data: GenerateImageResponse = await response.json();
+      if (!imagesResponse.ok || imagesData.error) {
+        throw new Error(imagesData.error || 'فشل في توليد الصور');
+      }
 
-          if (!response.ok || data.error) {
-            throw new Error(data.error || 'فشل في توليد الصورة');
-          }
-
-          const imageUrl = data.imageUrl || data.imageData;
-
-          // Update with success
-          setMultiDesigns(prev => prev.map((d, i) =>
-            i === designIndex ? { ...d, status: 'complete' as const, imageUrl } : d
-          ));
-
-          // الحفظ التلقائي للتصميم المكتمل
-          if (imageUrl && isAuthenticated) {
-            // إنشاء answers افتراضية للتصاميم المتعددة
-            const multiDesignAnswers: QuestionnaireAnswers = {
-              dressType: 'فستان',
-              dressLength: 'طويل',
-              skirtShape: 'مستقيم',
-              necklineType: 'دائري',
-              sleeveType: 'بدون أكمام',
-              fabricType: 'custom',
-              embellishments: [],
-              designStyle: 'عصري',
+      // Update designs with results
+      if (imagesData.results && Array.isArray(imagesData.results)) {
+        const updatedDesigns: MultiDesignResult[] = initialDesigns.map((design, index) => {
+          const result = imagesData.results.find((r: { index: number }) => r.index === index);
+          if (result && result.success) {
+            return {
+              ...design,
+              status: 'complete' as const,
+              imageUrl: result.imageData || result.imageUrl,
             };
+          } else if (result) {
+            return {
+              ...design,
+              status: 'error' as const,
+              error: result.error || 'فشل في توليد الصورة',
+            };
+          }
+          return { ...design, status: 'error' as const, error: 'لم يتم استلام نتيجة' };
+        });
 
-            try {
-              await autoSaveDesign(
-                currentAnswers || multiDesignAnswers,
-                prompt,
-                imageUrl,
-                selectedModel
-              );
-              console.log(`✅ تم حفظ التصميم ${designIndex + 1} تلقائياً`);
-            } catch (saveError) {
-              console.error(`⚠️ فشل حفظ التصميم ${designIndex + 1}:`, saveError);
-              // لا نوقف العملية إذا فشل الحفظ
+        setMultiDesigns(updatedDesigns);
+
+        // الحفظ التلقائي للتصاميم الناجحة
+        if (isAuthenticated) {
+          const multiDesignAnswers: QuestionnaireAnswers = {
+            dressType: 'فستان',
+            dressLength: 'طويل',
+            skirtShape: 'مستقيم',
+            necklineType: 'دائري',
+            sleeveType: 'بدون أكمام',
+            fabricType: 'custom',
+            embellishments: [],
+            designStyle: 'عصري',
+          };
+
+          for (const design of updatedDesigns) {
+            if (design.status === 'complete' && design.imageUrl) {
+              try {
+                await autoSaveDesign(
+                  currentAnswers || multiDesignAnswers,
+                  design.prompt,
+                  design.imageUrl,
+                  selectedModel
+                );
+                console.log(`✅ تم حفظ التصميم ${design.id} تلقائياً`);
+              } catch (saveError) {
+                console.error(`⚠️ فشل حفظ التصميم ${design.id}:`, saveError);
+              }
             }
           }
-
-          return { success: true, imageUrl };
-        } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
-
-          // Update with error
-          setMultiDesigns(prev => prev.map((d, i) =>
-            i === designIndex ? { ...d, status: 'error' as const, error: errorMsg } : d
-          ));
-
-          return { success: false, error: errorMsg };
         }
-      };
+      }
 
-      // Execute all image generations in parallel
-      await Promise.all(
-        promptsData.prompts.map((prompt, index) => generateImage(index, prompt))
-      );
-
-      console.log('✅ تم الانتهاء من توليد جميع الصور');
+      console.log(`✅ تم الانتهاء من توليد ${imagesData.successCount || 0} صور بنجاح`);
 
     } catch (error) {
       console.error('❌ خطأ في توليد التصاميم المتعددة:', error);
@@ -1210,7 +1203,7 @@ export default function DesignPage() {
     }
   };
 
-  // Retry a single design
+  // Retry a single design (uses generate-multiple-images with single prompt)
   const handleRetryDesign = async (designId: string) => {
     const design = multiDesigns.find(d => d.id === designId);
     if (!design) return;
@@ -1223,24 +1216,31 @@ export default function DesignPage() {
     ));
 
     try {
-      const response = await fetch('/api/generate-image', {
+      // استخدام نفس API المخصص لتوليد صورة واحدة مع dual-view
+      const response = await fetch('/api/generate-multiple-images', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: design.prompt,
-          model: selectedModel,
+          prompts: [design.prompt], // برومبت واحد فقط
           primaryFabricImage,
           secondaryFabricImage,
+          model: selectedModel,
         }),
       });
 
-      const data: GenerateImageResponse = await response.json();
+      const data = await response.json();
 
       if (!response.ok || data.error) {
         throw new Error(data.error || 'فشل في توليد الصورة');
       }
 
-      const imageUrl = data.imageUrl || data.imageData;
+      // استخراج النتيجة
+      const result = data.results?.[0];
+      if (!result || !result.success) {
+        throw new Error(result?.error || 'فشل في توليد الصورة');
+      }
+
+      const imageUrl = result.imageData || result.imageUrl;
 
       setMultiDesigns(prev => prev.map(d =>
         d.id === designId ? { ...d, status: 'complete' as const, imageUrl } : d
