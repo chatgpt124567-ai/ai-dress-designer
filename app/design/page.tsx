@@ -229,38 +229,98 @@ export default function DesignPage() {
     }
   }, [designMode]);
 
+  // Save current step and image with quota protection
   useEffect(() => {
     if (step === 'complete' && imageUrl) {
-      localStorage.setItem(STORAGE_PAGE_STEP_KEY, step);
-      localStorage.setItem(STORAGE_IMAGE_URL_KEY, imageUrl);
-      if (enhancedPrompt) {
-        localStorage.setItem(STORAGE_ENHANCED_PROMPT_KEY, enhancedPrompt);
+      try {
+        localStorage.setItem(STORAGE_PAGE_STEP_KEY, step);
+        localStorage.setItem(STORAGE_IMAGE_URL_KEY, imageUrl);
+        if (enhancedPrompt) {
+          localStorage.setItem(STORAGE_ENHANCED_PROMPT_KEY, enhancedPrompt);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('⚠️ تم تجاوز حد التخزين المحلي عند حفظ الصورة الحالية');
+          // مسح السجل القديم لإفساح المجال
+          localStorage.removeItem(STORAGE_IMAGE_HISTORY_KEY);
+        }
       }
     }
   }, [step, imageUrl, enhancedPrompt]);
 
+  // Save image history to localStorage with quota protection
   useEffect(() => {
     if (imageHistory.length > 0) {
-      localStorage.setItem(STORAGE_IMAGE_HISTORY_KEY, JSON.stringify(imageHistory));
+      try {
+        // الاحتفاظ بآخر 3 صور فقط لتجنب امتلاء التخزين
+        const MAX_HISTORY_ITEMS = 3;
+        const limitedHistory = imageHistory.slice(-MAX_HISTORY_ITEMS);
+
+        // حساب حجم البيانات تقريبياً (بالـ KB)
+        const dataSize = JSON.stringify(limitedHistory).length / 1024;
+
+        // تحذير إذا كان الحجم كبيراً (أكثر من 2MB)
+        if (dataSize > 2048) {
+          console.warn(`⚠️ حجم سجل الصور كبير: ${(dataSize / 1024).toFixed(2)} MB`);
+        }
+
+        localStorage.setItem(STORAGE_IMAGE_HISTORY_KEY, JSON.stringify(limitedHistory));
+      } catch (error) {
+        // معالجة خطأ امتلاء التخزين
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('⚠️ تم تجاوز حد التخزين المحلي. جاري مسح السجل القديم...');
+
+          // حذف سجل الصور القديم
+          localStorage.removeItem(STORAGE_IMAGE_HISTORY_KEY);
+
+          // محاولة حفظ آخر صورة فقط
+          try {
+            const lastImage = imageHistory.slice(-1);
+            localStorage.setItem(STORAGE_IMAGE_HISTORY_KEY, JSON.stringify(lastImage));
+            console.log('✅ تم حفظ آخر صورة فقط بنجاح');
+          } catch {
+            // إذا فشل أيضاً، تنظيف كامل للتخزين المتعلق بالتصاميم
+            console.warn('⚠️ جاري تنظيف التخزين المحلي بالكامل...');
+            localStorage.removeItem(STORAGE_IMAGE_HISTORY_KEY);
+            localStorage.removeItem(STORAGE_OWNFABRIC_PRIMARY_IMAGE_KEY);
+            localStorage.removeItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY);
+            console.log('✅ تم تنظيف التخزين المحلي');
+          }
+        } else {
+          console.error('❌ خطأ في حفظ سجل الصور:', error);
+        }
+      }
     }
   }, [imageHistory]);
 
-  // Save ownFabric state to localStorage
+  // Save ownFabric state to localStorage with quota protection
   useEffect(() => {
     if (designMode === 'ownFabric') {
-      localStorage.setItem(STORAGE_OWNFABRIC_STEP_KEY, ownFabricStep);
-      if (primaryFabricImage) {
-        localStorage.setItem(STORAGE_OWNFABRIC_PRIMARY_IMAGE_KEY, primaryFabricImage);
-      }
-      if (secondaryFabricImage) {
-        localStorage.setItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY, secondaryFabricImage);
-      }
-      if (primaryFabricPlacement || secondaryFabricPlacement || secondaryFabricType) {
-        localStorage.setItem(STORAGE_OWNFABRIC_PLACEMENTS_KEY, JSON.stringify({
-          primary: primaryFabricPlacement,
-          secondary: secondaryFabricPlacement,
-          secondaryType: secondaryFabricType
-        }));
+      try {
+        localStorage.setItem(STORAGE_OWNFABRIC_STEP_KEY, ownFabricStep);
+        if (primaryFabricImage) {
+          localStorage.setItem(STORAGE_OWNFABRIC_PRIMARY_IMAGE_KEY, primaryFabricImage);
+        }
+        if (secondaryFabricImage) {
+          localStorage.setItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY, secondaryFabricImage);
+        }
+        if (primaryFabricPlacement || secondaryFabricPlacement || secondaryFabricType) {
+          localStorage.setItem(STORAGE_OWNFABRIC_PLACEMENTS_KEY, JSON.stringify({
+            primary: primaryFabricPlacement,
+            secondary: secondaryFabricPlacement,
+            secondaryType: secondaryFabricType
+          }));
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('⚠️ تم تجاوز حد التخزين المحلي عند حفظ بيانات القماش');
+          // مسح البيانات القديمة لإفساح المجال
+          localStorage.removeItem(STORAGE_IMAGE_HISTORY_KEY);
+          localStorage.removeItem(STORAGE_OWNFABRIC_PRIMARY_IMAGE_KEY);
+          localStorage.removeItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY);
+        } else {
+          console.error('❌ خطأ في حفظ بيانات القماش:', error);
+        }
       }
     }
   }, [designMode, ownFabricStep, primaryFabricImage, secondaryFabricImage, primaryFabricPlacement, secondaryFabricPlacement, secondaryFabricType]);
