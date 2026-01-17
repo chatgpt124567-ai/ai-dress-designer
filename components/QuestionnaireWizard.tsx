@@ -29,7 +29,7 @@ export default function QuestionnaireWizard({
   onAnswersChange
 }: QuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  const totalSteps = 12; // 12 questions total (added back style question)
+  const totalSteps = 11; // 11 questions total (removed body size question)
 
   // Initialize with default value (1) to avoid hydration mismatch
   // The saved step will be loaded in useEffect after hydration
@@ -145,8 +145,8 @@ export default function QuestionnaireWizard({
         }
       }
 
-      // Check if we're on embellishments step (step 8) and embellishments are selected
-      if (currentStep === 8) {
+      // Check if we're on embellishments step (step 9) and embellishments are selected
+      if (currentStep === 9) {
         const selectedEmbs = Array.isArray(answers.embellishments)
           ? answers.embellishments
           : (answers.embellishments ? [answers.embellishments] : []);
@@ -286,9 +286,7 @@ export default function QuestionnaireWizard({
         return Array.isArray(answers.embellishments) && answers.embellishments.length > 0;
       case 10: // Design Style
         return !!answers.designStyle;
-      case 11: // Body Size
-        return !!answers.bodySize;
-      case 12: // Additional Notes (optional - always considered as having answer)
+      case 11: // Additional Notes (optional - always considered as having answer)
         return true;
       default:
         return false;
@@ -361,7 +359,17 @@ export default function QuestionnaireWizard({
                 animate={{ opacity: 1, y: 0 }}
                 className="p-4 bg-green-50 border-2 border-green-500 rounded-lg space-y-2"
               >
-                <p className="font-medium text-green-700">{t('questionnaire.section5.q8.fabricPlacementModalTitle')}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-medium text-green-700">{t('questionnaire.section5.q8.fabricPlacementModalTitle')}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMultiFabricModalOpen(true)}
+                    className="text-xs"
+                  >
+                    {t('common.edit')}
+                  </Button>
+                </div>
                 {selectedFabrics.filter(f => f !== 'customFabric').map((fabric) => (
                   answers.fabricPlacements?.[fabric] && (
                     <p key={fabric} className="text-sm text-gray-600">
@@ -630,27 +638,7 @@ export default function QuestionnaireWizard({
           />
         );
 
-      case 11: // Section 6: Body Size
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section6.title')}
-            questionText={t('questionnaire.section6.q10.question')}
-            questionType="radio"
-            options={[
-              { value: 'xs', labelKey: 'questionnaire.section6.q10.options.xs' },
-              { value: 's', labelKey: 'questionnaire.section6.q10.options.s' },
-              { value: 'm', labelKey: 'questionnaire.section6.q10.options.m' },
-              { value: 'l', labelKey: 'questionnaire.section6.q10.options.l' },
-              { value: 'xl', labelKey: 'questionnaire.section6.q10.options.xl' },
-              { value: 'xxl', labelKey: 'questionnaire.section6.q10.options.xxl' },
-            ]}
-            value={answers.bodySize || ''}
-            onChange={(value) => updateAnswer('bodySize', value as string)}
-            onAutoAdvance={handleNext}
-          />
-        );
-
-      case 12: // Section 9: Additional Notes
+      case 11: // Section 9: Additional Notes
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}
@@ -771,6 +759,11 @@ export default function QuestionnaireWizard({
         }}
         onConfirm={() => {
           // After confirming placements, advance to next step
+          setCurrentStep(currentStep + 1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSkip={() => {
+          // Skip placement selection and advance to next step
           setCurrentStep(currentStep + 1);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}

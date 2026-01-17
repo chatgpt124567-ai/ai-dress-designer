@@ -28,8 +28,8 @@ export default function SimplifiedQuestionnaireWizard({
   onAnswersChange
 }: SimplifiedQuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
-  // تم تحديث عدد الأسئلة إلى 11 بعد إضافة سؤال تصميم الظهر
-  const totalSteps = 11; // 11 سؤال لقسم تصميم باستخدام قماشك الخاص
+  // تم تحديث عدد الأسئلة إلى 10 بعد حذف سؤال مقاس الجسم
+  const totalSteps = 10; // 10 سؤال لقسم تصميم باستخدام قماشك الخاص
   const containerRef = useRef<HTMLDivElement>(null);
 
   // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
@@ -498,29 +498,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 10: // مقاس الجسم
-        return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section6.title')}
-            questionText={t('questionnaire.section6.q10.question')}
-            questionType="radio"
-            options={[
-              { value: 'xs', labelKey: 'questionnaire.section6.q10.options.xs' },
-              { value: 's', labelKey: 'questionnaire.section6.q10.options.s' },
-              { value: 'm', labelKey: 'questionnaire.section6.q10.options.m' },
-              { value: 'l', labelKey: 'questionnaire.section6.q10.options.l' },
-              { value: 'xl', labelKey: 'questionnaire.section6.q10.options.xl' },
-              { value: 'xxl', labelKey: 'questionnaire.section6.q10.options.xxl' },
-              { value: 'other', labelKey: 'questionnaire.section6.q10.options.other', hasCustomInput: true },
-            ]}
-            value={answers.bodyType || ''}
-            customValue={answers.bodyTypeCustom}
-            onChange={(value, customValue) => updateAnswer('bodyType', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
-        );
-
-      case 11: // تفاصيل إضافية
+      case 10: // تفاصيل إضافية
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}
@@ -613,6 +591,11 @@ export default function SimplifiedQuestionnaireWizard({
         }}
         onConfirm={() => {
           // بعد تأكيد الأماكن، الانتقال للخطوة التالية
+          setCurrentStep(currentStep + 1);
+          scrollToTop();
+        }}
+        onSkip={() => {
+          // تخطي تحديد الأماكن والانتقال للخطوة التالية
           setCurrentStep(currentStep + 1);
           scrollToTop();
         }}

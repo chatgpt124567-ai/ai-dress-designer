@@ -476,14 +476,6 @@ export default function RemoveModelWorkflow({
                 {direction === 'rtl' ? 'تجربة صورة أخرى' : 'Try Another Image'}
               </Button>
             </div>
-
-            {/* Back Button */}
-            <div className="flex justify-center mt-4">
-              <Button variant="ghost" onClick={handleBack} className="gap-2">
-                {direction === 'rtl' ? <ArrowRight className="w-4 h-4" /> : <ArrowLeft className="w-4 h-4" />}
-                {direction === 'rtl' ? 'العودة للقائمة الرئيسية' : 'Back to Main Menu'}
-              </Button>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
