@@ -14,6 +14,7 @@ interface MultiEmbellishmentPlacementModalProps {
   embellishmentPlacements: { [embellishmentType: string]: string };
   onPlacementsChange: (placements: { [embellishmentType: string]: string }) => void;
   onConfirm: () => void;
+  onSkip?: () => void; // Optional skip handler
 }
 
 export default function MultiEmbellishmentPlacementModal({
@@ -23,6 +24,7 @@ export default function MultiEmbellishmentPlacementModal({
   embellishmentPlacements,
   onPlacementsChange,
   onConfirm,
+  onSkip,
 }: MultiEmbellishmentPlacementModalProps) {
   const { t, direction } = useLanguage();
   const [localPlacements, setLocalPlacements] = useState<{ [key: string]: string }>({});
@@ -45,6 +47,13 @@ export default function MultiEmbellishmentPlacementModal({
   const handleConfirm = () => {
     onConfirm();
     onClose();
+  };
+
+  const handleSkip = () => {
+    if (onSkip) {
+      onSkip();
+      onClose();
+    }
   };
 
   // Check if all placements are filled
@@ -114,24 +123,37 @@ export default function MultiEmbellishmentPlacementModal({
           </div>
 
           {/* Footer */}
-          <div className="flex gap-3 p-4 md:p-6 border-t border-gray-200 bg-gray-50">
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={onClose}
-              className="flex-1"
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="primary"
-              size="lg"
-              onClick={handleConfirm}
-              disabled={!allPlacementsFilled}
-              className="flex-1"
-            >
-              {t('common.confirm')}
-            </Button>
+          <div className="flex flex-col gap-3 p-4 md:p-6 border-t border-gray-200 bg-gray-50">
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                size="lg"
+                onClick={onClose}
+                className="flex-1"
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleConfirm}
+                disabled={!allPlacementsFilled}
+                className="flex-1"
+              >
+                {t('common.confirm')}
+              </Button>
+            </div>
+            {/* Skip button */}
+            {onSkip && (
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handleSkip}
+                className="w-full text-gray-500 hover:text-gray-700"
+              >
+                {direction === 'rtl' ? 'تخطي تحديد الأماكن' : 'Skip placement selection'}
+              </Button>
+            )}
           </div>
         </motion.div>
       </motion.div>
