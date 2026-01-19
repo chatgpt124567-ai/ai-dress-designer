@@ -12,30 +12,50 @@ function buildFabricInstruction(hasPrimaryFabric: boolean, hasSecondaryFabric: b
   if (hasPrimaryFabric && hasSecondaryFabric) {
     return `
 
-FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
-• The client has provided TWO custom fabric images (attached below)
-• PRIMARY FABRIC: You MUST use the EXACT fabric pattern, texture, colors, and design from the first attached fabric image
-• SECONDARY FABRIC: You MUST use the EXACT fabric pattern, texture, colors, and design from the second attached fabric image
-• Apply both fabrics EXACTLY as specified in the dress description above
-• Do NOT modify, recolor, or alter either fabric pattern in ANY way
-• Do NOT change the pattern repeat, print, texture, or any visual characteristic
-• Maintain photorealistic accuracy when applying both fabrics to the dress
-• The fabrics should drape naturally and realistically on the dress with proper folds and textile behavior
-• Ensure the fabric patterns align correctly and look professionally tailored
-• The custom fabrics are the PRIMARY design elements - treat them with utmost precision`;
+═══════════════════════════════════════════════════════════════════
+🎯 FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY)
+═══════════════════════════════════════════════════════════════════
+
+The client has provided TWO custom fabric images (attached below).
+
+**PRIMARY FABRIC (First Image):**
+• You MUST use the EXACT fabric pattern, texture, colors, and design from the FIRST attached image
+• Apply to the areas specified in the design description
+• PRESERVE the original pattern scale, color saturation, and texture depth
+
+**SECONDARY FABRIC (Second Image):**
+• You MUST use the EXACT fabric pattern, texture, colors, and design from the SECOND attached image
+• Apply to the accent areas specified in the design description
+
+**STRICT RULES - VIOLATION IS UNACCEPTABLE:**
+• Do NOT modify, recolor, lighten, darken, or alter the fabric in ANY way
+• Do NOT invent new patterns or change the existing pattern
+• Do NOT distort the fabric's original appearance
+• The fabric must look IDENTICAL to the reference image when applied to the dress
+• Drape the fabric naturally with realistic folds and textile behavior
+• Ensure pattern alignment at seams looks professionally tailored`;
   } else if (hasPrimaryFabric) {
     return `
 
-FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
-• A custom fabric image has been provided by the client (attached below)
-• You MUST use the EXACT fabric pattern, texture, colors, and design from the attached custom fabric image
-• Apply this fabric EXACTLY as specified in the dress description above
-• Do NOT modify, recolor, or alter the fabric pattern in ANY way
-• Do NOT change the pattern repeat, print, texture, or any visual characteristic
-• Maintain photorealistic accuracy when applying the fabric to the dress
-• The fabric should drape naturally and realistically on the dress with proper folds and textile behavior
-• Ensure the fabric pattern aligns correctly and looks professionally tailored
-• The custom fabric is the PRIMARY design element - treat it with utmost precision`;
+═══════════════════════════════════════════════════════════════════
+🎯 FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY)
+═══════════════════════════════════════════════════════════════════
+
+The client has provided a custom fabric image (attached below).
+
+**FABRIC APPLICATION RULES:**
+• You MUST use the EXACT fabric pattern, texture, colors, and design from the attached image
+• PRESERVE the original pattern scale, color saturation, and texture depth
+• Apply to the entire dress or as specified in the design description
+
+**STRICT RULES - VIOLATION IS UNACCEPTABLE:**
+• Do NOT modify, recolor, lighten, darken, or alter the fabric in ANY way
+• Do NOT invent new patterns or change the existing pattern
+• Do NOT distort the fabric's original appearance
+• The fabric must look IDENTICAL to the reference image when applied to the dress
+• Drape the fabric naturally with realistic folds and textile behavior
+• Ensure pattern alignment at seams looks professionally tailored
+• The custom fabric is the STAR of this design - treat it with utmost precision`;
   }
   return '';
 }
@@ -62,81 +82,159 @@ ${prompt}${customFabricInstruction}
 
 ---
 
-Dress Rendering Requirements:
-• The dress must appear as a complete, continuous, non-deformed garment with no missing parts.
-• Maintain clean, symmetrical construction with a realistic silhouette.
-• Ensure all fabric edges are intact, smooth, and not cut off.
-• Highly detailed couture fashion design.
-• Realistic textile rendering with natural folds, fabric texture, fabric flow, and proper reflections.
-• Accurate color reproduction.
-• The dress must fit the mannequin naturally and consistently.
-
 ═══════════════════════════════════════════════════════════════════
-DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
+🎯 CRITICAL: FRONT & BACK DESIGN CONSISTENCY
 ═══════════════════════════════════════════════════════════════════
 
-**IMAGE LAYOUT:**
-• Create a SINGLE image showing TWO separate mannequins/dress forms side by side
-• RIGHT SIDE: Front view of the dress (facing the viewer)
-• LEFT SIDE: Back view of the SAME dress (showing the back to the viewer)
-• Both mannequins should be identical in pose and height
-• Leave appropriate spacing between the two views
+**THIS IS THE SAME DRESS - FRONT AND BACK MUST MATCH PERFECTLY:**
 
-**MANNEQUIN REQUIREMENTS (for BOTH views):**
-• Beige/cream fabric torso.
-• No arms.
-• Identical proportions and pose for both mannequins.
-• Headless mannequin.
-• Full-length view showing the entire dress from neckline to hem.
+The front view and back view show THE EXACT SAME GARMENT from different angles. They MUST be perfectly consistent:
 
-**VISUAL CONSISTENCY:**
-• SAME fabric pattern, color, and texture on both views
-• Identical embellishments placement (front and back as described)
-• Matching lighting and shadows on both mannequins
-• Same scale and proportion for both views
+**SLEEVES CONSISTENCY (CRITICAL):**
+• If front has sleeves → back MUST show the same sleeves from behind
+• If front has cap sleeves → back shows cap sleeves covering the shoulders
+• If front has long sleeves → back shows long sleeves running down the arms
+• If front is sleeveless → back is also sleeveless
+• Sleeve length, style, and coverage MUST be identical on both views
 
-**IMPORTANT - BOTH VIEWS MANDATORY:**
-• Do NOT show just the front view - BOTH front and back views are required
-• The back view (LEFT) must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind
-• The front view (RIGHT) must clearly show: front neckline, bodice details, front embellishments
+**NECKLINE & BACK CONSISTENCY:**
+• Off-shoulder front → back shows the same off-shoulder line continuing around
+• High neckline front → back can have different coverage but same shoulder line
+• V-neck front → back should logically connect (covered back or matching V)
+• Strapless front → back is also strapless with matching coverage
 
----
+**STRUCTURAL ELEMENTS:**
+• Same silhouette shape (A-line, mermaid, column, etc.) visible from both angles
+• Same dress length visible on both mannequins
+• Same waistline position (empire, natural, dropped)
+• If front has a slit → back may or may not show it depending on placement
+• If front has layers/tiers → back shows the same layering
 
-Branding / Logo Requirements:
-• Logo on the wall behind the mannequins (centered between both).
-• Text: "yasmin-alsham"
-• Style: luxury, elegant, high-end.
-• Font: Playfair Display serif.
-• Color: metallic gold (#C9A85A).
-• Centered above the mannequins.
-• Above the text: a small hand-drawn minimal couture dress sketch in soft black line-art.
-• Logo and sketch must remain identical across all images (size, placement, and styling).
+**FABRIC & EMBELLISHMENTS:**
+• IDENTICAL fabric pattern, color, and texture on both views
+• If front has beading on bodice → back shows beading continuing logically
+• If front has lace overlay → back has the same lace overlay
+• Sequins, embroidery, appliqués must appear on both views consistently
+• The fabric drape and folds should look natural for the same garment
 
-Background & Environment:
-• Minimal luxury fashion studio.
-• Soft beige/cream gradient background.
-• Clean soft shadows under both mannequins.
-• Consistent neutral lighting.
-• No extra props or clutter.
+**THINK OF IT AS ONE DRESS:**
+Imagine physically walking around a single dress on a mannequin. What you see from the front and what you see from the back must be the same dress - not two different designs.
 
-Rendering Specifications:
-• 4K photorealistic output.
-• Centered view showing both mannequins (left: back view, right: front view).
-• Clean composition, sharp edges, editorial quality.
-• Strict consistency for mannequins, background, lighting, and logo.
-• Only the dress design changes based on the enhanced client description.
-• Photo size will be 9:16
+═══════════════════════════════════════════════════════════════════
+DUAL-VIEW PRESENTATION LAYOUT
+═══════════════════════════════════════════════════════════════════
 
-Hard Rules (must follow):
-• Do NOT crop the dress.
-• Do NOT generate torn, incomplete, fragmented, or unrealistic fabric.
-• Do NOT distort proportions.
-• Dress must always be smooth, clean, symmetrical, and fully constructed.
-• The garment must look wearable and professionally tailored.
-• MUST show BOTH front and back views in the same image.
+**IMAGE COMPOSITION:**
+• Create a SINGLE image showing TWO mannequins side by side
+• LEFT SIDE: Back view of the dress (back facing viewer)
+• RIGHT SIDE: Front view of the SAME dress (front facing viewer)
+• Both mannequins identical in pose, height, and proportions
+• Appropriate spacing between the two views
 
-Output:
-Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above them.`;
+**MANNEQUIN SPECIFICATIONS:**
+• Beige/cream fabric torso
+• No arms (armless dress form)
+• Headless mannequin
+• Identical proportions for both mannequins
+• Full-length view from neckline to hem
+
+═══════════════════════════════════════════════════════════════════
+DRESS RENDERING QUALITY
+═══════════════════════════════════════════════════════════════════
+
+• Complete, continuous, non-deformed garment with no missing parts
+• Clean, symmetrical construction with realistic silhouette
+• All fabric edges intact, smooth, and not cut off
+• Highly detailed couture fashion design
+• Realistic textile rendering with natural folds, texture, and flow
+• Accurate color reproduction
+• Dress fits naturally on the mannequin
+
+═══════════════════════════════════════════════════════════════════
+🎨 BACKGROUND - INFINITY SEAMLESS STUDIO (CRITICAL)
+═══════════════════════════════════════════════════════════════════
+
+**EXACT BACKGROUND SPECIFICATION - MUST FOLLOW PRECISELY:**
+
+The background MUST be a seamless "infinity cove" / "cyclorama" studio setup:
+
+**COLOR (STRICT):**
+• Single uniform color: warm beige/cream (#F5F0E8 to #EDE8E0 range)
+• Soft, even gradient from slightly lighter at top to slightly warmer at bottom
+• NO harsh color transitions or visible color layers
+• The SAME background color in EVERY generated image - no variation
+
+**INFINITY BACKGROUND EFFECT (CRITICAL):**
+• Floor and wall BLEND into ONE continuous curved surface
+• NO visible horizon line where floor meets wall
+• NO visible corner, edge, or seam between floor and wall
+• The surface curves smoothly from vertical (behind) to horizontal (below)
+• Mannequins appear to float on an infinite, seamless surface
+
+**ABSOLUTELY NO:**
+⛔ NO walls - no visible wall structures or panels
+⛔ NO floor textures - no ceramic tiles, wood, marble, concrete, or any pattern
+⛔ NO architectural elements - no corners, baseboards, moldings
+⛔ NO visible floor surface - the floor blends seamlessly with background
+⛔ NO multiple color layers or gradient bands
+⛔ NO colored floor different from the background
+⛔ NO shadows on walls (only soft shadows directly under mannequins)
+⛔ NO windows, doors, or any room features
+⛔ NO reflective surfaces or mirrors
+⛔ NO props, furniture, or decorative elements
+
+**LIGHTING:**
+• Soft, diffused, even studio lighting
+• Light comes from above and slightly in front
+• Soft, subtle shadows ONLY directly under the mannequin bases
+• Shadows should be light gray, not dark - barely visible
+• No harsh shadows, no directional lighting effects
+• Lighting identical across all generated images
+
+**VISUAL REFERENCE:**
+Think of a professional fashion photography infinity cove - a curved white/cream seamless backdrop that eliminates all edges and creates a pure, minimal, floating effect. The mannequins should appear suspended in a clean, infinite cream-colored space.
+
+═══════════════════════════════════════════════════════════════════
+BRANDING / LOGO
+═══════════════════════════════════════════════════════════════════
+
+**Logo Placement:**
+• Text: "yasmin-alsham" floating in the background (centered between mannequins)
+• Position: upper portion of image, above the mannequins
+• Style: luxury, elegant, high-end
+• Font: Playfair Display serif
+• Color: metallic gold (#C9A85A)
+• Above the text: small hand-drawn minimal couture dress sketch in soft black line-art
+• Logo appears to float on the seamless background - NOT on a wall
+
+═══════════════════════════════════════════════════════════════════
+⛔ HARD RULES - VIOLATION IS UNACCEPTABLE
+═══════════════════════════════════════════════════════════════════
+
+**BACKGROUND RULES:**
+• Background MUST be seamless infinity cove - NO exceptions
+• NO visible floor or wall structures
+• NO tiles, textures, or patterns on any surface
+• Background color MUST be consistent warm beige/cream
+
+**DRESS RULES:**
+• Do NOT crop the dress
+• Do NOT generate torn, incomplete, or fragmented fabric
+• Do NOT distort proportions
+• Do NOT create different dress designs for front vs back
+• MUST show BOTH front and back views in the same image
+• Front and back MUST be the same dress
+
+**OUTPUT SPECIFICATIONS:**
+• Photo size: 1:1 (square)
+• 4K photorealistic output quality
+• Professional fashion editorial quality
+
+═══════════════════════════════════════════════════════════════════
+OUTPUT
+═══════════════════════════════════════════════════════════════════
+
+Two full-body mannequins side by side (left: back view, right: front view) wearing THE SAME complete dress. Mannequins are centered on a seamless warm beige/cream infinity background with NO visible floor or walls. The "yasmin-alsham" gold logo floats above them. Clean, minimal, professional fashion studio aesthetic.`;
 
 
     // بناء محتوى الرسالة (نص + صور)

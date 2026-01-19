@@ -15,8 +15,13 @@ interface BatchDesignQuestionnaireProps {
   loading?: boolean;
 }
 
+// أنواع الأسئلة مع حقل النص المخصص
+type QuestionId = 'dressTypes' | 'dressLengths' | 'embellishments' | 'designStyles' | 'backStyles';
+type CustomFieldId = 'dressTypesCustom' | 'dressLengthsCustom' | 'embellishmentsCustom' | 'designStylesCustom' | 'backStylesCustom';
+
 interface QuestionConfig {
-  id: keyof BatchDesignQuestionnaireAnswers;
+  id: QuestionId;
+  customFieldId: CustomFieldId;
   sectionTitleKey: string;
   questionKey: string;
   options: Array<{
@@ -35,19 +40,30 @@ export default function BatchDesignQuestionnaire({
   const { t, direction } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const [answers, setAnswers] = useState<BatchDesignQuestionnaireAnswers>({
     dressTypes: [],
     dressLengths: [],
     embellishments: [],
     designStyles: [],
+    backStyles: [],
   });
 
-  // تكوين الأسئلة الأربعة
+  // حالة النص المخصص لكل سؤال
+  const [customTexts, setCustomTexts] = useState<Record<CustomFieldId, string>>({
+    dressTypesCustom: '',
+    dressLengthsCustom: '',
+    embellishmentsCustom: '',
+    designStylesCustom: '',
+    backStylesCustom: '',
+  });
+
+  // تكوين الأسئلة الخمسة مع خيار "وصف آخر"
   const questions: QuestionConfig[] = [
     {
       id: 'dressTypes',
+      customFieldId: 'dressTypesCustom',
       sectionTitleKey: 'questionnaire.section1.title',
       questionKey: 'questionnaire.section1.q1.question',
       options: [
@@ -55,10 +71,12 @@ export default function BatchDesignQuestionnaire({
         { value: 'wedding', labelKey: 'questionnaire.section1.q1.options.wedding' },
         { value: 'engagement', labelKey: 'questionnaire.section1.q1.options.engagement' },
         { value: 'party', labelKey: 'questionnaire.section1.q1.options.party' },
+        { value: 'other', labelKey: 'questionnaire.section1.q1.options.other' },
       ],
     },
     {
       id: 'dressLengths',
+      customFieldId: 'dressLengthsCustom',
       sectionTitleKey: 'questionnaire.section1.title',
       questionKey: 'questionnaire.section1.q2.question',
       options: [
@@ -66,10 +84,12 @@ export default function BatchDesignQuestionnaire({
         { value: 'long', labelKey: 'questionnaire.section1.q2.options.long' },
         { value: 'floor', labelKey: 'questionnaire.section1.q2.options.floor' },
         { value: 'train', labelKey: 'questionnaire.section1.q2.options.train' },
+        { value: 'other', labelKey: 'questionnaire.section1.q2.options.other' },
       ],
     },
     {
       id: 'embellishments',
+      customFieldId: 'embellishmentsCustom',
       sectionTitleKey: 'questionnaire.section6.title',
       questionKey: 'questionnaire.section6.q9.question',
       options: [
@@ -82,10 +102,12 @@ export default function BatchDesignQuestionnaire({
         { value: 'feathers', labelKey: 'questionnaire.section6.q9.options.feathers' },
         { value: 'bow', labelKey: 'questionnaire.section6.q9.options.bow' },
         { value: 'ruffles', labelKey: 'questionnaire.section6.q9.options.ruffles' },
+        { value: 'other', labelKey: 'questionnaire.section6.q9.options.other' },
       ],
     },
     {
       id: 'designStyles',
+      customFieldId: 'designStylesCustom',
       sectionTitleKey: 'questionnaire.section8.title',
       questionKey: 'questionnaire.section8.q14.question',
       options: [
@@ -96,6 +118,26 @@ export default function BatchDesignQuestionnaire({
         { value: 'boho', labelKey: 'questionnaire.section8.q14.options.boho' },
         { value: 'dramatic', labelKey: 'questionnaire.section8.q14.options.dramatic' },
         { value: 'minimalist', labelKey: 'questionnaire.section8.q14.options.minimalist' },
+        { value: 'other', labelKey: 'questionnaire.section8.q14.options.other' },
+      ],
+    },
+    {
+      id: 'backStyles',
+      customFieldId: 'backStylesCustom',
+      sectionTitleKey: 'questionnaire.section4.title',
+      questionKey: 'questionnaire.section4.q7.question',
+      options: [
+        { value: 'covered', labelKey: 'questionnaire.section4.q7.options.covered' },
+        { value: 'openBack', labelKey: 'questionnaire.section4.q7.options.openBack' },
+        { value: 'deepV', labelKey: 'questionnaire.section4.q7.options.deepV' },
+        { value: 'keyhole', labelKey: 'questionnaire.section4.q7.options.keyhole' },
+        { value: 'illusion', labelKey: 'questionnaire.section4.q7.options.illusion' },
+        { value: 'laceBack', labelKey: 'questionnaire.section4.q7.options.laceBack' },
+        { value: 'lowBack', labelKey: 'questionnaire.section4.q7.options.lowBack' },
+        { value: 'crossBack', labelKey: 'questionnaire.section4.q7.options.crossBack' },
+        { value: 'bowBack', labelKey: 'questionnaire.section4.q7.options.bowBack' },
+        { value: 'corsetBack', labelKey: 'questionnaire.section4.q7.options.corsetBack' },
+        { value: 'other', labelKey: 'questionnaire.section4.q7.options.other' },
       ],
     },
   ];
@@ -108,10 +150,25 @@ export default function BatchDesignQuestionnaire({
     }
   };
 
-  const handleOptionToggle = (questionId: keyof BatchDesignQuestionnaireAnswers, value: string) => {
+  // التنقل المباشر إلى سؤال محدد
+  const handleStepClick = (step: number) => {
+    if (step >= 1 && step <= totalSteps && step !== currentStep) {
+      setCurrentStep(step);
+      scrollToTop();
+    }
+  };
+
+  const handleOptionToggle = (questionId: QuestionId, value: string) => {
     setAnswers((prev) => {
       const currentValues = prev[questionId] || [];
       if (currentValues.includes(value)) {
+        // إذا كان الخيار "other" وتم إلغاء تحديده، امسح النص المخصص
+        if (value === 'other') {
+          const customFieldId = questions.find(q => q.id === questionId)?.customFieldId;
+          if (customFieldId) {
+            setCustomTexts(prev => ({ ...prev, [customFieldId]: '' }));
+          }
+        }
         return { ...prev, [questionId]: currentValues.filter((v) => v !== value) };
       }
       if (currentValues.length >= MAX_SELECTIONS) {
@@ -119,6 +176,11 @@ export default function BatchDesignQuestionnaire({
       }
       return { ...prev, [questionId]: [...currentValues, value] };
     });
+  };
+
+  // معالجة تغيير النص المخصص
+  const handleCustomTextChange = (customFieldId: CustomFieldId, value: string) => {
+    setCustomTexts(prev => ({ ...prev, [customFieldId]: value }));
   };
 
   const handleSkip = () => {
@@ -150,16 +212,31 @@ export default function BatchDesignQuestionnaire({
   };
 
   const handleSubmit = () => {
-    onSubmit(answers);
+    // دمج الإجابات مع النصوص المخصصة
+    const finalAnswers: BatchDesignQuestionnaireAnswers = {
+      ...answers,
+      dressTypesCustom: customTexts.dressTypesCustom || undefined,
+      dressLengthsCustom: customTexts.dressLengthsCustom || undefined,
+      embellishmentsCustom: customTexts.embellishmentsCustom || undefined,
+      designStylesCustom: customTexts.designStylesCustom || undefined,
+      backStylesCustom: customTexts.backStylesCustom || undefined,
+    };
+    onSubmit(finalAnswers);
   };
 
   const currentQuestion = questions[currentStep - 1];
   const currentAnswers = answers[currentQuestion.id] || [];
+  const isOtherSelected = currentAnswers.includes('other');
+  const currentCustomText = customTexts[currentQuestion.customFieldId] || '';
 
   return (
     <div ref={containerRef} className="luxury-card p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
-      {/* شريط التقدم */}
-      <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+      {/* شريط التقدم مع إمكانية التنقل المباشر */}
+      <ProgressBar
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        onStepClick={handleStepClick}
+      />
 
       {/* عنوان الميزة */}
       <div className="text-center mb-6">
@@ -241,6 +318,36 @@ export default function BatchDesignQuestionnaire({
               );
             })}
           </div>
+
+          {/* حقل النص المخصص عند اختيار "وصف آخر" */}
+          <AnimatePresence>
+            {isOtherSelected && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4"
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {direction === 'rtl' ? 'يرجى وصف ما تريدينه:' : 'Please describe what you want:'}
+                </label>
+                <textarea
+                  value={currentCustomText}
+                  onChange={(e) => handleCustomTextChange(currentQuestion.customFieldId, e.target.value)}
+                  placeholder={direction === 'rtl' ? 'اكتبي وصفك هنا...' : 'Type your description here...'}
+                  className={cn(
+                    'w-full p-3 border-2 rounded-xl resize-none transition-all',
+                    'border-accent-gold/50 focus:border-accent-gold focus:ring-2 focus:ring-accent-gold/20',
+                    'bg-white text-gray-800 placeholder-gray-400',
+                    'min-h-[100px]',
+                    direction === 'rtl' ? 'text-right' : 'text-left'
+                  )}
+                  dir={direction}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </AnimatePresence>
 

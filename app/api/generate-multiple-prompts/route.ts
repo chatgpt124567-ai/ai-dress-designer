@@ -150,9 +150,9 @@ const translationMaps = {
   } as Record<string, string>,
   dressLengths: {
     knee: 'knee-length',
-    long: 'long/floor-length',
+    long: 'long (ankle-length)',
     floor: 'floor-length',
-    train: 'with train',
+    train: 'floor-length with train',
   } as Record<string, string>,
   embellishments: {
     sequins: 'sequins',
@@ -164,69 +164,158 @@ const translationMaps = {
     feathers: 'feathers',
     bow: 'bow',
     ruffles: 'ruffles',
+    none: 'no embellishments (clean fabric-focused design)',
   } as Record<string, string>,
   designStyles: {
-    classic: 'classic',
-    modern: 'modern',
-    romantic: 'romantic',
-    glamorous: 'glamorous',
-    boho: 'boho',
-    dramatic: 'dramatic',
-    minimalist: 'minimalist',
+    classic: 'classic/timeless',
+    modern: 'modern/contemporary',
+    romantic: 'romantic/soft',
+    glamorous: 'glamorous/luxurious',
+    boho: 'boho/natural',
+    dramatic: 'dramatic/bold',
+    minimalist: 'minimalist/elegant',
+  } as Record<string, string>,
+  backStyles: {
+    covered: 'fully covered back',
+    openBack: 'open back',
+    deepV: 'deep V-back',
+    keyhole: 'keyhole back',
+    illusion: 'illusion back with sheer fabric',
+    laceBack: 'lace back',
+    lowBack: 'low back',
+    crossBack: 'cross-back straps',
+    bowBack: 'bow detail on back',
+    corsetBack: 'corset lace-up back',
   } as Record<string, string>,
 };
 
 /**
- * بناء تعليمات الاستبيان المخصص للإضافة على البرومبت
+ * بناء تعليمات ذكية للاستبيان - تتعامل مع كل سيناريو بشكل مختلف
  */
 function buildQuestionnaireInstructions(answers?: BatchDesignQuestionnaireAnswers): string {
-  if (!answers) return '';
+  const sections: string[] = [];
 
-  const instructions: string[] = [];
+  // ========== 1. نوع الفستان ==========
+  const dressTypes = answers?.dressTypes?.filter(t => t !== 'other') || [];
+  const dressTypesTranslated = dressTypes.map(t => translationMaps.dressTypes[t] || t);
+  if (answers?.dressTypesCustom) dressTypesTranslated.push(answers.dressTypesCustom);
 
-  // نوع الفستان
-  if (answers.dressTypes && answers.dressTypes.length > 0) {
-    const types = answers.dressTypes.map(t => translationMaps.dressTypes[t] || t).join(', ');
-    instructions.push(`- **DRESS TYPES to include across the 5 designs:** ${types}`);
+  if (dressTypesTranslated.length === 0) {
+    sections.push(`**DRESS TYPE:** ⚡ CLIENT SKIPPED - You must AUTO-GENERATE appropriate dress types for each design based on the fabric's characteristics. Choose from: evening gown, wedding dress, engagement dress, or party dress. Create variety across the 5 designs.`);
+  } else if (dressTypesTranslated.length === 1) {
+    sections.push(`**DRESS TYPE:** 🔒 FIXED - ALL 5 designs MUST be "${dressTypesTranslated[0]}". Do NOT vary this.`);
+  } else {
+    sections.push(`**DRESS TYPE:** 📊 DISTRIBUTE - Use ONLY these types across the 5 designs: [${dressTypesTranslated.join(', ')}]. Each type must appear in at least one design. Suggested: Design 1=${dressTypesTranslated[0] || 'auto'}, Design 2=${dressTypesTranslated[1] || 'auto'}, Design 3=${dressTypesTranslated[2] || dressTypesTranslated[0]}, Design 4=${dressTypesTranslated[3] || dressTypesTranslated[1] || dressTypesTranslated[0]}, Design 5=${dressTypesTranslated[4] || dressTypesTranslated[0]}.`);
   }
 
-  // طول الفستان
-  if (answers.dressLengths && answers.dressLengths.length > 0) {
-    const lengths = answers.dressLengths.map(l => translationMaps.dressLengths[l] || l).join(', ');
-    instructions.push(`- **DRESS LENGTHS to distribute across designs:** ${lengths}`);
+  // ========== 2. طول الفستان ==========
+  const dressLengths = answers?.dressLengths?.filter(l => l !== 'other') || [];
+  const dressLengthsTranslated = dressLengths.map(l => translationMaps.dressLengths[l] || l);
+  if (answers?.dressLengthsCustom) dressLengthsTranslated.push(answers.dressLengthsCustom);
+
+  if (dressLengthsTranslated.length === 0) {
+    sections.push(`**DRESS LENGTH:** ⚡ CLIENT SKIPPED - You must AUTO-GENERATE appropriate lengths based on the fabric weight and drape. For flowing fabrics prefer floor-length; for structured fabrics vary between knee and floor-length. Create variety across the 5 designs.`);
+  } else if (dressLengthsTranslated.length === 1) {
+    sections.push(`**DRESS LENGTH:** 🔒 FIXED - ALL 5 designs MUST be "${dressLengthsTranslated[0]}". Do NOT vary this.`);
+  } else {
+    const distribution = dressLengthsTranslated.map((l, i) => `Design ${i + 1}=${l}`);
+    // ملء التصاميم المتبقية بالتكرار
+    for (let i = dressLengthsTranslated.length; i < 5; i++) {
+      distribution.push(`Design ${i + 1}=${dressLengthsTranslated[i % dressLengthsTranslated.length]}`);
+    }
+    sections.push(`**DRESS LENGTH:** 📊 DISTRIBUTE - Use ONLY these lengths: [${dressLengthsTranslated.join(', ')}]. Assignment: ${distribution.join(', ')}.`);
   }
 
-  // الزينة
-  if (answers.embellishments && answers.embellishments.length > 0) {
-    const embs = answers.embellishments.map(e => translationMaps.embellishments[e] || e).join(', ');
-    instructions.push(`- **EMBELLISHMENTS to incorporate:** ${embs}`);
+  // ========== 3. الزينة ==========
+  const embellishments = answers?.embellishments?.filter(e => e !== 'other') || [];
+  const embellishmentsTranslated = embellishments.map(e => translationMaps.embellishments[e] || e);
+  if (answers?.embellishmentsCustom) embellishmentsTranslated.push(answers.embellishmentsCustom);
+
+  if (embellishmentsTranslated.length === 0) {
+    sections.push(`**EMBELLISHMENTS:** ⚡ CLIENT SKIPPED - You must AUTO-GENERATE embellishment choices that complement the fabric. Analyze the fabric's texture and pattern: if fabric is already ornate/patterned, use minimal embellishments; if fabric is plain, add creative embellishments. Create variety across designs.`);
+  } else if (embellishmentsTranslated.length === 1) {
+    sections.push(`**EMBELLISHMENTS:** 🔒 FIXED - ALL 5 designs MUST feature "${embellishmentsTranslated[0]}" as the primary embellishment. You may combine it with subtle complementary details.`);
+  } else {
+    sections.push(`**EMBELLISHMENTS:** 🎨 MIX & MATCH - Available embellishments: [${embellishmentsTranslated.join(', ')}]. You CAN combine multiple embellishments in ONE design. Each embellishment should appear in at least one design. Be creative: some designs can have 2-3 combined, others can feature just one prominently.`);
   }
 
-  // أسلوب التصميم
-  if (answers.designStyles && answers.designStyles.length > 0) {
-    const styles = answers.designStyles.map(s => translationMaps.designStyles[s] || s).join(', ');
-    instructions.push(`- **DESIGN STYLES to express:** ${styles}`);
+  // ========== 4. أسلوب التصميم ==========
+  const designStyles = answers?.designStyles?.filter(s => s !== 'other') || [];
+  const designStylesTranslated = designStyles.map(s => translationMaps.designStyles[s] || s);
+  if (answers?.designStylesCustom) designStylesTranslated.push(answers.designStylesCustom);
+
+  if (designStylesTranslated.length === 0) {
+    sections.push(`**DESIGN STYLE:** ⚡ CLIENT SKIPPED - You must AUTO-GENERATE design styles based on the fabric. Luxurious fabrics = glamorous; soft flowing fabrics = romantic; structured fabrics = modern or classic. Create variety across the 5 designs.`);
+  } else if (designStylesTranslated.length === 1) {
+    sections.push(`**DESIGN STYLE:** 🔒 FIXED - ALL 5 designs MUST follow the "${designStylesTranslated[0]}" aesthetic. Do NOT vary the overall style.`);
+  } else {
+    const distribution = designStylesTranslated.map((s, i) => `Design ${i + 1}=${s}`);
+    for (let i = designStylesTranslated.length; i < 5; i++) {
+      distribution.push(`Design ${i + 1}=${designStylesTranslated[i % designStylesTranslated.length]}`);
+    }
+    sections.push(`**DESIGN STYLE:** 📊 DISTRIBUTE - Use ONLY these styles: [${designStylesTranslated.join(', ')}]. Assignment: ${distribution.join(', ')}.`);
   }
 
-  if (instructions.length === 0) return '';
+  // ========== 5. شكل الظهر ==========
+  const backStyles = answers?.backStyles?.filter(b => b !== 'other') || [];
+  const backStylesTranslated = backStyles.map(b => translationMaps.backStyles[b] || b);
+  if (answers?.backStylesCustom) backStylesTranslated.push(answers.backStylesCustom);
+
+  if (backStylesTranslated.length === 0) {
+    sections.push(`**BACK DESIGN:** ⚡ CLIENT SKIPPED - You must AUTO-GENERATE back designs that complement each front design. Create variety: some open backs, some covered, some with unique closures. The back should enhance the overall design coherence.`);
+  } else if (backStylesTranslated.length === 1) {
+    sections.push(`**BACK DESIGN:** 🔒 FIXED - ALL 5 designs MUST have "${backStylesTranslated[0]}". Do NOT vary the back style.`);
+  } else if (backStylesTranslated.length === 5) {
+    // 5 أنواع = كل تصميم يحصل على واحد
+    sections.push(`**BACK DESIGN:** 🎯 EXACT MATCH - You selected exactly 5 back styles. Each design gets ONE: Design 1="${backStylesTranslated[0]}", Design 2="${backStylesTranslated[1]}", Design 3="${backStylesTranslated[2]}", Design 4="${backStylesTranslated[3]}", Design 5="${backStylesTranslated[4]}".`);
+  } else {
+    const distribution = backStylesTranslated.map((b, i) => `Design ${i + 1}=${b}`);
+    for (let i = backStylesTranslated.length; i < 5; i++) {
+      distribution.push(`Design ${i + 1}=${backStylesTranslated[i % backStylesTranslated.length]}`);
+    }
+    sections.push(`**BACK DESIGN:** 📊 DISTRIBUTE - Use ONLY these back styles: [${backStylesTranslated.join(', ')}]. Assignment: ${distribution.join(', ')}.`);
+  }
+
+  // ========== 6. العناصر التي يجب على AI توليدها تلقائياً ==========
+  const autoGenerateItems: string[] = [];
+  autoGenerateItems.push('Neckline type (V-neck, sweetheart, off-shoulder, high neck, etc.)');
+  autoGenerateItems.push('Sleeve type (sleeveless, long, short, bell, etc.)');
+  autoGenerateItems.push('Skirt shape (A-line, mermaid, ball gown, straight, etc.)');
+  autoGenerateItems.push('Waist style (fitted, empire, dropped, natural, etc.)');
+
+  sections.push(`
+**🤖 AUTO-GENERATE THESE ELEMENTS (Client did not answer):**
+The following elements were NOT specified by the client. You MUST generate them creatively based on the fabric's characteristics:
+- ${autoGenerateItems.join('\n- ')}
+
+Choose these elements to:
+1. Complement the fabric's weight, drape, and texture
+2. Create cohesive designs where all elements work together
+3. Ensure variety across the 5 designs (don't repeat the same neckline 5 times, etc.)
+`);
 
   return `
 ═══════════════════════════════════════════════════════════════════
-CLIENT PREFERENCES (MUST BE INCLUDED IN THE 5 DESIGNS)
+🎨 CLIENT PREFERENCES & DESIGN INSTRUCTIONS
 ═══════════════════════════════════════════════════════════════════
 
-The client has specified the following preferences. You MUST distribute these choices across the 5 designs:
+LEGEND:
+🔒 FIXED = Client selected ONE option → ALL 5 designs must use it
+📊 DISTRIBUTE = Client selected multiple → Spread them across designs
+🎨 MIX & MATCH = Can combine multiple in one design
+⚡ AUTO-GENERATE = Client skipped → You decide based on fabric
 
-${instructions.join('\n')}
+─────────────────────────────────────────────────────────────────
 
-**IMPORTANT:** Make sure each of the selected options appears in at least one design. If the client selected 3 dress lengths (e.g., long, knee-length, with train), the 5 designs should include these 3 lengths distributed among them.
+${sections.join('\n\n')}
 
+═══════════════════════════════════════════════════════════════════
 `;
 }
 
 /**
  * بناء البرومبت الرئيسي الذي سيُرسل للذكاء الاصطناعي لتوليد 5 تصاميم مختلفة
- * يعتمد على تحليل صورة القماش لاختيار التصاميم المناسبة
+ * يعتمد على تحليل صورة القماش + إجابات المستخدم
  */
 function buildMultiDesignPrompt(
   primaryFabricPlacement?: string,
@@ -239,162 +328,128 @@ function buildMultiDesignPrompt(
   // تعليمات القماش المخصص
   let fabricInstruction = '';
   if (hasSecondaryFabric && secondaryFabricPlacement) {
-    fabricInstruction = `"Use the exact fabric pattern, texture, and colors shown in the attached PRIMARY fabric image for ${primaryPlacement}. Use the SECONDARY fabric for ${secondaryFabricPlacement}. Do NOT modify, recolor, or alter the fabric designs in any way. Apply both fabrics with photorealistic precision maintaining all original details, including pattern repeats, texture depth, and color accuracy. The fabrics should drape naturally and realistically on the dress."`;
+    fabricInstruction = `Use the EXACT fabric pattern, texture, and colors from the attached PRIMARY fabric image for ${primaryPlacement}. Use the SECONDARY fabric for ${secondaryFabricPlacement}. Do NOT modify, recolor, or alter the fabrics. Apply with photorealistic precision.`;
   } else {
-    fabricInstruction = `"Use the exact fabric pattern, texture, and colors shown in the attached fabric image for ${primaryPlacement}. Do NOT modify, recolor, or alter the fabric design in any way. Apply it with photorealistic precision maintaining all original details, including the pattern repeat, texture depth, and color accuracy. The fabric should drape naturally and realistically on the dress."`;
+    fabricInstruction = `Use the EXACT fabric pattern, texture, and colors from the attached fabric image for ${primaryPlacement}. Do NOT modify, recolor, or alter the fabric. Apply with photorealistic precision maintaining all original details.`;
   }
 
-  return `You are an elite couture fashion designer AI. Your task is to generate EXACTLY 5 COMPLETELY DIFFERENT and UNIQUE dress designs based on your analysis of the client's provided fabric image.
+  // الحصول على تعليمات الاستبيان
+  const questionnaireInstructions = buildQuestionnaireInstructions(questionnaireAnswers);
 
-⚠️ CRITICAL REQUIREMENT: You MUST generate ALL 5 DESIGNS. Do not stop after 3 or 4 designs. The output is incomplete unless it contains all 5 designs with their proper markers.
+  return `You are an elite couture fashion designer AI. Your task is to generate EXACTLY 5 COMPLETELY DIFFERENT and UNIQUE dress designs based on the client's fabric image AND their preferences below.
 
-═══════════════════════════════════════════════════════════════════
-STEP 1: FABRIC ANALYSIS (Do this first)
-═══════════════════════════════════════════════════════════════════
-
-Before designing, carefully analyze the attached fabric image and identify:
-- **Fabric Type**: Is it satin, silk, chiffon, velvet, lace, organza, crepe, tulle, or another material?
-- **Texture**: Is it smooth, textured, embroidered, beaded, or has special surface treatment?
-- **Weight & Drape**: Is it lightweight and flowing, medium-weight structured, or heavy and luxurious?
-- **Colors**: What are the primary and secondary colors? Is it solid, gradient, or patterned?
-- **Pattern**: Is it plain, floral, geometric, abstract, traditional, or has special motifs?
-- **Sheen Level**: Is it matte, subtle sheen, or high shine?
-
-Use this analysis to select the most suitable design elements for each of the 5 designs.
+⚠️ CRITICAL: You MUST generate ALL 5 DESIGNS with proper markers. Incomplete output is unacceptable.
 
 ═══════════════════════════════════════════════════════════════════
-STEP 2: DESIGN DECISIONS (Choose based on fabric analysis)
+📷 STEP 1: ANALYZE THE FABRIC IMAGE
 ═══════════════════════════════════════════════════════════════════
 
-For each design, you must decide on the following elements. Choose what works BEST with the analyzed fabric:
+Look at the attached fabric image and identify:
+• Fabric Type (satin, silk, chiffon, velvet, lace, organza, crepe, tulle, etc.)
+• Texture (smooth, textured, embroidered, beaded)
+• Weight & Drape (lightweight/flowing, medium/structured, heavy/luxurious)
+• Colors (primary, secondary, solid/gradient/patterned)
+• Pattern (plain, floral, geometric, abstract, traditional motifs)
+• Sheen (matte, subtle sheen, high shine)
 
-**1. DRESS LENGTH**
-Choose the most suitable length based on fabric weight and drape.
-
-**2. SKIRT SHAPE**
-Choose a shape that complements the fabric's characteristics and movement.
-
-**3. NECKLINE TYPE**
-Select a neckline that enhances the fabric's beauty and suits the overall design.
-
-**4. SLEEVE TYPE**
-Pick sleeves that work harmoniously with the fabric texture and weight.
-
-**5. EMBELLISHMENTS & DETAILS**
-Decide on decorative elements that enhance without overwhelming the fabric.
-
-**6. DESIGN STYLE**
-Choose an overall aesthetic direction that maximizes the fabric's potential.
-
-**7. BACK DESIGN (CRITICAL - Must complement the front)**
-Design the back of the dress to create a cohesive and stunning look:
-- Back neckline style (open back, keyhole, illusion, covered, etc.)
-- Closure type (hidden zipper, buttons, corset lacing, open back with straps)
-- Back embellishments and details (matching or contrasting with front)
-- Train/hem details as seen from behind
-- How the back design balances with the front (e.g., if front is modest, back can be dramatic)
-
-
+Your design choices MUST complement these fabric characteristics.
 
 ═══════════════════════════════════════════════════════════════════
-COHERENCE RULES
-═══════════════════════════════════════════════════════════════════
-
-Each design must be internally consistent:
-- If the fabric is delicate/lightweight → prefer flowing silhouettes
-- If the fabric is structured/heavy → can support dramatic shapes
-- If the fabric has bold patterns → use simpler silhouettes
-- If the fabric is plain → can add more embellishments
-- Sleeves, neckline, and skirt must work together harmoniously
-- Design style must match all chosen elements
-
-═══════════════════════════════════════════════════════════════════
-CRITICAL CUSTOM FABRIC INSTRUCTION (MUST BE IN EVERY DESIGN)
+🎯 FABRIC INSTRUCTION (HIGHEST PRIORITY)
 ═══════════════════════════════════════════════════════════════════
 
 ${fabricInstruction}
 
-${buildQuestionnaireInstructions(questionnaireAnswers)}
+The fabric should drape naturally and realistically with proper folds and textile behavior.
+
+${questionnaireInstructions}
 ═══════════════════════════════════════════════════════════════════
-OUTPUT FORMAT - Follow this EXACT structure
+🎨 DESIGN VARIETY REQUIREMENTS
+═══════════════════════════════════════════════════════════════════
+
+Each of the 5 designs MUST be distinctly different in:
+• Silhouette (A-line, mermaid, ball gown, column, fit-and-flare)
+• Neckline (V-neck, sweetheart, off-shoulder, halter, high neck, strapless)
+• Sleeve style (sleeveless, cap, long, bell, puff, sheer)
+• Skirt shape (flowing, fitted, layered, high-low, with slit)
+• Back design (open, keyhole, corset, illusion, covered with buttons)
+• Embellishment placement and intensity
+
+DO NOT create 5 variations of the same dress. Each design should feel like a completely different vision.
+
+═══════════════════════════════════════════════════════════════════
+✏️ OUTPUT FORMAT (MANDATORY - Follow EXACTLY)
 ═══════════════════════════════════════════════════════════════════
 
 ===DESIGN_1===
-**Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
-**Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
 
-**Front Design:** [Write 3-4 sentences describing the front view in detail - neckline, bodice, skirt front, embellishments placement]
+**Front View:** [3-4 detailed sentences: neckline, bodice construction, waist definition, skirt shape, embellishment placement, how the fabric drapes and moves]
 
-**Back Design:** [Write 3-4 sentences describing the back view - back neckline style, closure type (zipper/buttons/lacing), back embellishments, how it complements the front]
-
-[Optional: 1-2 sentences on overall cohesion and movement]
+**Back View:** [3-4 detailed sentences: back neckline style, closure type (hidden zipper/buttons/corset lacing), back embellishments, train details if applicable, how it complements the front]
 ===END_DESIGN_1===
 
 ===DESIGN_2===
-**Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
-**Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
 
-**Front Design:** [3-4 sentences - completely different approach]
+**Front View:** [Completely different design approach]
 
-**Back Design:** [3-4 sentences - complementary back design]
+**Back View:** [Complementary back design]
 ===END_DESIGN_2===
 
 ===DESIGN_3===
-**Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
-**Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
 
-**Front Design:** [3-4 sentences - another unique vision]
+**Front View:** [Another unique vision]
 
-**Back Design:** [3-4 sentences - matching back design]
+**Back View:** [Matching back design]
 ===END_DESIGN_3===
 
 ===DESIGN_4===
-**Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
-**Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
 
-**Front Design:** [3-4 sentences - distinct design direction]
+**Front View:** [Distinct design direction]
 
-**Back Design:** [3-4 sentences - complementary back]
+**Back View:** [Complementary back]
 ===END_DESIGN_4===
 
 ===DESIGN_5===
-**Fabric Analysis Applied:** [Brief note on how this design suits the fabric]
-**Design Choices:** Length: [X] | Skirt: [X] | Neckline: [X] | Sleeves: [X] | Embellishments: [X] | Style: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
 
-**Front Design:** [3-4 sentences - final unique creation]
+**Front View:** [Final unique creation]
 
-**Back Design:** [3-4 sentences - stunning back design]
+**Back View:** [Stunning back design]
 ===END_DESIGN_5===
 
 ═══════════════════════════════════════════════════════════════════
-IMPORTANT RULES
+⚠️ ABSOLUTE RULES
 ═══════════════════════════════════════════════════════════════════
 
-- ⚠️ YOU MUST OUTPUT ALL 5 DESIGNS - THIS IS MANDATORY
-- ⚠️ EACH DESIGN MUST INCLUDE BOTH **Front Design:** AND **Back Design:** SECTIONS
-- Describe the DRESS ONLY - no background, environment, mannequin, lighting, or camera
-- Write in the tone of an elite fashion designer describing couture masterpieces
-- Be precise and technical in fabric behavior and construction details
-- Each design must feel like a unique, complete vision optimized for THIS specific fabric
-- Do NOT repeat the same combinations between designs
-- The fabric's characteristics should influence every design decision
-- The back design must logically complement and enhance the front design
-- Use EXACTLY the format shown above with ===DESIGN_X=== and ===END_DESIGN_X=== markers
+1. OUTPUT ALL 5 DESIGNS - Missing designs = failure
+2. USE EXACT MARKERS: ===DESIGN_X=== and ===END_DESIGN_X===
+3. INCLUDE BOTH Front View AND Back View for each design
+4. DESCRIBE ONLY THE DRESS - no background, mannequin, lighting, or camera
+5. FOLLOW CLIENT PREFERENCES exactly as specified above (🔒=fixed, 📊=distribute)
+6. FOR SKIPPED QUESTIONS (⚡), generate creative choices based on the fabric
+7. Each design must be coherent: all elements should work together harmoniously
+8. Write like an elite fashion designer describing couture masterpieces
 
 ═══════════════════════════════════════════════════════════════════
-FINAL CHECK BEFORE SUBMITTING
+✅ FINAL CHECKLIST
 ═══════════════════════════════════════════════════════════════════
 
-Before finishing, verify you have included:
-✓ ===DESIGN_1=== ... ===END_DESIGN_1===
-✓ ===DESIGN_2=== ... ===END_DESIGN_2===
-✓ ===DESIGN_3=== ... ===END_DESIGN_3===
-✓ ===DESIGN_4=== ... ===END_DESIGN_4===
-✓ ===DESIGN_5=== ... ===END_DESIGN_5===
+Before submitting, verify:
+☑ Design 1 complete with ===DESIGN_1=== and ===END_DESIGN_1=== markers
+☑ Design 2 complete with ===DESIGN_2=== and ===END_DESIGN_2=== markers
+☑ Design 3 complete with ===DESIGN_3=== and ===END_DESIGN_3=== markers
+☑ Design 4 complete with ===DESIGN_4=== and ===END_DESIGN_4=== markers
+☑ Design 5 complete with ===DESIGN_5=== and ===END_DESIGN_5=== markers
+☑ Client preferences followed (fixed items appear in ALL designs)
+☑ All 5 designs are visually distinct from each other
+☑ Each design has both Front View and Back View
 
 Now analyze the attached fabric image and generate ALL 5 unique designs:`;
 }
-
 export async function POST(request: NextRequest) {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   console.log(`\n${'='.repeat(60)}`);
@@ -440,6 +495,7 @@ export async function POST(request: NextRequest) {
       console.log(`   - أطوال الفساتين: ${batchQuestionnaireAnswers.dressLengths?.join(', ') || 'لم يُحدد'}`);
       console.log(`   - الزينة: ${batchQuestionnaireAnswers.embellishments?.join(', ') || 'لم يُحدد'}`);
       console.log(`   - أساليب التصميم: ${batchQuestionnaireAnswers.designStyles?.join(', ') || 'لم يُحدد'}`);
+      console.log(`   - شكل الظهر: ${batchQuestionnaireAnswers.backStyles?.join(', ') || 'لم يُحدد'}`);
     } else {
       console.log(`📋 [${requestId}] لا توجد إجابات استبيان (تخطى المستخدم)`);
     }
@@ -517,6 +573,14 @@ export async function POST(request: NextRequest) {
         if (data.choices && data.choices.length > 0) {
           generatedText = data.choices[0].message.content.trim();
           console.log('✅ تم توليد النص بنجاح');
+
+          // طباعة النص الخام الكامل لفحص المشكلة
+          console.log(`\n${'🔍'.repeat(40)}`);
+          console.log(`📜 النص الخام المُولد من AI (كامل):`);
+          console.log(`${'🔍'.repeat(40)}`);
+          console.log(generatedText);
+          console.log(`${'🔍'.repeat(40)}\n`);
+
           break;
         } else {
           throw new Error('لا توجد استجابة من OpenRouter API');
@@ -580,16 +644,30 @@ export async function POST(request: NextRequest) {
     }
 
     // تسجيل النتيجة النهائية
-    console.log(`\n${'='.repeat(60)}`);
+    console.log(`\n${'='.repeat(80)}`);
     console.log(`✅ [${requestId}] اكتمل التوليد بنجاح`);
     console.log(`📊 [${requestId}] النتيجة النهائية:`);
     console.log(`   - عدد التصاميم: ${finalPrompts.length}/5`);
     console.log(`   - طريقة التحليل: ${parseResult.method}`);
     console.log(`   - تم إكمال تصاميم ناقصة: ${parseResult.prompts.length < 5 ? 'نعم' : 'لا'}`);
-    finalPrompts.forEach((p, i) => {
-      console.log(`   - تصميم ${i + 1}: ${p.substring(0, 80)}...`);
+    console.log(`${'='.repeat(80)}\n`);
+
+    // طباعة البرومبتات الخمسة الكاملة
+    console.log(`\n${'🎨'.repeat(40)}`);
+    console.log(`📋 البرومبتات الخمسة المُولدة (التي سترسل لتوليد الصور):`);
+    console.log(`${'🎨'.repeat(40)}\n`);
+
+    finalPrompts.forEach((prompt, index) => {
+      console.log(`\n${'─'.repeat(60)}`);
+      console.log(`🎯 التصميم ${index + 1} من 5`);
+      console.log(`${'─'.repeat(60)}`);
+      console.log(prompt);
+      console.log(`${'─'.repeat(60)}\n`);
     });
-    console.log(`${'='.repeat(60)}\n`);
+
+    console.log(`\n${'🎨'.repeat(40)}`);
+    console.log(`✅ نهاية البرومبتات الخمسة`);
+    console.log(`${'🎨'.repeat(40)}\n`);
 
     return NextResponse.json({
       prompts: finalPrompts,

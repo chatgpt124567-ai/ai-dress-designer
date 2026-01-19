@@ -27,6 +27,26 @@ const tajawal = Tajawal({
 export const metadata: Metadata = {
   title: "Yasmine Al-Sham Smart Designer - Turn Your Imagination Into Couture",
   description: "Create stunning, couture-level dress designs with AI. Transform your vision into elegant fashion with Yasmine Al-Sham Smart Designer.",
+  icons: {
+    icon: [
+      { url: "/favicon/favicon.ico", sizes: "any" },
+      { url: "/favicon/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: [
+      { url: "/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
+  manifest: "/favicon/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Yasmine Designer",
+  },
+  other: {
+    "theme-color": "#C9A85A",
+    "msapplication-TileColor": "#C9A85A",
+  },
 };
 
 export default function RootLayout({

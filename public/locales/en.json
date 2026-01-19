@@ -750,6 +750,11 @@
       "profileUpdateSuccess": "Profile updated successfully",
       "profileUpdateError": "Failed to update profile"
     }
+  },
+  "batchQuestionnaire": {
+    "backStyle": {
+      "note": "This section is not used - translations exist in questionnaire.section4.q7"
+    }
   }
 }
 

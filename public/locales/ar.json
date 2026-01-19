@@ -405,11 +405,11 @@
           "covered": "مغطى بالكامل",
           "openBack": "مفتوح",
           "deepV": "فتحة V عميقة",
-          "keyhole": "فتحة صغيرة (Keyhole)",
-          "illusion": "شفاف مع تطريز (Illusion)",
+          "keyhole": "فتحة صغيرة",
+          "illusion": "شفاف مع تطريز",
           "laceBack": "دانتيل",
           "lowBack": "منخفض",
-          "crossBack": "متقاطع (Cross Back)",
+          "crossBack": "متقاطع",
           "bowBack": "مع فيونكة",
           "corsetBack": "ربطات كورسيه",
           "other": "وصف آخر"
@@ -749,6 +749,11 @@
       "passwordUpdateError": "فشل تحديث كلمة المرور",
       "profileUpdateSuccess": "تم تحديث البروفايل بنجاح",
       "profileUpdateError": "فشل تحديث البروفايل"
+    }
+  },
+  "batchQuestionnaire": {
+    "backStyle": {
+      "note": "هذا القسم غير مستخدم - الترجمات موجودة في questionnaire.section4.q7"
     }
   }
 }

@@ -127,9 +127,15 @@ export interface QuestionnaireAnswers {
 // إجابات استبيان 5 تصاميم المخصص
 export interface BatchDesignQuestionnaireAnswers {
   dressTypes?: string[]; // أنواع الفساتين المختارة (حد أقصى 5)
+  dressTypesCustom?: string; // وصف مخصص لنوع الفستان
   dressLengths?: string[]; // أطوال الفساتين المختارة (حد أقصى 5)
+  dressLengthsCustom?: string; // وصف مخصص لطول الفستان
   embellishments?: string[]; // الزينة المختارة (حد أقصى 5)
+  embellishmentsCustom?: string; // وصف مخصص للزينة
   designStyles?: string[]; // أساليب التصميم المختارة (حد أقصى 5)
+  designStylesCustom?: string; // وصف مخصص لأسلوب التصميم
+  backStyles?: string[]; // أشكال ظهر الفستان المختارة (حد أقصى 5)
+  backStylesCustom?: string; // وصف مخصص لشكل الظهر
 }
 
 // طلب توليد 5 برومبتات مختلفة
