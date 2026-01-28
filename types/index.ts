@@ -27,6 +27,7 @@ export interface GenerateImageRequest {
   // Own Fabric Workflow
   primaryFabricImage?: string; // Primary fabric image (Base64)
   secondaryFabricImage?: string; // Secondary fabric image (Base64)
+  questionnaireAnswers?: QuestionnaireAnswers; // Questionnaire answers for Design Specs
 }
 
 export interface GenerateImageResponse {

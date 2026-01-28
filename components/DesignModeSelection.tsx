@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Sparkles, Wand2, Scissors, UserX } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,14 @@ interface DesignModeSelectionProps {
 
 export default function DesignModeSelection({ onSelectMode }: DesignModeSelectionProps) {
   const { direction } = useLanguage();
+  const router = useRouter();
+
+  const handleModeClick = (mode: 'scratch' | 'external' | 'ownFabric' | 'removeModel') => {
+    // Navigate with query parameter
+    router.push(`/design?mode=${mode}`);
+    // Also call the original callback for compatibility
+    onSelectMode(mode);
+  };
 
   const modes = [
     {
@@ -99,7 +108,7 @@ export default function DesignModeSelection({ onSelectMode }: DesignModeSelectio
               }}
               whileHover={{ y: -8, scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onSelectMode(mode.id)}
+              onClick={() => handleModeClick(mode.id)}
               className={cn(
                 'group relative overflow-hidden flex-1',
                 'p-3 sm:p-5 md:p-8 lg:p-10',

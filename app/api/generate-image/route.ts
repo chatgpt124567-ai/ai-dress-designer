@@ -1,5 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { GenerateImageRequest, GenerateImageResponse, GeminiImageModel } from '@/types';
+import type { GenerateImageRequest, GenerateImageResponse, GeminiImageModel, QuestionnaireAnswers } from '@/types';
+
+// Helper function to format Design Specs from questionnaire answers
+function formatDesignSpecs(answers: QuestionnaireAnswers): string {
+  const specs: string[] = [];
+
+  // Type
+  if (answers.dressType) {
+    const typeValue = answers.dressTypeCustom || answers.dressType;
+    specs.push(`• Type: ${typeValue}`);
+  }
+
+  // Length
+  if (answers.dressLength) {
+    const lengthValue = answers.dressLengthCustom || answers.dressLength;
+    specs.push(`• Length: ${lengthValue}`);
+  }
+
+  // Back Style
+  if (answers.backStyle) {
+    const backValue = answers.backStyleCustom || answers.backStyle;
+    specs.push(`• Back: ${backValue}`);
+  }
+
+  // Neckline
+  if (answers.necklineType) {
+    const necklineValue = answers.necklineTypeCustom || answers.necklineType;
+    specs.push(`• Neckline: ${necklineValue}`);
+  }
+
+  // Sleeve Style
+  if (answers.sleeveType) {
+    const sleeveValue = answers.sleeveTypeCustom || answers.sleeveType;
+    specs.push(`• Sleeve Style: ${sleeveValue}`);
+  }
+
+  // Skirt Shape
+  if (answers.skirtShape) {
+    const skirtValue = answers.skirtShapeCustom || answers.skirtShape;
+    specs.push(`• Skirt Shape: ${skirtValue}`);
+  }
+
+  // Embellishment Placement & Intensity
+  if (answers.embellishments && answers.embellishments.length > 0) {
+    const embellishmentsList = answers.embellishments
+      .map(e => answers.embellishmentsCustom && e === 'other' ? answers.embellishmentsCustom : e)
+      .join(', ');
+
+    let embellishmentDetails = embellishmentsList;
+
+    // Add placement details if available
+    if (answers.embellishmentPlacements && Object.keys(answers.embellishmentPlacements).length > 0) {
+      const placements = Object.entries(answers.embellishmentPlacements)
+        .map(([type, placement]) => `${type}: ${placement}`)
+        .join('; ');
+      embellishmentDetails += ` (Placement: ${placements})`;
+    } else if (answers.embellishmentPlacement) {
+      embellishmentDetails += ` (Placement: ${answers.embellishmentPlacement})`;
+    }
+
+    specs.push(`• Embellishment Placement & Intensity: ${embellishmentDetails}`);
+  } else {
+    specs.push(`• Embellishment Placement & Intensity: Not specified`);
+  }
+
+  // Style
+  if (answers.designStyle) {
+    const styleValue = answers.designStyleCustom || answers.designStyle;
+    specs.push(`• Style: ${styleValue}`);
+  }
+
+  return specs.length > 0 ? specs.join('\n') : '';
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +81,8 @@ export async function POST(request: NextRequest) {
       fabricImage,
       primaryFabricImage,
       secondaryFabricImage,
-      model = 'google/gemini-2.5-flash-image'
+      model = 'google/gemini-2.5-flash-image',
+      questionnaireAnswers
     } = body;
 
     if (!prompt || prompt.trim().length === 0) {
@@ -18,6 +91,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Print the enhanced prompt received from client
+    console.log('\n🎨 البرومبت المُستلم في API لتوليد الصورة:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(prompt);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📊 الموديل المستخدم: ${model}`);
+    console.log(`🖼️  صورة قماش أساسية: ${primaryFabricImage ? 'نعم ✅' : 'لا ❌'}`);
+    console.log(`🖼️  صورة قماش ثانوية: ${secondaryFabricImage ? 'نعم ✅' : 'لا ❌'}`);
+    console.log(`🖼️  صورة قماش قديمة: ${fabricImage ? 'نعم ✅' : 'لا ❌'}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
     if (!process.env.OPENROUTER_API_KEY) {
       return NextResponse.json(
@@ -76,8 +160,22 @@ FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
 • The custom fabric is the PRIMARY design element - treat it with utmost precision`;
     }
 
-    const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
+    // Build Design Specs section if questionnaire answers are provided (Own Fabric Workflow only)
+    let designSpecsSection = '';
+    if (primaryFabricImage && questionnaireAnswers) {
+      const designSpecs = formatDesignSpecs(questionnaireAnswers);
+      if (designSpecs) {
+        designSpecsSection = `
 
+**Design Specs:**
+${designSpecs}
+
+`;
+      }
+    }
+
+    const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
+${designSpecsSection}
 ${prompt}${customFabricInstruction}
 
 ---

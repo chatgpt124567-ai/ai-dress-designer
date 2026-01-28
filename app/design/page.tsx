@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shirt, Home, Download } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -38,6 +38,7 @@ type DesignMode = 'selection' | 'scratch' | 'external' | 'ownFabric' | 'removeMo
 export default function DesignPage() {
   const { t, direction } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Workflow mode state
   const [designMode, setDesignMode] = useState<DesignMode>('selection');
@@ -220,6 +221,31 @@ export default function DesignPage() {
 
     // No cleanup function - we want to keep the data even when navigating away
   }, []);
+
+  // Read mode from URL query parameter and update designMode
+  useEffect(() => {
+    const modeFromUrl = searchParams.get('mode');
+    const fabricModeFromUrl = searchParams.get('fabricMode');
+    console.log('Mode from URL:', modeFromUrl, 'Fabric Mode:', fabricModeFromUrl);
+
+    if (modeFromUrl && ['scratch', 'external', 'ownFabric', 'removeModel'].includes(modeFromUrl)) {
+      console.log('Setting design mode from URL:', modeFromUrl);
+      setDesignMode(modeFromUrl as DesignMode);
+
+      // If ownFabric mode, check for fabricMode parameter to skip directly to the chosen workflow
+      if (modeFromUrl === 'ownFabric' && fabricModeFromUrl) {
+        if (fabricModeFromUrl === 'single') {
+          console.log('Direct link to single custom design - skipping to questionnaire');
+          // Skip choice screen and go directly to questionnaire
+          setOwnFabricStep('questionnaire');
+        } else if (fabricModeFromUrl === 'multi') {
+          console.log('Direct link to multi-design - skipping to batch questionnaire');
+          // Skip choice screen and go directly to batch questionnaire
+          setOwnFabricStep('batchQuestionnaire');
+        }
+      }
+    }
+  }, [searchParams]);
 
   // Save page state to localStorage whenever it changes
   useEffect(() => {
@@ -570,6 +596,12 @@ export default function DesignPage() {
       setEnhancedPrompt(finalPrompt);
       setDescription(finalPrompt); // Store enhanced prompt as description
 
+      // Print enhanced prompt to console for review
+      console.log('\n🎨 البرومبت النهائي المُحسّن (Enhanced Prompt):');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log(finalPrompt);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
       // Step 2: Generate image using enhanced prompt and selected model
       setStep('generating');
 
@@ -582,6 +614,7 @@ export default function DesignPage() {
       // Own Fabric Workflow
       if (primaryFabricImage) {
         generatePayload.primaryFabricImage = primaryFabricImage;
+        generatePayload.questionnaireAnswers = questionnaireAnswers; // Include questionnaire answers for Design Specs
         if (secondaryFabricImage) {
           generatePayload.secondaryFabricImage = secondaryFabricImage;
         }
@@ -1120,6 +1153,8 @@ export default function DesignPage() {
 
   // Handle multi-design choice - user wants 5 designs
   const handleChooseMultipleDesigns = () => {
+    // Update URL with fabricMode parameter
+    router.push('/design?mode=ownFabric&fabricMode=multi');
     // انتقل إلى استبيان الـ 5 تصاميم أولاً
     setOwnFabricStep('batchQuestionnaire');
   };
@@ -1133,6 +1168,8 @@ export default function DesignPage() {
 
   // Handle traditional questionnaire choice
   const handleChooseTraditional = () => {
+    // Update URL with fabricMode parameter
+    router.push('/design?mode=ownFabric&fabricMode=single');
     setOwnFabricStep('questionnaire');
   };
 

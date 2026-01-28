@@ -6,6 +6,31 @@ import type {
 } from '@/types';
 
 /**
+ * التحقق من اكتمال التصميم - يجب أن يحتوي على Design Specs و Front View و Back View
+ */
+function validateDesignCompleteness(content: string): {
+  isComplete: boolean;
+  hasSpecs: boolean;
+  hasFront: boolean;
+  hasBack: boolean;
+  missingParts: string[]
+} {
+  // البحث عن المكونات الأساسية
+  const hasSpecs = /design\s*specs|type:|length:|style:|back:/i.test(content);
+  const hasFront = /front\s*view|front view/i.test(content);
+  const hasBack = /back\s*view|back view/i.test(content);
+
+  const missingParts: string[] = [];
+  if (!hasSpecs) missingParts.push('Design Specs');
+  if (!hasFront) missingParts.push('Front View');
+  if (!hasBack) missingParts.push('Back View');
+
+  const isComplete = hasSpecs && hasFront && hasBack;
+
+  return { isComplete, hasSpecs, hasFront, hasBack, missingParts };
+}
+
+/**
  * دالة لفصل البرومبتات الخمسة من النص المُولد
  * تستخدم عدة طرق للتحليل لضمان استخراج أكبر عدد ممكن من التصاميم
  */
@@ -13,129 +38,277 @@ function parseMultiplePrompts(generatedText: string): { prompts: string[]; rawTe
   console.log('📝 بدء تحليل النص المُولد...');
   console.log(`📏 طول النص: ${generatedText.length} حرف`);
 
-  // الطريقة 1: استخدام العلامات الدقيقة
+  // الطريقة 1: استخدام العلامات الدقيقة (الأفضل والأكثر دقة)
   let prompts = parseWithExactMarkers(generatedText);
-  if (prompts.length === 5) {
-    console.log('✅ الطريقة 1 (علامات دقيقة): نجحت - 5 تصاميم');
-    return { prompts, rawText: generatedText, method: 'exact_markers' };
+  let validPrompts = prompts.filter(p => validateDesignCompleteness(p).isComplete);
+
+  if (validPrompts.length === 5) {
+    console.log('✅ الطريقة 1 (علامات دقيقة): نجحت - 5 تصاميم مكتملة');
+    logDesignValidation(validPrompts);
+    return { prompts: validPrompts, rawText: generatedText, method: 'exact_markers' };
   }
-  console.log(`⚠️ الطريقة 1: استخرجت ${prompts.length} تصاميم فقط`);
+  console.log(`⚠️ الطريقة 1: استخرجت ${prompts.length} تصاميم (${validPrompts.length} مكتملة)`);
 
   // الطريقة 2: استخدام regex مرن
   const regexPrompts = parseWithFlexibleRegex(generatedText);
-  if (regexPrompts.length > prompts.length) {
+  const validRegexPrompts = regexPrompts.filter(p => validateDesignCompleteness(p).isComplete);
+
+  if (validRegexPrompts.length > validPrompts.length) {
     prompts = regexPrompts;
-    if (prompts.length === 5) {
-      console.log('✅ الطريقة 2 (regex مرن): نجحت - 5 تصاميم');
-      return { prompts, rawText: generatedText, method: 'flexible_regex' };
+    validPrompts = validRegexPrompts;
+    if (validPrompts.length === 5) {
+      console.log('✅ الطريقة 2 (regex مرن): نجحت - 5 تصاميم مكتملة');
+      logDesignValidation(validPrompts);
+      return { prompts: validPrompts, rawText: generatedText, method: 'flexible_regex' };
     }
   }
-  console.log(`⚠️ الطريقة 2: استخرجت ${prompts.length} تصاميم`);
+  console.log(`⚠️ الطريقة 2: استخرجت ${regexPrompts.length} تصاميم (${validRegexPrompts.length} مكتملة)`);
 
-  // الطريقة 3: تقسيم بناءً على أنماط Design
+  // الطريقة 3: تقسيم بناءً على أنماط Design (محسّنة)
   const patternPrompts = parseWithDesignPatterns(generatedText);
-  if (patternPrompts.length > prompts.length) {
+  const validPatternPrompts = patternPrompts.filter(p => validateDesignCompleteness(p).isComplete);
+
+  if (validPatternPrompts.length > validPrompts.length) {
     prompts = patternPrompts;
-    if (prompts.length === 5) {
-      console.log('✅ الطريقة 3 (أنماط Design): نجحت - 5 تصاميم');
-      return { prompts, rawText: generatedText, method: 'design_patterns' };
+    validPrompts = validPatternPrompts;
+    if (validPrompts.length === 5) {
+      console.log('✅ الطريقة 3 (أنماط Design): نجحت - 5 تصاميم مكتملة');
+      logDesignValidation(validPrompts);
+      return { prompts: validPrompts, rawText: generatedText, method: 'design_patterns' };
     }
   }
-  console.log(`⚠️ الطريقة 3: استخرجت ${prompts.length} تصاميم`);
+  console.log(`⚠️ الطريقة 3: استخرجت ${patternPrompts.length} تصاميم (${validPatternPrompts.length} مكتملة)`);
 
-  // الطريقة 4: تقسيم بناءً على الأرقام
+  // الطريقة 4: تقسيم بناءً على الأرقام (محسّنة)
   const numberedPrompts = parseWithNumberedSections(generatedText);
-  if (numberedPrompts.length > prompts.length) {
+  const validNumberedPrompts = numberedPrompts.filter(p => validateDesignCompleteness(p).isComplete);
+
+  if (validNumberedPrompts.length > validPrompts.length) {
     prompts = numberedPrompts;
-    if (prompts.length === 5) {
-      console.log('✅ الطريقة 4 (أقسام مرقمة): نجحت - 5 تصاميم');
-      return { prompts, rawText: generatedText, method: 'numbered_sections' };
+    validPrompts = validNumberedPrompts;
+    if (validPrompts.length === 5) {
+      console.log('✅ الطريقة 4 (أقسام مرقمة): نجحت - 5 تصاميم مكتملة');
+      logDesignValidation(validPrompts);
+      return { prompts: validPrompts, rawText: generatedText, method: 'numbered_sections' };
     }
   }
-  console.log(`⚠️ الطريقة 4: استخرجت ${prompts.length} تصاميم`);
+  console.log(`⚠️ الطريقة 4: استخرجت ${numberedPrompts.length} تصاميم (${validNumberedPrompts.length} مكتملة)`);
 
-  console.log(`📊 النتيجة النهائية: ${prompts.length} تصاميم من 5`);
-  return { prompts, rawText: generatedText, method: 'best_effort' };
+  // استخدام أفضل نتيجة متاحة (حتى لو أقل من 5)
+  const bestPrompts = validPrompts.length > 0 ? validPrompts : prompts;
+
+  console.log(`📊 النتيجة النهائية: ${bestPrompts.length} تصاميم من 5`);
+  logDesignValidation(bestPrompts);
+
+  return { prompts: bestPrompts, rawText: generatedText, method: 'best_effort' };
 }
 
-// الطريقة 1: العلامات الدقيقة
+/**
+ * طباعة تفاصيل التحقق من التصاميم
+ */
+function logDesignValidation(prompts: string[]): void {
+  prompts.forEach((prompt, index) => {
+    const validation = validateDesignCompleteness(prompt);
+    const status = validation.isComplete ? '✅' : '⚠️';
+    const details = validation.isComplete
+      ? 'مكتمل'
+      : `ناقص: ${validation.missingParts.join(', ')}`;
+    console.log(`   ${status} التصميم ${index + 1}: ${details} (${prompt.length} حرف)`);
+  });
+}
+
+// الطريقة 1: العلامات الدقيقة (محسّنة لاستخراج المحتوى الكامل)
 function parseWithExactMarkers(text: string): string[] {
   const prompts: string[] = [];
+
   for (let i = 1; i <= 5; i++) {
-    const startMarker = `===DESIGN_${i}===`;
-    const endMarker = `===END_DESIGN_${i}===`;
-    const startIndex = text.indexOf(startMarker);
-    const endIndex = text.indexOf(endMarker);
+    // استخدام regex أكثر مرونة للعلامات
+    const startPatterns = [
+      `===DESIGN_${i}===`,
+      `=== DESIGN_${i} ===`,
+      `===DESIGN ${i}===`,
+      `=== DESIGN ${i} ===`,
+      `==DESIGN_${i}==`,
+      `== DESIGN_${i} ==`,
+    ];
+
+    const endPatterns = [
+      `===END_DESIGN_${i}===`,
+      `=== END_DESIGN_${i} ===`,
+      `===END DESIGN_${i}===`,
+      `=== END DESIGN_${i} ===`,
+      `===END_DESIGN ${i}===`,
+      `=== END_DESIGN ${i} ===`,
+      `==END_DESIGN_${i}==`,
+      `== END_DESIGN_${i} ==`,
+    ];
+
+    let startIndex = -1;
+    let startMarkerLength = 0;
+
+    // البحث عن علامة البداية
+    for (const marker of startPatterns) {
+      const idx = text.indexOf(marker);
+      if (idx !== -1) {
+        startIndex = idx;
+        startMarkerLength = marker.length;
+        break;
+      }
+    }
+
+    // البحث عن علامة النهاية
+    let endIndex = -1;
+    for (const marker of endPatterns) {
+      const idx = text.indexOf(marker);
+      if (idx !== -1 && (endIndex === -1 || idx < endIndex)) {
+        endIndex = idx;
+      }
+    }
+
     if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
-      const content = text.substring(startIndex + startMarker.length, endIndex).trim();
-      if (content.length > 50) prompts.push(content);
+      const content = text.substring(startIndex + startMarkerLength, endIndex).trim();
+      // التحقق من أن المحتوى ذو معنى (يحتوي على Front View و Back View)
+      if (content.length > 50) {
+        prompts.push(content);
+      }
     }
   }
+
   return prompts;
 }
 
-// الطريقة 2: Regex مرن (يتعامل مع اختلافات المسافات)
+// الطريقة 2: Regex مرن محسّن (يتعامل مع جميع الاختلافات)
 function parseWithFlexibleRegex(text: string): string[] {
   const prompts: string[] = [];
+
   for (let i = 1; i <= 5; i++) {
-    // regex مرن يتعامل مع مسافات ونقاط وأقواس
-    const regex = new RegExp(
-      `={2,}\\s*DESIGN[_\\s-]*${i}\\s*={2,}([\\s\\S]*?)={2,}\\s*END[_\\s-]*DESIGN[_\\s-]*${i}\\s*={2,}`,
-      'i'
-    );
-    const match = text.match(regex);
-    if (match && match[1] && match[1].trim().length > 50) {
-      prompts.push(match[1].trim());
+    // regex مرن جداً يتعامل مع مسافات ونقاط وأقواس مختلفة
+    // يستخدم lazy matching (.*?) لتجنب التطابق الجشع
+    const regexPatterns = [
+      // النمط الأساسي: ===DESIGN_X=== ... ===END_DESIGN_X===
+      new RegExp(
+        `={2,}\\s*DESIGN[_\\s-]*${i}\\s*={2,}([\\s\\S]*?)={2,}\\s*END[_\\s-]*DESIGN[_\\s-]*${i}\\s*={2,}`,
+        'i'
+      ),
+      // نمط بديل مع نقطتين
+      new RegExp(
+        `DESIGN[_\\s]*${i}[:\\s]*([\\s\\S]*?)(?:END[_\\s]*DESIGN[_\\s]*${i}|DESIGN[_\\s]*${i + 1}|$)`,
+        'i'
+      ),
+    ];
+
+    for (const regex of regexPatterns) {
+      const match = text.match(regex);
+      if (match && match[1]) {
+        const content = match[1].trim();
+        // التحقق من اكتمال المحتوى
+        if (content.length > 100 && validateDesignCompleteness(content).isComplete) {
+          prompts.push(content);
+          break; // وجدنا تطابق جيد، ننتقل للتصميم التالي
+        }
+      }
     }
   }
+
   return prompts;
 }
 
-// الطريقة 3: أنماط Design
+// الطريقة 3: أنماط Design (محسّنة - لا تستخدم split)
 function parseWithDesignPatterns(text: string): string[] {
-  // تقسيم بناءً على عناوين Design مختلفة
-  const patterns = [
-    /Design\s*#?\s*(\d)\s*[:\-–—]/gi,
-    /DESIGN\s*#?\s*(\d)\s*[:\-–—]/gi,
-    /\*\*Design\s*#?\s*(\d)\*\*/gi,
-    /#{1,3}\s*Design\s*#?\s*(\d)/gi,
-  ];
+  const prompts: string[] = [];
 
-  for (const pattern of patterns) {
-    const parts = text.split(pattern).filter(p => p.trim().length > 0);
-    // إزالة الأرقام المنفردة من التقسيم
-    const validParts = parts.filter(p => !/^\d$/.test(p.trim()) && p.trim().length > 50);
-    if (validParts.length >= 5) {
-      return validParts.slice(0, 5).map(p => p.trim());
+  // البحث عن كل نقطة بداية تصميم
+  const designStartPattern = /(?:^|\n)\s*(?:#{1,3}\s*)?(?:\*\*)?Design\s*#?\s*(\d)\s*(?:\*\*)?[:\-–—\s]*(?:\n|$)/gi;
+
+  const matches: { index: number; designNum: number }[] = [];
+  let match;
+
+  while ((match = designStartPattern.exec(text)) !== null) {
+    const designNum = parseInt(match[1], 10);
+    if (designNum >= 1 && designNum <= 5) {
+      matches.push({
+        index: match.index + match[0].length,
+        designNum
+      });
     }
   }
 
-  return [];
+  // ترتيب المطابقات حسب رقم التصميم
+  matches.sort((a, b) => a.designNum - b.designNum);
+
+  // استخراج المحتوى بين كل تصميم والذي يليه
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index - 50 : text.length; // -50 لاستبعاد العنوان التالي
+
+    let content = text.substring(start, end).trim();
+
+    // إزالة علامات النهاية إذا وُجدت
+    content = content.replace(/={2,}\s*END[_\s-]*DESIGN[_\s-]*\d\s*={2,}/gi, '').trim();
+
+    if (content.length > 100) {
+      prompts.push(content);
+    }
+  }
+
+  return prompts;
 }
 
-// الطريقة 4: أقسام مرقمة
+// الطريقة 4: أقسام مرقمة (محسّنة - تحافظ على المحتوى الكامل)
 function parseWithNumberedSections(text: string): string[] {
-  // البحث عن أنماط ترقيم مختلفة
-  const splitPatterns = [
-    /(?:^|\n)\s*(?:\d+[\.\)\-:]|\*\*\d+\*\*)\s*/,
-    /(?:^|\n)\s*Design\s+\d+/i,
-    /(?:^|\n)\s*#{1,3}\s*\d+/,
+  const prompts: string[] = [];
+
+  // البحث عن أنماط ترقيم شائعة للتصاميم
+  const sectionPatterns = [
+    // **1.** أو **Design 1:**
+    /(?:^|\n)\s*\*\*\s*(?:Design\s*)?(\d)[.\):]\s*\*\*/gi,
+    // ## Design 1 أو ### 1.
+    /(?:^|\n)\s*#{1,3}\s*(?:Design\s*)?(\d)[.\):]?\s*/gi,
+    // 1. أو 1) أو 1:
+    /(?:^|\n)\s*(\d)[.\):][\s]+(?=\S)/gi,
   ];
 
-  for (const pattern of splitPatterns) {
-    const parts = text.split(pattern).filter(p => p.trim().length > 100);
-    if (parts.length >= 5) {
-      return parts.slice(0, 5).map(p => p.trim());
+  for (const pattern of sectionPatterns) {
+    const matches: { index: number; num: number; matchLength: number }[] = [];
+    let match;
+
+    // إعادة تعيين lastIndex للـ regex
+    pattern.lastIndex = 0;
+
+    while ((match = pattern.exec(text)) !== null) {
+      const num = parseInt(match[1], 10);
+      if (num >= 1 && num <= 5) {
+        matches.push({
+          index: match.index + match[0].length,
+          num,
+          matchLength: match[0].length
+        });
+      }
+    }
+
+    if (matches.length >= 5) {
+      // ترتيب حسب الترقيم
+      matches.sort((a, b) => a.num - b.num);
+
+      // استخراج المحتوى
+      const extracted: string[] = [];
+      for (let i = 0; i < Math.min(matches.length, 5); i++) {
+        const start = matches[i].index;
+        const end = i + 1 < matches.length ? matches[i + 1].index - matches[i + 1].matchLength : text.length;
+
+        const content = text.substring(start, end).trim();
+        if (content.length > 100) {
+          extracted.push(content);
+        }
+      }
+
+      if (extracted.length >= 5) {
+        return extracted.slice(0, 5);
+      }
     }
   }
 
-  // محاولة أخيرة: تقسيم على أساس الفقرات الكبيرة
-  const paragraphs = text.split(/\n{2,}/).filter(p => p.trim().length > 150);
-  if (paragraphs.length >= 5) {
-    return paragraphs.slice(0, 5).map(p => p.trim());
-  }
-
-  return [];
+  return prompts;
 }
 
 /**
@@ -339,7 +512,7 @@ function buildMultiDesignPrompt(
   return `You are an elite couture fashion designer AI. Your task is to generate EXACTLY 5 COMPLETELY DIFFERENT and UNIQUE dress designs based on the client's fabric image AND their preferences below.
 
 ⚠️ CRITICAL: You MUST generate ALL 5 DESIGNS with proper markers. Incomplete output is unacceptable.
-
+⚠️   Warning: The back design must be perfectly consistent with the front design. The gown must read as one fully integrated, cohesive piece. Avoid creating any back design that feels disconnected, contradictory, or visually inconsistent with the front.
 ═══════════════════════════════════════════════════════════════════
 📷 STEP 1: ANALYZE THE FABRIC IMAGE
 ═══════════════════════════════════════════════════════════════════
@@ -367,22 +540,91 @@ ${questionnaireInstructions}
 🎨 DESIGN VARIETY REQUIREMENTS
 ═══════════════════════════════════════════════════════════════════
 
-Each of the 5 designs MUST be distinctly different in:
-• Silhouette (A-line, mermaid, ball gown, column, fit-and-flare)
-• Neckline (V-neck, sweetheart, off-shoulder, halter, high neck, strapless)
-• Sleeve style (sleeveless, cap, long, bell, puff, sheer)
-• Skirt shape (flowing, fitted, layered, high-low, with slit)
-• Back design (open, keyhole, corset, illusion, covered with buttons)
-• Embellishment placement and intensity
+Each of the 5 designs MUST be distinctly different in the following aspects:
 
-DO NOT create 5 variations of the same dress. Each design should feel like a completely different vision.
+• Silhouette (Cut / Shape)
+
+Choose from a wide range of evening-appropriate silhouettes, such as:
+
+A-line
+Mermaid / Fishtail
+Ball Gown
+Column
+Fit-and-Flare
+Trumpet
+Empire Waist
+Asymmetrical Cut
+Sculpted Corset Silhouette
+Draped Grecian Silhouette
+
+• Neckline
+
+Each design must feature a different neckline, including but not limited to:
+V-neck
+Deep Plunging V
+Sweetheart
+Straight Strapless
+Asymmetrical One-Shoulder
+Off-Shoulder
+Halter Neck
+High Neck
+Illusion Neckline
+Square Neck
+Draped Cowl Neck
+
+• Sleeve Style
+
+Sleeve treatments must vary clearly between designs:
+Sleeveless
+Cap Sleeves
+Long Fitted Sleeves
+Sheer Long Sleeves
+Bell Sleeves
+Bishop Sleeves
+Puff Sleeves
+Off-Shoulder Sleeves
+Draped Sleeves
+One-Sleeve Design
+
+• Skirt Shape
+
+The skirt construction must differ significantly across designs:
+Straight / Column Skirt
+Flowing A-line Skirt
+Fully Layered Skirt
+Soft Tulle Volume
+High Slit Skirt
+Wrap Skirt
+High-Low Hem
+Overskirt
+Draped Skirt
+Sculpted Structured Skirt
+
+• Embellishment Placement & Intensity
+
+Embellishment must vary in both placement and density:
+Minimal embroidery concentrated at bodice
+Vertical embroidery elongating the silhouette
+Gradient embellishment fading toward the hem
+Asymmetrical embellishment placement
+Heavy embellishment on bodice with clean skirt
+Scattered crystal or bead detailing
+Tone-on-tone embroidery for subtle luxury
+
+❌ DO NOT create variations of the same dress.
+✔️ Each design must feel like a completely unique evening gown vision
 
 ═══════════════════════════════════════════════════════════════════
 ✏️ OUTPUT FORMAT (MANDATORY - Follow EXACTLY)
 ═══════════════════════════════════════════════════════════════════
 
 ===DESIGN_1===
-**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]  Silhouette: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Neckline: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Sleeve Style: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Skirt Shape: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Embellishment Placement & Intensity: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+
 
 **Front View:** [3-4 detailed sentences: neckline, bodice construction, waist definition, skirt shape, embellishment placement, how the fabric drapes and moves]
 
@@ -390,7 +632,11 @@ DO NOT create 5 variations of the same dress. Each design should feel like a com
 ===END_DESIGN_1===
 
 ===DESIGN_2===
-**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]  Silhouette: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Neckline: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Sleeve Style: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Skirt Shape: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Embellishment Placement & Intensity: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
 
 **Front View:** [Completely different design approach]
 
@@ -398,7 +644,11 @@ DO NOT create 5 variations of the same dress. Each design should feel like a com
 ===END_DESIGN_2===
 
 ===DESIGN_3===
-**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]  Silhouette: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Neckline: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Sleeve Style: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Skirt Shape: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Embellishment Placement & Intensity: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
 
 **Front View:** [Another unique vision]
 
@@ -406,7 +656,11 @@ DO NOT create 5 variations of the same dress. Each design should feel like a com
 ===END_DESIGN_3===
 
 ===DESIGN_4===
-**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]  Silhouette: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Neckline: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Sleeve Style: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Skirt Shape: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Embellishment Placement & Intensity: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
 
 **Front View:** [Distinct design direction]
 
@@ -414,7 +668,11 @@ DO NOT create 5 variations of the same dress. Each design should feel like a com
 ===END_DESIGN_4===
 
 ===DESIGN_5===
-**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]
+**Design Specs:** Type: [X] | Length: [X] | Style: [X] | Back: [X]  Silhouette: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Neckline: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Sleeve Style: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Skirt Shape: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
+Embellishment Placement & Intensity: [Choose from the DESIGN VARIETY REQUIREMENTS section. The selected option must be appropriate for the provided fabric image and aligned with the overall design concept.]
 
 **Front View:** [Final unique creation]
 

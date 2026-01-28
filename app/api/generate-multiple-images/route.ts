@@ -198,14 +198,15 @@ Think of a professional fashion photography infinity cove - a curved white/cream
 BRANDING / LOGO
 ═══════════════════════════════════════════════════════════════════
 
-**Logo Placement:**
-• Text: "yasmin-alsham" floating in the background (centered between mannequins)
-• Position: upper portion of image, above the mannequins
-• Style: luxury, elegant, high-end
-• Font: Playfair Display serif
-• Color: metallic gold (#C9A85A)
-• Above the text: small hand-drawn minimal couture dress sketch in soft black line-art
-• Logo appears to float on the seamless background - NOT on a wall
+Logo Placement:
+
+Text: "Brokar Al Sharqiya" floating in the background (centered between mannequins)
+Position: upper portion of image, above the mannequins
+Style: luxury, elegant, high-end
+Font: Elegant handwritten signature script style, sophisticated calligraphy 
+Color: Black
+Above the text: small hand-drawn minimal couture dress sketch in soft black line-art
+Logo appears to float on the seamless background - NOT on a wall
 
 ═══════════════════════════════════════════════════════════════════
 ⛔ HARD RULES - VIOLATION IS UNACCEPTABLE
