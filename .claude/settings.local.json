@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c 'dir \"\"c:\\\\Users\\\\khale\\\\OneDrive\\\\سطح المكتب\\\\ai designer virsion 2\\\\*.png\"\" /b 2>&1')"
+    ]
+  }
+}

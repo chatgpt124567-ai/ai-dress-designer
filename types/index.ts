@@ -10,6 +10,7 @@ export interface EnhancePromptRequest {
   secondaryFabricType?: string; // Secondary fabric type (if not image)
   primaryFabricPlacement?: string; // Where to use primary fabric
   secondaryFabricPlacement?: string; // Where to use secondary fabric
+  secondaryFabricColor?: string; // Color of the secondary fabric
 }
 
 export interface EnhancePromptResponse {
@@ -18,12 +19,12 @@ export interface EnhancePromptResponse {
   error?: string;
 }
 
-export type GeminiImageModel = 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview';
+export type GeminiImageModel = 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview';
 
 export interface GenerateImageRequest {
   prompt: string;
   fabricImage?: string; // NEW: Custom fabric image (Base64 data URL)
-  model?: GeminiImageModel; // Optional: defaults to gemini-2.5-flash-image
+  model?: GeminiImageModel; // Optional: defaults to gemini-3.1-flash-image-preview
   // Own Fabric Workflow
   primaryFabricImage?: string; // Primary fabric image (Base64)
   secondaryFabricImage?: string; // Secondary fabric image (Base64)
@@ -195,6 +196,6 @@ export interface Design {
   original_description?: string; // Optional: JSON string of questionnaire answers or text description
   image_data?: string; // Optional: Base64 image data (legacy)
   embellishment_placement?: string | null; // Optional: Embellishment placement details
-  model_used?: string; // Optional: AI model used for generation (e.g., 'google/gemini-2.5-flash-image')
+  model_used?: string; // Optional: AI model used for generation (e.g., 'google/gemini-3.1-flash-image-preview')
 }
 

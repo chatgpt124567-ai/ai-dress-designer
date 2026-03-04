@@ -126,7 +126,7 @@ Receive enhanced description
          ↓
 Send enhanced description to /api/generate-image
          ↓
-Gemini 2.5 Flash Image generates dress image
+Gemini 3.1 Flash Image Preview generates dress image
          ↓
 Display final image with yasmin-alsham branding
 ```
@@ -158,7 +158,7 @@ Transform all the information into one polished, cohesive paragraph written
 in the tone of a luxury fashion designer describing a couture dress.
 ```
 
-### 2. **Gemini 2.5 Flash Image** (`google/gemini-2.5-flash-image`)
+### 2. **Gemini 3.1 Flash Image Preview** (`google/gemini-3.1-flash-image-preview`)
 **Purpose:** Image Generation
 **Endpoint:** `/api/generate-image`
 
@@ -494,7 +494,7 @@ npm run build
 ### Documentation
 - **OpenRouter API:** https://openrouter.ai/docs
 - **DeepSeek R1:** https://openrouter.ai/models/deepseek/deepseek-r1-0528:free
-- **Gemini 2.5 Flash Image:** https://openrouter.ai/models/google/gemini-2.5-flash-image
+- **Gemini 3.1 Flash Image Preview:** https://openrouter.ai/models/google/gemini-3.1-flash-image-preview
 - **Next.js 16:** https://nextjs.org/docs
 - **Framer Motion:** https://www.framer.com/motion/
 

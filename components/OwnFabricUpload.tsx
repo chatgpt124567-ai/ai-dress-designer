@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Camera, Image as ImageIcon, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
 
@@ -26,6 +27,7 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
   const [secondaryFabricImage, setSecondaryFabricImage] = useState<string | undefined>();
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const handleFileChange = (file: File | null, isPrimary: boolean) => {
     if (!file) {
@@ -35,31 +37,77 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
 
     console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
 
-    // Validate file size
-    if (file.size > 5 * 1024 * 1024) {
-      alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-      return;
-    }
-
     // Validate file type
     if (!file.type.startsWith('image/')) {
       alert(direction === 'rtl' ? 'يرجى اختيار ملف صورة' : 'Please select an image file');
       return;
     }
 
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const fileSizeMB = file.size / (1024 * 1024);
+
     const reader = new FileReader();
-    
-    reader.onload = () => {
+
+    reader.onload = async () => {
       const result = reader.result as string;
-      if (result) {
-        if (isPrimary) {
-          setPrimaryFabricImage(result);
-        } else {
-          setSecondaryFabricImage(result);
-        }
-      } else {
+      if (!result) {
         console.error('Reader result is empty');
         alert(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+        return;
+      }
+
+      let finalImage = result;
+
+      // Smart compression for images > 5MB
+      if (file.size > MAX_SIZE) {
+        try {
+          setIsCompressing(true);
+          const targetSizeMB = 4.99;
+          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
+
+          console.log(`Image is ${fileSizeMB.toFixed(2)}MB, compressing with quality ${quality.toFixed(2)}...`);
+
+          const compressed = await compressImage(result, 99999, quality);
+          const compressedBlob = base64ToBlob(compressed);
+          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
+
+          console.log(`Compressed: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB`);
+
+          if (compressedBlob.size > MAX_SIZE) {
+            setIsCompressing(false);
+            alert(
+              direction === 'rtl'
+                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
+                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
+            );
+            return;
+          }
+
+          finalImage = compressed;
+
+          const message = direction === 'rtl'
+            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
+            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
+          setTimeout(() => alert(message), 100);
+
+        } catch (error) {
+          console.error('Compression error:', error);
+          setIsCompressing(false);
+          alert(
+            direction === 'rtl'
+              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
+              : 'Failed to compress image. Please choose an image smaller than 5MB.'
+          );
+          return;
+        } finally {
+          setIsCompressing(false);
+        }
+      }
+
+      if (isPrimary) {
+        setPrimaryFabricImage(finalImage);
+      } else {
+        setSecondaryFabricImage(finalImage);
       }
     };
 

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export type GeminiModel = 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview';
+export type GeminiModel = 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview';
 
 export interface EditDesignRequest {
   originalImageUrl: string;
   editRequest: string;
-  model?: GeminiModel; // Optional: defaults to gemini-2.5-flash-image
+  model?: GeminiModel; // Optional: defaults to gemini-3.1-flash-image-preview
 }
 
 export interface EditDesignResponse {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     console.log('=== Edit Design API Called ===');
 
     const body: EditDesignRequest = await request.json();
-    const { originalImageUrl, editRequest, model = 'google/gemini-2.5-flash-image' } = body;
+    const { originalImageUrl, editRequest, model = 'google/gemini-3.1-flash-image-preview' } = body;
 
     console.log('Request details:', {
       hasImageUrl: !!originalImageUrl,

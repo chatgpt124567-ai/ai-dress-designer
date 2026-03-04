@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Upload, Sparkles, Download, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
 import { createClient } from '@/lib/supabase/client';
@@ -35,7 +36,7 @@ export default function RemoveModelWorkflow({
   const [step, setStep] = useState<WorkflowStep>('upload');
   const [uploadedImage, setUploadedImage] = useState<string>('');
   const [resultImage, setResultImage] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>('google/gemini-2.5-flash-image');
+  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>('google/gemini-3.1-flash-image-preview');
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -77,6 +78,8 @@ export default function RemoveModelWorkflow({
     onBack();
   };
 
+  const [isCompressing, setIsCompressing] = useState(false);
+
   // Handle file upload
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -89,20 +92,67 @@ export default function RemoveModelWorkflow({
       return;
     }
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError(direction === 'rtl' ? 'حجم الصورة يجب أن يكون أقل من 10 ميجابايت' : 'Image size must be less than 10MB');
-      return;
-    }
-
     setError('');
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const fileSizeMB = file.size / (1024 * 1024);
 
     // Convert to base64
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const base64 = event.target?.result as string;
-      setUploadedImage(base64);
-      // Stay on upload step to show preview with submit button
+      if (!base64) {
+        setError(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+        return;
+      }
+
+      let finalImage = base64;
+
+      // Smart compression for images > 5MB
+      if (file.size > MAX_SIZE) {
+        try {
+          setIsCompressing(true);
+          const targetSizeMB = 4.99;
+          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
+
+          console.log(`Image is ${fileSizeMB.toFixed(2)}MB, compressing with quality ${quality.toFixed(2)}...`);
+
+          const compressed = await compressImage(base64, 99999, quality);
+          const compressedBlob = base64ToBlob(compressed);
+          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
+
+          console.log(`Compressed: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB`);
+
+          if (compressedBlob.size > MAX_SIZE) {
+            setIsCompressing(false);
+            setError(
+              direction === 'rtl'
+                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
+                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
+            );
+            return;
+          }
+
+          finalImage = compressed;
+
+          const message = direction === 'rtl'
+            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
+            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
+          setTimeout(() => alert(message), 100);
+        } catch (err) {
+          console.error('Compression error:', err);
+          setIsCompressing(false);
+          setError(
+            direction === 'rtl'
+              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
+              : 'Failed to compress image. Please choose an image smaller than 5MB.'
+          );
+          return;
+        } finally {
+          setIsCompressing(false);
+        }
+      }
+
+      setUploadedImage(finalImage);
     };
     reader.readAsDataURL(file);
   };
@@ -110,7 +160,7 @@ export default function RemoveModelWorkflow({
   // Handle submit - start processing with fast model
   const handleSubmit = () => {
     if (!uploadedImage) return;
-    handleModelSelect('google/gemini-2.5-flash-image');
+    handleModelSelect('google/gemini-3.1-flash-image-preview');
   };
 
   // Auto-save to profile (called automatically after successful processing)
@@ -255,7 +305,14 @@ export default function RemoveModelWorkflow({
 
             {/* Upload Area or Image Preview */}
             <div className="luxury-card p-8">
-              {!uploadedImage ? (
+              {isCompressing ? (
+                <div className="flex flex-col items-center justify-center py-16 space-y-4">
+                  <div className="w-12 h-12 border-4 border-accent-gold border-t-transparent rounded-full animate-spin" />
+                  <p className="text-base text-gray-600 font-medium">
+                    {direction === 'rtl' ? 'جارٍ ضغط الصورة...' : 'Compressing image...'}
+                  </p>
+                </div>
+              ) : !uploadedImage ? (
                 // Upload area when no image
                 <label
                   htmlFor="image-upload"
@@ -277,7 +334,7 @@ export default function RemoveModelWorkflow({
                         {direction === 'rtl' ? 'اختاري صورة من جهازك' : 'Choose an image from your device'}
                       </p>
                       <p className="text-sm text-neutral-500">
-                        {direction === 'rtl' ? 'JPG, PNG, WEBP - حتى 10 ميجابايت' : 'JPG, PNG, WEBP - up to 10MB'}
+                        {direction === 'rtl' ? 'JPG, PNG, WEBP - حتى 5 ميجابايت (يتم الضغط تلقائياً)' : 'JPG, PNG, WEBP - up to 5MB (auto-compressed)'}
                       </p>
                     </div>
                   </div>

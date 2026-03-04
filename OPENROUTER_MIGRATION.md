@@ -84,7 +84,7 @@ POST https://openrouter.ai/api/v1/chat/completions
 **Changes:**
 - ❌ Removed: `import { GoogleGenerativeAI } from '@google/generative-ai';`
 - ✅ Added: Direct fetch calls to OpenRouter API
-- ✅ Model: `google/gemini-2.5-flash-image` (State-of-the-art image generation)
+- ✅ Model: `google/gemini-3.1-flash-image-preview` (State-of-the-art image generation)
 - ✅ Maintained: Same input/output interface
 - ✅ Maintained: Retry logic (3 attempts with 3s delay)
 - ✅ Maintained: Error handling and Arabic error messages
@@ -98,7 +98,7 @@ POST https://openrouter.ai/api/v1/chat/completions
 **Request Body:**
 ```javascript
 {
-  model: 'google/gemini-2.5-flash-image',
+  model: 'google/gemini-3.1-flash-image-preview',
   messages: [
     { role: 'user', content: imagePrompt }
   ],
@@ -151,7 +151,7 @@ POST https://openrouter.ai/api/v1/chat/completions
 
 ---
 
-### For Image Generation: `google/gemini-2.5-flash-image`
+### For Image Generation: `google/gemini-3.1-flash-image-preview`
 
 **Why this model?**
 - ✅ **State-of-the-art**: Latest Gemini image generation model ("Nano Banana")

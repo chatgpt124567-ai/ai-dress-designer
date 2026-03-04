@@ -86,7 +86,7 @@ export default function ModelSelectionModal({
                 <div className="grid grid-cols-1 gap-4">
                   {/* Simple Model Option */}
                   <button
-                    onClick={() => handleModelSelect('google/gemini-2.5-flash-image')}
+                    onClick={() => handleModelSelect('google/gemini-3.1-flash-image-preview')}
                     disabled={loading}
                     className={cn(
                       'group relative p-6 rounded-xl border-2 transition-all text-start',

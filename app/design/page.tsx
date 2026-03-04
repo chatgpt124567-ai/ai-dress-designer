@@ -69,7 +69,7 @@ export default function DesignPage() {
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [pendingSubmitAnswers, setPendingSubmitAnswers] = useState<QuestionnaireAnswers | null>(null);
   const [modelSelectionModalOpen, setModelSelectionModalOpen] = useState(false); // Track model selection modal
-  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>('google/gemini-2.5-flash-image'); // Track selected model
+  const [selectedModel, setSelectedModel] = useState<GeminiImageModel>('google/gemini-3.1-flash-image-preview'); // Track selected model
   const [pendingGenerationAnswers, setPendingGenerationAnswers] = useState<QuestionnaireAnswers | null>(null); // Track answers pending model selection
 
   // Own Fabric Workflow State
@@ -80,6 +80,7 @@ export default function DesignPage() {
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
   const [primaryFabricPlacement, setPrimaryFabricPlacement] = useState<string | undefined>();
   const [secondaryFabricPlacement, setSecondaryFabricPlacement] = useState<string | undefined>();
+  const [secondaryFabricColor, setSecondaryFabricColor] = useState<string | undefined>();
 
   // Multi Design State (5 designs at once)
   interface MultiDesignResult {
@@ -196,6 +197,9 @@ export default function DesignPage() {
             setPrimaryFabricPlacement(placements.primary);
             setSecondaryFabricPlacement(placements.secondary);
             setSecondaryFabricType(placements.secondaryType);
+            if (placements.secondaryColor) {
+              setSecondaryFabricColor(placements.secondaryColor);
+            }
           } catch (e) {
             console.error('Error parsing ownFabric placements:', e);
           }
@@ -330,11 +334,12 @@ export default function DesignPage() {
         if (secondaryFabricImage) {
           localStorage.setItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY, secondaryFabricImage);
         }
-        if (primaryFabricPlacement || secondaryFabricPlacement || secondaryFabricType) {
+        if (primaryFabricPlacement || secondaryFabricPlacement || secondaryFabricType || secondaryFabricColor) {
           localStorage.setItem(STORAGE_OWNFABRIC_PLACEMENTS_KEY, JSON.stringify({
             primary: primaryFabricPlacement,
             secondary: secondaryFabricPlacement,
-            secondaryType: secondaryFabricType
+            secondaryType: secondaryFabricType,
+            secondaryColor: secondaryFabricColor,
           }));
         }
       } catch (error) {
@@ -349,7 +354,7 @@ export default function DesignPage() {
         }
       }
     }
-  }, [designMode, ownFabricStep, primaryFabricImage, secondaryFabricImage, primaryFabricPlacement, secondaryFabricPlacement, secondaryFabricType]);
+  }, [designMode, ownFabricStep, primaryFabricImage, secondaryFabricImage, primaryFabricPlacement, secondaryFabricPlacement, secondaryFabricType, secondaryFabricColor]);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -554,7 +559,7 @@ export default function DesignPage() {
     setCurrentAnswers(questionnaireAnswers); // Store answers for later saving
 
     // Use provided model or default to simple model
-    const selectedAIModel = model || 'google/gemini-2.5-flash-image';
+    const selectedAIModel = model || 'google/gemini-3.1-flash-image-preview';
     console.log('🎨 Processing design with model:', selectedAIModel);
 
     try {
@@ -572,9 +577,15 @@ export default function DesignPage() {
         if (secondaryFabricImage) {
           enhancePayload.secondaryFabricImage = secondaryFabricImage;
           enhancePayload.secondaryFabricPlacement = secondaryFabricPlacement;
+          if (secondaryFabricColor) {
+            enhancePayload.secondaryFabricColor = secondaryFabricColor;
+          }
         } else if (secondaryFabricType) {
           enhancePayload.secondaryFabricType = secondaryFabricType;
           enhancePayload.secondaryFabricPlacement = secondaryFabricPlacement;
+          if (secondaryFabricColor) {
+            enhancePayload.secondaryFabricColor = secondaryFabricColor;
+          }
         }
       }
 
@@ -685,6 +696,7 @@ export default function DesignPage() {
       setSecondaryFabricType(undefined);
       setPrimaryFabricPlacement(undefined);
       setSecondaryFabricPlacement(undefined);
+      setSecondaryFabricColor(undefined);
     }
 
     // Clear all saved state from localStorage
@@ -945,7 +957,7 @@ export default function DesignPage() {
     answers: QuestionnaireAnswers,
     prompt: string,
     imageUrl: string,
-    modelUsed: GeminiImageModel = 'google/gemini-2.5-flash-image'
+    modelUsed: GeminiImageModel = 'google/gemini-3.1-flash-image-preview'
   ) => {
     try {
       const supabase = createClient();
@@ -1109,6 +1121,21 @@ export default function DesignPage() {
   // Handle back to mode selection
   const handleBackToModeSelection = () => {
     setDesignMode('selection');
+
+    // Reset design result state so the "Results" tab is empty on next design
+    setImageUrl('');
+    setEnhancedPrompt('');
+    setDescription('');
+    setStep('input');
+    setError('');
+    setImageHistory([]);
+    setCurrentAnswers(null);
+
+    // Reset multi-design state
+    setMultiDesigns([]);
+    setMultiDesignLoading(false);
+    setBatchQuestionnaireAnswers(null);
+
     // Reset own fabric workflow state
     setOwnFabricStep('upload');
     setPrimaryFabricImage(undefined);
@@ -1116,6 +1143,7 @@ export default function DesignPage() {
     setSecondaryFabricType(undefined);
     setPrimaryFabricPlacement(undefined);
     setSecondaryFabricPlacement(undefined);
+    setSecondaryFabricColor(undefined);
 
     // Clear saved page state when going back to selection
     localStorage.removeItem(STORAGE_DESIGN_MODE_KEY);
@@ -1432,7 +1460,7 @@ export default function DesignPage() {
         body: JSON.stringify({
           originalImageUrl: design.imageUrl,
           editRequest: editRequest,
-          model: model as 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview',
+          model: model as 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview',
         } as EditDesignRequest),
       });
 
@@ -1502,9 +1530,11 @@ export default function DesignPage() {
   const handleFabricPlacementComplete = (data: {
     primaryFabricPlacement: string;
     secondaryFabricPlacement?: string;
+    secondaryFabricColor?: string;
   }) => {
     setPrimaryFabricPlacement(data.primaryFabricPlacement);
     setSecondaryFabricPlacement(data.secondaryFabricPlacement);
+    setSecondaryFabricColor(data.secondaryFabricColor);
     // بعد الـ placement اذهب لخطوة الاختيار
     setOwnFabricStep('choice');
   };
@@ -1633,6 +1663,7 @@ export default function DesignPage() {
                   hasSecondaryFabric={!!(secondaryFabricImage || secondaryFabricType)}
                   initialPrimaryPlacement={primaryFabricPlacement}
                   initialSecondaryPlacement={secondaryFabricPlacement}
+                  initialSecondaryColor={secondaryFabricColor}
                   onComplete={handleFabricPlacementComplete}
                   onBack={handleBackFromFabricPlacement}
                 />

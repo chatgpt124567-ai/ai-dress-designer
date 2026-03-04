@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Upload, Camera, X, Image as ImageIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
 
@@ -13,7 +14,7 @@ interface ImageUploadStepProps {
   onBack: () => void;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FORMATS = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 export default function ImageUploadStep({ onImageSelected, onBack }: ImageUploadStepProps) {
@@ -22,6 +23,7 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
   const [error, setError] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,17 +36,65 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
       return;
     }
 
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      setError(t('design.external.upload.errors.fileTooLarge'));
-      return;
-    }
+    const fileSizeMB = file.size / (1024 * 1024);
 
     // Read and preview the image
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const result = e.target?.result as string;
-      setPreview(result);
+      if (!result) {
+        setError(t('design.external.upload.errors.readFailed'));
+        return;
+      }
+
+      let finalImage = result;
+
+      // Smart compression for images > 5MB
+      if (file.size > MAX_SIZE) {
+        try {
+          setIsCompressing(true);
+          const targetSizeMB = 4.99;
+          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
+
+          console.log(`Image is ${fileSizeMB.toFixed(2)}MB, compressing with quality ${quality.toFixed(2)}...`);
+
+          const compressed = await compressImage(result, 99999, quality);
+          const compressedBlob = base64ToBlob(compressed);
+          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
+
+          console.log(`Compressed: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB`);
+
+          if (compressedBlob.size > MAX_SIZE) {
+            setIsCompressing(false);
+            setError(
+              direction === 'rtl'
+                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
+                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
+            );
+            return;
+          }
+
+          finalImage = compressed;
+
+          const message = direction === 'rtl'
+            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
+            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
+          setTimeout(() => alert(message), 100);
+        } catch (err) {
+          console.error('Compression error:', err);
+          setIsCompressing(false);
+          setError(
+            direction === 'rtl'
+              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
+              : 'Failed to compress image. Please choose an image smaller than 5MB.'
+          );
+          return;
+        } finally {
+          setIsCompressing(false);
+        }
+      }
+
+      setPreview(finalImage);
     };
     reader.onerror = () => {
       setError(t('design.external.upload.errors.readFailed'));
@@ -106,7 +156,14 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
             {t('design.external.upload.selectImage')}
           </h3>
 
-          {!preview ? (
+          {isCompressing ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-3">
+              <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-gray-600 font-medium">
+                {direction === 'rtl' ? 'جارٍ ضغط الصورة...' : 'Compressing image...'}
+              </p>
+            </div>
+          ) : !preview ? (
             <div className="flex flex-col sm:flex-row gap-4">
               {/* Take Photo Button */}
               <label className="flex-1 cursor-pointer">

@@ -1,76 +1,157 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { GenerateImageRequest, GenerateImageResponse, GeminiImageModel, QuestionnaireAnswers } from '@/types';
 
+// English label mappings for questionnaire option values
+const ENGLISH_LABELS: Record<string, Record<string, string>> = {
+  dressType: {
+    evening: 'Evening Gown',
+    wedding: 'Wedding Dress',
+    engagement: 'Engagement Dress',
+    party: 'Party Dress',
+  },
+  dressLength: {
+    knee: 'Knee-length',
+    long: 'Long',
+    floor: 'Floor-length',
+    train: 'With train',
+  },
+  designStyle: {
+    classic: 'Classic',
+    modern: 'Modern',
+    romantic: 'Romantic',
+    glamorous: 'Glamorous',
+    boho: 'Boho',
+    dramatic: 'Dramatic',
+    minimalist: 'Minimalist',
+  },
+  backStyle: {
+    covered: 'Fully covered',
+    openBack: 'Open back',
+    deepV: 'Deep V-back',
+    keyhole: 'Keyhole back',
+    illusion: 'Illusion back with embroidery',
+    laceBack: 'Lace back',
+    lowBack: 'Low back',
+    crossBack: 'Cross back',
+    bowBack: 'Bow back',
+    corsetBack: 'Corset lace-up',
+  },
+  necklineType: {
+    vNeck: 'V-neck',
+    round: 'Round neck',
+    sweetheart: 'Sweetheart',
+    offShoulder: 'Off-shoulder',
+    high: 'High neck',
+    oneShoulder: 'One-shoulder',
+    strapless: 'Strapless',
+    square: 'Square neck',
+  },
+  sleeveType: {
+    sleeveless: 'Sleeveless',
+    short: 'Short sleeves',
+    long: 'Long sleeves',
+    sheer: 'Sheer sleeves',
+    puff: 'Puff sleeves',
+    offShoulder: 'Off-shoulder sleeves',
+    lace: 'Lace sleeves',
+  },
+  skirtShape: {
+    straight: 'Straight',
+    tight: 'Tight',
+    layered: 'Layered',
+    pleated: 'Pleated',
+    puffy: 'Puffy',
+    mermaidTail: 'Mermaid Tail',
+    overskirt: 'With Overskirt',
+    peplum: 'With Peplum at Waist',
+    sideDrape: 'Side Drape / Cascade',
+  },
+  embellishments: {
+    sequins: 'Sequins',
+    stones: 'Rhinestones (Crystals)',
+    pearls: 'Pearls',
+    embroideryBeads: 'Embroidery & Beads',
+    decorativeLace: 'Decorative lace',
+    '3dFlowers': '3D flowers',
+    feathers: 'Feathers',
+    bow: 'Bow',
+    ruffles: 'Ruffles',
+    belt: 'Belt',
+  },
+};
+
+// Helper: get English label for a predefined option, or custom text as-is
+function getEnglishLabel(category: string, value: string, customValue?: string): string {
+  if (value === 'other' && customValue) return customValue;
+  if (customValue) return customValue;
+  return ENGLISH_LABELS[category]?.[value] || value;
+}
+
 // Helper function to format Design Specs from questionnaire answers
 function formatDesignSpecs(answers: QuestionnaireAnswers): string {
-  const specs: string[] = [];
+  const lines: string[] = [];
 
   // Type
   if (answers.dressType) {
-    const typeValue = answers.dressTypeCustom || answers.dressType;
-    specs.push(`• Type: ${typeValue}`);
+    lines.push(`Type: ${getEnglishLabel('dressType', answers.dressType, answers.dressTypeCustom)}`);
   }
 
   // Length
   if (answers.dressLength) {
-    const lengthValue = answers.dressLengthCustom || answers.dressLength;
-    specs.push(`• Length: ${lengthValue}`);
+    lines.push(`Length: ${getEnglishLabel('dressLength', answers.dressLength, answers.dressLengthCustom)}`);
   }
 
-  // Back Style
+  // Style
+  if (answers.designStyle) {
+    lines.push(`Style: ${getEnglishLabel('designStyle', answers.designStyle, answers.designStyleCustom)}`);
+  }
+
+  // Back
   if (answers.backStyle) {
-    const backValue = answers.backStyleCustom || answers.backStyle;
-    specs.push(`• Back: ${backValue}`);
+    lines.push(`Back: ${getEnglishLabel('backStyle', answers.backStyle, answers.backStyleCustom)}`);
   }
 
   // Neckline
   if (answers.necklineType) {
-    const necklineValue = answers.necklineTypeCustom || answers.necklineType;
-    specs.push(`• Neckline: ${necklineValue}`);
+    lines.push(`Neckline: ${getEnglishLabel('necklineType', answers.necklineType, answers.necklineTypeCustom)}`);
   }
 
   // Sleeve Style
   if (answers.sleeveType) {
-    const sleeveValue = answers.sleeveTypeCustom || answers.sleeveType;
-    specs.push(`• Sleeve Style: ${sleeveValue}`);
+    lines.push(`Sleeve Style: ${getEnglishLabel('sleeveType', answers.sleeveType, answers.sleeveTypeCustom)}`);
   }
 
   // Skirt Shape
   if (answers.skirtShape) {
-    const skirtValue = answers.skirtShapeCustom || answers.skirtShape;
-    specs.push(`• Skirt Shape: ${skirtValue}`);
+    lines.push(`Skirt Shape: ${getEnglishLabel('skirtShape', answers.skirtShape, answers.skirtShapeCustom)}`);
   }
 
   // Embellishment Placement & Intensity
   if (answers.embellishments && answers.embellishments.length > 0) {
-    const embellishmentsList = answers.embellishments
-      .map(e => answers.embellishmentsCustom && e === 'other' ? answers.embellishmentsCustom : e)
+    const embellishmentLabels = answers.embellishments
+      .map(e => {
+        if (e === 'other' && answers.embellishmentsCustom) return answers.embellishmentsCustom;
+        return ENGLISH_LABELS.embellishments[e] || e;
+      })
       .join(', ');
 
-    let embellishmentDetails = embellishmentsList;
+    let embellishmentDetails = embellishmentLabels;
 
-    // Add placement details if available
     if (answers.embellishmentPlacements && Object.keys(answers.embellishmentPlacements).length > 0) {
       const placements = Object.entries(answers.embellishmentPlacements)
-        .map(([type, placement]) => `${type}: ${placement}`)
+        .map(([type, placement]) => `${ENGLISH_LABELS.embellishments[type] || type}: ${placement}`)
         .join('; ');
       embellishmentDetails += ` (Placement: ${placements})`;
     } else if (answers.embellishmentPlacement) {
       embellishmentDetails += ` (Placement: ${answers.embellishmentPlacement})`;
     }
 
-    specs.push(`• Embellishment Placement & Intensity: ${embellishmentDetails}`);
+    lines.push(`Embellishment Placement & Intensity: ${embellishmentDetails}`);
   } else {
-    specs.push(`• Embellishment Placement & Intensity: Not specified`);
+    lines.push(`Embellishment Placement & Intensity: None`);
   }
 
-  // Style
-  if (answers.designStyle) {
-    const styleValue = answers.designStyleCustom || answers.designStyle;
-    specs.push(`• Style: ${styleValue}`);
-  }
-
-  return specs.length > 0 ? specs.join('\n') : '';
+  return lines.join('\n');
 }
 
 export async function POST(request: NextRequest) {
@@ -81,7 +162,7 @@ export async function POST(request: NextRequest) {
       fabricImage,
       primaryFabricImage,
       secondaryFabricImage,
-      model = 'google/gemini-2.5-flash-image',
+      model = 'google/gemini-3.1-flash-image-preview',
       questionnaireAnswers
     } = body;
 
@@ -160,14 +241,13 @@ FABRIC INSTRUCTION (CRITICAL - HIGHEST PRIORITY):
 • The custom fabric is the PRIMARY design element - treat it with utmost precision`;
     }
 
-    // Build Design Specs section if questionnaire answers are provided (Own Fabric Workflow only)
+    // Build Design Specs section if questionnaire answers are provided
     let designSpecsSection = '';
-    if (primaryFabricImage && questionnaireAnswers) {
+    if (questionnaireAnswers) {
       const designSpecs = formatDesignSpecs(questionnaireAnswers);
       if (designSpecs) {
         designSpecsSection = `
 
-**Design Specs:**
 ${designSpecs}
 
 `;
@@ -201,7 +281,7 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 • Leave appropriate spacing between the two views
 
 **MANNEQUIN REQUIREMENTS (for BOTH views):**
-• Beige/cream fabric torso.
+• white fabric torso.
 • No arms.
 • Identical proportions and pose for both mannequins.
 • Headless mannequin.
@@ -220,19 +300,20 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 
 ---
 
-Branding / Logo Requirements:
-• Logo on the wall behind the mannequins (centered between both).
-• Text: "yasmin-alsham"
-• Style: luxury, elegant, high-end.
-• Font: Playfair Display serif.
-• Color: metallic gold (#C9A85A).
-• Centered above the mannequins.
-• Above the text: a small hand-drawn minimal couture dress sketch in soft black line-art.
-• Logo and sketch must remain identical across all images (size, placement, and styling).
+Logo Placement:
+
+Text: "Brokar Al Sharqiya" floating in the background (centered between mannequins)
+Position: upper portion of image, above the mannequins
+Style: luxury, elegant, high-end
+Font: Elegant handwritten signature script style, sophisticated calligraphy 
+Color: Black
+Above the text: small hand-drawn minimal couture dress sketch in soft black line-art
+Logo appears to float on the seamless background - NOT on a wall
+
 
 Background & Environment:
 • Minimal luxury fashion studio.
-• Soft beige/cream gradient background.
+• white background.
 • Clean soft shadows under both mannequins.
 • Consistent neutral lighting.
 • No extra props or clutter.
@@ -254,7 +335,17 @@ Hard Rules (must follow):
 • MUST show BOTH front and back views in the same image.
 
 Output:
-Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "yasmin-alsham" gold logo and the couture sketch above them.`;
+Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "Brokar Al Sharqiya" gold logo and the couture sketch above them.`;
+
+    // طباعة البرومبت النهائي الكامل الذي سيُرسل لتوليد الصورة
+    console.log('\n');
+    console.log('╔══════════════════════════════════════════════════════════════════╗');
+    console.log('║        🖼️  البرومبت النهائي المُرسل لتوليد الصورة 🖼️           ║');
+    console.log('╚══════════════════════════════════════════════════════════════════╝');
+    console.log(imagePrompt);
+    console.log('╔══════════════════════════════════════════════════════════════════╗');
+    console.log('║                    🔚 نهاية البرومبت النهائي                    ║');
+    console.log('╚══════════════════════════════════════════════════════════════════╝\n');
 
     // نظام إعادة المحاولة
     let imageData: string | null = null;
@@ -339,7 +430,7 @@ Two full-body mannequins side by side (left: back view, right: front view) weari
             'X-Title': 'Yasmine Al-Sham Smart Designer',
           },
           body: JSON.stringify({
-            model: model, // Use selected model (gemini-2.5-flash-image or gemini-3-pro-image-preview)
+            model: model, // Use selected model (gemini-3.1-flash-image-preview or gemini-3-pro-image-preview)
             messages: [
               {
                 role: 'user',

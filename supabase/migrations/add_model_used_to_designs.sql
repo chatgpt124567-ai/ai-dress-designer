@@ -7,14 +7,14 @@
 
 -- 1. Add model_used column to designs table
 ALTER TABLE designs 
-ADD COLUMN IF NOT EXISTS model_used TEXT DEFAULT 'google/gemini-2.5-flash-image';
+ADD COLUMN IF NOT EXISTS model_used TEXT DEFAULT 'google/gemini-3.1-flash-image-preview';
 
 -- 2. Add comment to model_used column
-COMMENT ON COLUMN designs.model_used IS 'AI model used for design generation (e.g., google/gemini-2.5-flash-image or google/gemini-3-pro-image-preview)';
+COMMENT ON COLUMN designs.model_used IS 'AI model used for design generation (e.g., google/gemini-3.1-flash-image-preview or google/gemini-3-pro-image-preview)';
 
 -- 3. Update existing rows to have default model
 UPDATE designs 
-SET model_used = 'google/gemini-2.5-flash-image'
+SET model_used = 'google/gemini-3.1-flash-image-preview'
 WHERE model_used IS NULL;
 
 -- 4. Make model_used NOT NULL after setting defaults

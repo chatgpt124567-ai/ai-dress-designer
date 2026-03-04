@@ -69,7 +69,7 @@ async function generateSingleImage(
   index: number,
   primaryFabricImage: string,
   secondaryFabricImage?: string,
-  model: string = 'google/gemini-2.5-flash-image'
+  model: string = 'google/gemini-3.1-flash-image-preview'
 ): Promise<SingleImageResult> {
   try {
     // بناء تعليمات القماش
@@ -125,6 +125,11 @@ DUAL-VIEW PRESENTATION LAYOUT
 ═══════════════════════════════════════════════════════════════════
 
 **IMAGE COMPOSITION:**
+
+
+
+
+
 • Create a SINGLE image showing TWO mannequins side by side
 • LEFT SIDE: Back view of the dress (back facing viewer)
 • RIGHT SIDE: Front view of the SAME dress (front facing viewer)
@@ -338,7 +343,7 @@ export async function POST(request: NextRequest) {
     console.log(`🎨 بدء توليد ${prompts.length} صور بالتوازي...`);
 
     // توليد جميع الصور بالتوازي
-    const selectedModel = model || 'google/gemini-2.5-flash-image';
+    const selectedModel = model || 'google/gemini-3.1-flash-image-preview';
     const imagePromises = prompts.map((prompt, index) =>
       generateSingleImage(prompt, index, primaryFabricImage, secondaryFabricImage, selectedModel)
     );

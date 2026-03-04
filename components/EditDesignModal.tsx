@@ -33,7 +33,7 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [otherLocation, setOtherLocation] = useState('');
   const [modificationDescription, setModificationDescription] = useState('');
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.5-flash-image');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-3.1-flash-image-preview');
   const [refining, setRefining] = useState(false);
 
   // Reset state when modal opens/closes
@@ -43,7 +43,7 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
       setSelectedLocations([]);
       setOtherLocation('');
       setModificationDescription('');
-      setSelectedModel('google/gemini-2.5-flash-image');
+      setSelectedModel('google/gemini-3.1-flash-image-preview');
     }
   }, [isOpen]);
 
@@ -119,7 +119,7 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
       setSelectedLocations([]);
       setOtherLocation('');
       setModificationDescription('');
-      setSelectedModel('google/gemini-2.5-flash-image');
+      setSelectedModel('google/gemini-3.1-flash-image-preview');
     } catch (error) {
       console.error('Error refining modification:', error);
       // Fallback: use the original description if refinement fails
@@ -322,7 +322,7 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
                       <div className="grid grid-cols-1 gap-4">
                         {/* Simple Model Option */}
                         <button
-                          onClick={() => handleSubmit('google/gemini-2.5-flash-image')}
+                          onClick={() => handleSubmit('google/gemini-3.1-flash-image-preview')}
                           disabled={isProcessing}
                           className={cn(
                             'group relative p-6 rounded-xl border-2 transition-all text-start',

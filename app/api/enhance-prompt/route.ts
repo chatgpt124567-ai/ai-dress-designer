@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
       secondaryFabricImage,
       secondaryFabricType,
       primaryFabricPlacement,
-      secondaryFabricPlacement
+      secondaryFabricPlacement,
+      secondaryFabricColor
     } = body;
 
     // Support both old (description) and new (questionnaireAnswers) formats
@@ -187,9 +188,10 @@ export async function POST(request: NextRequest) {
       if (secondaryFabricImage || secondaryFabricType) {
         // Has secondary fabric
         const secondaryPlacement = secondaryFabricPlacement || 'accent areas';
+        const colorDesc = secondaryFabricColor ? ` in ${secondaryFabricColor} color` : '';
         const secondaryFabricDesc = secondaryFabricType
-          ? `${secondaryFabricType} fabric`
-          : 'the secondary fabric shown in the attached image';
+          ? `${secondaryFabricType} fabric${colorDesc}`
+          : `the secondary fabric shown in the attached image${colorDesc}`;
 
         customFabricInstruction = `
 
@@ -261,6 +263,7 @@ Your output must be a single polished paragraph describing ONLY:
 • aesthetic style
 
 IMPORTANT - BACK DESIGN:
+Warning: The back design must be perfectly consistent with the front design. The gown must read as one fully integrated, cohesive piece. Avoid creating any back design that feels disconnected, contradictory, or visually inconsistent with the front.
 You MUST describe the back of the dress in detail, including:
 - Back neckline style (open, covered, keyhole, illusion, deep V, etc.)
 - Closure type (hidden zipper, buttons, corset lacing, etc.)

@@ -146,7 +146,7 @@ if (additionalNotes) {
    - خيار التعديل أو التأكيد
 
 5. **اختيار الموديل** (`ModelSelectionModal`)
-   - Gemini 2.5 Flash Image (سريع)
+   - Gemini 3.1 Flash Image Preview (سريع)
    - Gemini 3 Pro Image Preview (متقدم)
 
 6. **توليد التصميم** (`processDesign`)
@@ -154,7 +154,7 @@ if (additionalNotes) {
      - يستخدم GPT-5-mini لتحسين البرومبت
      - يدمج تعليمات القماش المخصص في البرومبت
    - **الخطوة 2**: إرسال البرومبت النهائي + صور القماش إلى `/api/generate-image`
-     - يستخدم الموديل المختار (Gemini 2.5 Flash Image أو Gemini 3 Pro)
+     - يستخدم الموديل المختار (Gemini 3.1 Flash Image Preview أو Gemini 3 Pro)
      - يولد صورة الفستان
    - **الخطوة 3**: حفظ التصميم تلقائياً في قاعدة البيانات
 
@@ -182,7 +182,7 @@ if (additionalNotes) {
 4. (اختياري) أضف قماش ثانوي وحدد موضع كل قماش
 5. املأ الاستبيان (9 أسئلة)
 6. راجع الإجابات في النافذة المنبثقة
-7. اختر الموديل (Gemini 2.5 Flash Image أو Gemini 3 Pro)
+7. اختر الموديل (Gemini 3.1 Flash Image Preview أو Gemini 3 Pro)
 8. انتظر توليد التصميم
 9. تحقق من عرض النتيجة بشكل صحيح
 

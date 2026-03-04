@@ -210,6 +210,9 @@
         "secondaryLabel": "القماش الثانوي",
         "primaryPlaceholder": "مثال: الجسم والتنورة",
         "secondaryPlaceholder": "مثال: الأكمام والياقة",
+        "secondaryColorLabel": "ما لون القماش الثانوي؟",
+        "secondaryColorPlaceholder": "مثال: أزرق ملكي، ذهبي، فضي، أبيض...",
+        "secondaryColorRequired": "يرجى تحديد لون القماش الثانوي",
         "continue": "متابعة للاستبيان"
       },
       "questionnaire": {

@@ -2,7 +2,7 @@
 
 ## 🎉 تم التحديث بنجاح!
 
-تم تحديث التطبيق ليستخدم **Google Gemini 2.5 Flash** - أحدث نموذج من Google!
+تم تحديث التطبيق ليستخدم **Google Gemini 3.1 Flash Image Preview** - أحدث نموذج من Google!
 
 ---
 

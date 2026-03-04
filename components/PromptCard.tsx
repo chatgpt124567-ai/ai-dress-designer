@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import ToggleSwitch from './ToggleSwitch';
 
@@ -24,17 +25,75 @@ export default function PromptCard({ onSubmit, loading = false }: PromptCardProp
   const [preservePose, setPreservePose] = useState(false);
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert(direction === 'rtl' ? 'يرجى اختيار ملف صورة' : 'Please select an image file');
+      return;
     }
+
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const result = reader.result as string;
+      if (!result) return;
+
+      let finalImage = result;
+      let finalFile = file;
+
+      // Smart compression for images > 5MB
+      if (file.size > MAX_SIZE) {
+        try {
+          setIsCompressing(true);
+          const targetSizeMB = 4.99;
+          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
+
+          const compressed = await compressImage(result, 99999, quality);
+          const compressedBlob = base64ToBlob(compressed);
+          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
+
+          if (compressedBlob.size > MAX_SIZE) {
+            setIsCompressing(false);
+            alert(
+              direction === 'rtl'
+                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
+                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
+            );
+            return;
+          }
+
+          finalImage = compressed;
+          finalFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+
+          const message = direction === 'rtl'
+            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
+            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
+          setTimeout(() => alert(message), 100);
+        } catch (err) {
+          console.error('Compression error:', err);
+          setIsCompressing(false);
+          alert(
+            direction === 'rtl'
+              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
+              : 'Failed to compress image. Please choose an image smaller than 5MB.'
+          );
+          return;
+        } finally {
+          setIsCompressing(false);
+        }
+      }
+
+      setImage(finalFile);
+      setImagePreview(finalImage);
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeImage = () => {
@@ -78,7 +137,14 @@ export default function PromptCard({ onSubmit, loading = false }: PromptCardProp
           <label className="block text-xs md:text-sm font-medium text-primary mb-2">
             {t('design.prompt.imageUpload')}
           </label>
-          {imagePreview ? (
+          {isCompressing ? (
+            <div className="flex flex-col items-center justify-center w-full h-28 md:h-32 border-2 border-dashed border-accent-gold rounded-md space-y-2">
+              <div className="w-8 h-8 border-3 border-accent-gold border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs md:text-sm text-gray-600 font-medium">
+                {direction === 'rtl' ? 'جارٍ ضغط الصورة...' : 'Compressing image...'}
+              </p>
+            </div>
+          ) : imagePreview ? (
             <div className="relative inline-block">
               <img
                 src={imagePreview}

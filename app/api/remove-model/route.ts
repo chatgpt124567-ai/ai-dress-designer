@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     console.log('=== Remove Model API Called ===');
 
     const body: RemoveModelRequest = await request.json();
-    const { imageData, model = 'google/gemini-2.5-flash-image' } = body;
+    const { imageData, model = 'google/gemini-3.1-flash-image-preview' } = body;
 
     console.log('Request details:', {
       hasImageData: !!imageData,

@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Camera, Image as ImageIcon, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 
 interface ImageUploadBoxProps {
   image?: string;
@@ -28,15 +30,10 @@ export default function ImageUploadBox({
   variant = 'primary',
 }: ImageUploadBoxProps) {
   const { t, direction } = useLanguage();
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleFileChange = (file: File | null) => {
+  const handleFileChange = async (file: File | null) => {
     if (!file) return;
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      alert(direction === 'rtl' ? 'حجم الصورة كبير جداً. الحد الأقصى 5MB' : 'Image size too large. Maximum 5MB');
-      return;
-    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -44,8 +41,71 @@ export default function ImageUploadBox({
       return;
     }
 
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    // Smart compression for images > 5MB
+    if (file.size > MAX_SIZE) {
+      try {
+        setIsCompressing(true);
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
+
+        const targetSizeMB = 4.99;
+        const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
+        const compressed = await compressImage(base64, 99999, quality);
+        const compressedBlob = base64ToBlob(compressed);
+        const compressedSizeMB = compressedBlob.size / (1024 * 1024);
+
+        if (compressedBlob.size > MAX_SIZE) {
+          setIsCompressing(false);
+          alert(
+            direction === 'rtl'
+              ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
+              : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
+          );
+          return;
+        }
+
+        // Convert compressed base64 back to File
+        const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+
+        const message = direction === 'rtl'
+          ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
+          : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
+        setTimeout(() => alert(message), 100);
+
+        onImageChange(compressedFile);
+      } catch (error) {
+        console.error('Compression error:', error);
+        alert(
+          direction === 'rtl'
+            ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
+            : 'Failed to compress image. Please choose an image smaller than 5MB.'
+        );
+      } finally {
+        setIsCompressing(false);
+      }
+      return;
+    }
+
     onImageChange(file);
   };
+
+  if (isCompressing) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 space-y-3">
+        <div className="w-10 h-10 border-4 border-accent-gold border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-gray-600 font-medium">
+          {direction === 'rtl' ? 'جارٍ ضغط الصورة...' : 'Compressing image...'}
+        </p>
+      </div>
+    );
+  }
 
   if (!image) {
     return (

@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.model_removed_designs (
   result_thumbnail_storage_path TEXT,
   
   -- Processing details
-  model_used TEXT NOT NULL, -- e.g., 'google/gemini-2.5-flash-image' or 'google/gemini-2.0-flash-001'
+  model_used TEXT NOT NULL, -- e.g., 'google/gemini-3.1-flash-image-preview' or 'google/gemini-2.0-flash-001'
   
   -- Timestamps
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -34,7 +34,7 @@ COMMENT ON COLUMN model_removed_designs.result_image_url IS 'Public URL of the A
 COMMENT ON COLUMN model_removed_designs.result_storage_path IS 'Storage path of result full-size image';
 COMMENT ON COLUMN model_removed_designs.result_thumbnail_url IS 'Public URL of result image thumbnail';
 COMMENT ON COLUMN model_removed_designs.result_thumbnail_storage_path IS 'Storage path of result thumbnail';
-COMMENT ON COLUMN model_removed_designs.model_used IS 'AI model used for processing (gemini-2.5-flash-image or gemini-2.0-flash-001)';
+COMMENT ON COLUMN model_removed_designs.model_used IS 'AI model used for processing (gemini-3.1-flash-image-preview or gemini-2.0-flash-001)';
 
 -- 3. Create indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_model_removed_designs_user_id 

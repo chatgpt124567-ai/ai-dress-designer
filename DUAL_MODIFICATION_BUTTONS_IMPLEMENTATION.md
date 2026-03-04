@@ -2,7 +2,7 @@
 
 ## Overview
 Successfully implemented two separate modification buttons that allow users to either:
-1. **Iteratively modify** the current/latest version using `gemini-2.5-flash-image`
+1. **Iteratively modify** the current/latest version using `gemini-3.1-flash-image-preview`
 2. **Try new modifications** on the original base image using `gemini-3-pro-image-preview`
 
 ## Implementation Summary
@@ -27,16 +27,16 @@ Successfully implemented two separate modification buttons that allow users to e
 **Changes:**
 - Added `GeminiModel` type for model selection
 - Updated `EditDesignRequest` interface to include optional `model` parameter
-- Modified API logic to use the selected model (defaults to `gemini-2.5-flash-image`)
+- Modified API logic to use the selected model (defaults to `gemini-3.1-flash-image-preview`)
 
 **New Type:**
 ```typescript
-export type GeminiModel = 'google/gemini-2.5-flash-image' | 'google/gemini-3-pro-image-preview';
+export type GeminiModel = 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview';
 
 export interface EditDesignRequest {
   originalImageUrl: string;
   editRequest: string;
-  model?: GeminiModel; // Optional: defaults to gemini-2.5-flash-image
+  model?: GeminiModel; // Optional: defaults to gemini-3.1-flash-image-preview
 }
 ```
 
@@ -48,7 +48,7 @@ export interface EditDesignRequest {
 - `editMode`: Tracks whether user wants 'iterative' or 'original' modification
 
 **New Functions:**
-- `handleRequestIterativeEdit()`: Opens modal for iterative editing (current version + gemini-2.5-flash-image)
+- `handleRequestIterativeEdit()`: Opens modal for iterative editing (current version + gemini-3.1-flash-image-preview)
 - `handleRequestOriginalEdit()`: Opens modal for original editing (base image + gemini-3-pro-image-preview)
 
 **Updated Functions:**
@@ -85,9 +85,9 @@ GPT-5-mini refines prompt
     ↓
 API called with:
   - originalImageUrl: current/latest image
-  - model: 'google/gemini-2.5-flash-image'
+  - model: 'google/gemini-3.1-flash-image-preview'
     ↓
-Gemini 2.5 Flash Image generates modified version
+Gemini 3.1 Flash Image Preview generates modified version
     ↓
 Result replaces current image (iterative modification)
 ```
@@ -118,7 +118,7 @@ Result replaces current image (new attempt on original)
 | Feature | Button 1 (Iterative) | Button 2 (Original) |
 |---------|---------------------|---------------------|
 | **Source Image** | Current/Latest version | Original base image |
-| **AI Model** | gemini-2.5-flash-image | gemini-3-pro-image-preview |
+| **AI Model** | gemini-3.1-flash-image-preview | gemini-3-pro-image-preview |
 | **Use Case** | Build on previous modifications | Try different approach on original |
 | **Visibility** | Always visible | Only when original exists |
 | **Button Color** | Gold border | Primary (dark) border |
@@ -166,7 +166,7 @@ npm run dev
 **To verify:**
 1. Generate a design
 2. Verify both buttons appear
-3. Click "طلب تعديل آخر على هذه الصورة" - should use current image + gemini-2.5-flash-image
+3. Click "طلب تعديل آخر على هذه الصورة" - should use current image + gemini-3.1-flash-image-preview
 4. Click "محاولة جديدة على الصورة الأصلية" - should use original image + gemini-3-pro-image-preview
 5. Check console logs to verify correct model and image are being used
 

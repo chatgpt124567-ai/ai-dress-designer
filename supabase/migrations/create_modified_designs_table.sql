@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.modified_designs (
   
   -- Modification details
   modification_request TEXT NOT NULL,
-  model_used TEXT NOT NULL, -- e.g., 'google/gemini-2.5-flash-image'
+  model_used TEXT NOT NULL, -- e.g., 'google/gemini-3.1-flash-image-preview'
   
   -- Optional: Reference to original design if it was from our system
   original_design_id UUID REFERENCES public.designs(id) ON DELETE SET NULL,
@@ -40,7 +40,7 @@ COMMENT ON COLUMN modified_designs.modified_storage_path IS 'Storage path of mod
 COMMENT ON COLUMN modified_designs.modified_thumbnail_url IS 'Public URL of modified image thumbnail';
 COMMENT ON COLUMN modified_designs.modified_thumbnail_storage_path IS 'Storage path of modified thumbnail';
 COMMENT ON COLUMN modified_designs.modification_request IS 'User description of requested modifications';
-COMMENT ON COLUMN modified_designs.model_used IS 'AI model used for modification (gemini-2.5-flash-image or gemini-3-pro-image-preview)';
+COMMENT ON COLUMN modified_designs.model_used IS 'AI model used for modification (gemini-3.1-flash-image-preview or gemini-3-pro-image-preview)';
 COMMENT ON COLUMN modified_designs.original_design_id IS 'Reference to original design if it was from our designs table';
 
 -- 3. Create indexes for faster queries

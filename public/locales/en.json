@@ -210,6 +210,9 @@
         "secondaryLabel": "Secondary Fabric",
         "primaryPlaceholder": "Example: bodice and skirt",
         "secondaryPlaceholder": "Example: sleeves and neckline",
+        "secondaryColorLabel": "What color is the secondary fabric?",
+        "secondaryColorPlaceholder": "Example: royal blue, gold, silver, white...",
+        "secondaryColorRequired": "Please specify the secondary fabric color",
         "continue": "Continue to Questionnaire"
       },
       "questionnaire": {
