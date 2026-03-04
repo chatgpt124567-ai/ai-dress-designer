@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import { Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -262,29 +264,92 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 4: // Neckline Type
+      case 4: { // Neckline Type - Image Grid
+        const necklineOptions = [
+          { value: 'vNeck',        image: '/V-neck.png',               labelKey: 'questionnaire.section3.q5.options.vNeck' },
+          { value: 'sweetheart',   image: '/Sweetheart.png',           labelKey: 'questionnaire.section3.q5.options.sweetheart' },
+          { value: 'offShoulder',  image: '/Off-shoulder.png',         labelKey: 'questionnaire.section3.q5.options.offShoulder' },
+          { value: 'strapless',    image: '/Strapless.png',            labelKey: 'questionnaire.section3.q5.options.strapless' },
+          { value: 'square',       image: '/Square.png',               labelKey: 'questionnaire.section3.q5.options.square' },
+          { value: 'scoop',        image: '/Scoop.png',                labelKey: 'questionnaire.section3.q5.options.scoop' },
+          { value: 'halter',       image: '/Halter.png',               labelKey: 'questionnaire.section3.q5.options.halter' },
+          { value: 'halterStrap',  image: '/Halter strap.png',         labelKey: 'questionnaire.section3.q5.options.halterStrap' },
+          { value: 'jewel',        image: '/Jewel.png',                labelKey: 'questionnaire.section3.q5.options.jewel' },
+          { value: 'surplice',     image: '/superlice.png',            labelKey: 'questionnaire.section3.q5.options.surplice' },
+          { value: 'cowl',         image: '/Cowl.png',                 labelKey: 'questionnaire.section3.q5.options.cowl' },
+          { value: 'asymmetric',   image: '/Asymmetric.png',           labelKey: 'questionnaire.section3.q5.options.asymmetric' },
+          { value: 'illusion',     image: '/Illusion.png',             labelKey: 'questionnaire.section3.q5.options.illusion' },
+          { value: 'convertible',  image: '/convertble nickline.png',  labelKey: 'questionnaire.section3.q5.options.convertible' },
+          { value: 'keyhole',      image: '/keyhole neck.png',         labelKey: 'questionnaire.section3.q5.options.keyhole' },
+          { value: 'spaghettiStrap', image: '/Spaghetti strap.png',   labelKey: 'questionnaire.section3.q5.options.spaghettiStrap' },
+          { value: 'portrait',     image: '/Portrait Neckline.png',    labelKey: 'questionnaire.section3.q5.options.portrait' },
+          { value: 'bardot',       image: '/Bardot Neckline.png',      labelKey: 'questionnaire.section3.q5.options.bardot' },
+          { value: 'mockNeck',     image: '/Mock Neck.png',            labelKey: 'questionnaire.section3.q5.options.mockNeck' },
+        ];
+
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section3.title')}
-            questionText={t('questionnaire.section3.q5.question')}
-            questionType="radio"
-            options={[
-              { value: 'vNeck', labelKey: 'questionnaire.section3.q5.options.vNeck' },
-              { value: 'round', labelKey: 'questionnaire.section3.q5.options.round' },
-              { value: 'sweetheart', labelKey: 'questionnaire.section3.q5.options.sweetheart' },
-              { value: 'offShoulder', labelKey: 'questionnaire.section3.q5.options.offShoulder' },
-              { value: 'high', labelKey: 'questionnaire.section3.q5.options.high' },
-              { value: 'oneShoulder', labelKey: 'questionnaire.section3.q5.options.oneShoulder' },
-              { value: 'strapless', labelKey: 'questionnaire.section3.q5.options.strapless' },
-              { value: 'square', labelKey: 'questionnaire.section3.q5.options.square' },
-              { value: 'other', labelKey: 'questionnaire.section3.q5.options.other', hasCustomInput: true },
-            ]}
-            value={answers.necklineType}
-            customValue={answers.necklineTypeCustom}
-            onChange={(value, customValue) => updateAnswer('necklineType', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
+          <div className="space-y-4">
+            {/* Section title */}
+            <div>
+              <span className="text-xs font-medium text-accent-gold uppercase tracking-wide">
+                {t('questionnaire.section3.title')}
+              </span>
+              <h3 className="text-lg md:text-xl font-semibold text-primary mt-1">
+                {t('questionnaire.section3.q5.question')}
+              </h3>
+            </div>
+
+            {/* Image grid – 2 cols on mobile, 3 on sm, 4 on md, 5 on lg+ */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {necklineOptions.map((option) => {
+                const isSelected = answers.necklineType === option.value;
+                return (
+                  <motion.button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      updateAnswer('necklineType', option.value);
+                      setTimeout(handleNext, 350);
+                    }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex flex-col items-center cursor-pointer text-center group"
+                  >
+                    {/* Thumbnail */}
+                    <div className={cn(
+                      'relative w-full aspect-[3/4] rounded-lg overflow-hidden mb-2 transition-all',
+                      isSelected ? 'ring-2 ring-accent-gold shadow-md' : 'group-hover:opacity-90'
+                    )}>
+                      <Image
+                        src={option.image}
+                        alt={t(option.labelKey)}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 18vw"
+                        unoptimized
+                      />
+                      {isSelected && (
+                        <div className="absolute inset-0 bg-accent-gold/20 flex items-end justify-end p-1">
+                          <div className="w-6 h-6 bg-accent-gold rounded-full flex items-center justify-center shadow">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Label */}
+                    <span className={cn(
+                      'text-xs font-medium leading-tight',
+                      isSelected ? 'text-accent-gold' : 'text-gray-700'
+                    )}>
+                      {t(option.labelKey)}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
         );
+      }
 
       case 5: // Back Style
         return (
