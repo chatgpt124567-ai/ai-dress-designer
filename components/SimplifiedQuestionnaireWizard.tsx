@@ -13,6 +13,7 @@ import QuestionStep from './QuestionStep';
 import SkirtPreviewModal from './SkirtPreviewModal';
 import MultiEmbellishmentPlacementModal from './MultiEmbellishmentPlacementModal';
 import TransparentPartsPlacementModal from './TransparentPartsPlacementModal';
+import ImageCropper from './ImageCropper';
 
 interface SimplifiedQuestionnaireWizardProps {
   onSubmit: (answers: QuestionnaireAnswers) => void;
@@ -34,6 +35,7 @@ export default function SimplifiedQuestionnaireWizard({
   const totalSteps = 11; // 11 سؤال لقسم تصميم باستخدام قماشك الخاص (يشمل سؤال الصورة المرجعية)
   const containerRef = useRef<HTMLDivElement>(null);
   const referenceImageInputRef = useRef<HTMLInputElement>(null);
+  const [refImageCropper, setRefImageCropper] = useState<string | null>(null);
 
   // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
   const [currentStep, setCurrentStep] = useState(1);
@@ -275,6 +277,15 @@ export default function SimplifiedQuestionnaireWizard({
                     alt="Reference"
                     className="w-full max-h-72 object-contain"
                   />
+                  {/* Crop Button */}
+                  <button
+                    type="button"
+                    onClick={() => setRefImageCropper(answers.referenceImage!)}
+                    className="absolute top-3 left-3 bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-1.5 rounded-lg shadow-md transition-colors text-sm font-medium"
+                  >
+                    {direction === 'rtl' ? 'قص' : 'Crop'}
+                  </button>
+                  {/* Remove Button */}
                   <button
                     type="button"
                     onClick={() =>
@@ -879,6 +890,18 @@ export default function SimplifiedQuestionnaireWizard({
           scrollToTop();
         }}
       />
+
+      {/* قاص الصورة المرجعية */}
+      {refImageCropper && (
+        <ImageCropper
+          imageSrc={refImageCropper}
+          onCrop={(croppedImage) => {
+            setAnswers(prev => ({ ...prev, referenceImage: croppedImage, referenceImagePart: undefined, referenceImagePartCustom: undefined }));
+            setRefImageCropper(null);
+          }}
+          onCancel={() => setRefImageCropper(null)}
+        />
+      )}
     </div>
   );
 }

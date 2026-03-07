@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
+import ImageCropper from './ImageCropper';
 
 interface OwnFabricUploadProps {
   onComplete: (data: {
@@ -28,6 +29,8 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
   const [secondaryFabricType, setSecondaryFabricType] = useState<string | undefined>();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
+  const [cropperTarget, setCropperTarget] = useState<'primary' | 'secondary'>('primary');
 
   const handleFileChange = (file: File | null, isPrimary: boolean) => {
     if (!file) {
@@ -214,9 +217,18 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                   onClick={() => setLightboxImage(primaryFabricImage)}
                 />
                 <div className={cn(
-                  "absolute top-2 flex gap-2",
+                  "absolute top-2 flex gap-2 flex-wrap",
                   direction === 'rtl' ? 'left-2' : 'right-2'
                 )}>
+                  {/* Crop Button */}
+                  <button
+                    onClick={() => { setCropperTarget('primary'); setCropperImage(primaryFabricImage!); }}
+                    className="bg-accent-gold/90 hover:bg-accent-gold text-white px-4 py-2 rounded-lg shadow-md transition-all"
+                  >
+                    <span className="text-sm font-medium">
+                      {direction === 'rtl' ? 'قص' : 'Crop'}
+                    </span>
+                  </button>
                   {/* Change Image Button */}
                   <label className="cursor-pointer bg-white/90 hover:bg-white px-4 py-2 rounded-lg shadow-md transition-all">
                     <input
@@ -378,12 +390,27 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                           className="w-full h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
                           onClick={() => setLightboxImage(secondaryFabricImage)}
                         />
-                        <button
-                          onClick={() => setSecondaryFabricImage(undefined)}
-                          className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-lg shadow-md transition-all"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+                        <div className={cn(
+                          "absolute top-2 flex gap-2",
+                          direction === 'rtl' ? 'left-2' : 'right-2'
+                        )}>
+                          {/* Crop Button */}
+                          <button
+                            onClick={() => { setCropperTarget('secondary'); setCropperImage(secondaryFabricImage!); }}
+                            className="bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-2 rounded-lg shadow-md transition-all"
+                          >
+                            <span className="text-sm font-medium">
+                              {direction === 'rtl' ? 'قص' : 'Crop'}
+                            </span>
+                          </button>
+                          {/* Remove Button */}
+                          <button
+                            onClick={() => setSecondaryFabricImage(undefined)}
+                            className="bg-red-500/90 hover:bg-red-500 text-white p-2 rounded-lg shadow-md transition-all"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -458,6 +485,22 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
         imageSrc={lightboxImage || ''}
         imageAlt={direction === 'rtl' ? 'معاينة القماش' : 'Fabric Preview'}
       />
+
+      {/* Cropper */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          onCrop={(croppedImage) => {
+            if (cropperTarget === 'primary') {
+              setPrimaryFabricImage(croppedImage);
+            } else {
+              setSecondaryFabricImage(croppedImage);
+            }
+            setCropperImage(null);
+          }}
+          onCancel={() => setCropperImage(null)}
+        />
+      )}
     </div>
   );
 }

@@ -10,7 +10,8 @@
       "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\insert_ref.py\")",
       "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_enhance.py\")",
       "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_generate.py\")",
-      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_page.py\")"
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_page.py\")",
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\restore_fixes.py\")"
     ]
   }
 }

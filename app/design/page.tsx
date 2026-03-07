@@ -135,10 +135,16 @@ export default function DesignPage() {
       console.log('Saved answers in localStorage:', saved ? 'Found' : 'Not found');
 
       if (saved) {
-        const parsedAnswers = JSON.parse(saved);
-        setSavedAnswers(parsedAnswers);
-        setCurrentAnswers(parsedAnswers);
-        console.log('✅ Restored saved answers:', parsedAnswers);
+        try {
+          const parsedAnswers = JSON.parse(saved);
+          setSavedAnswers(parsedAnswers);
+          setCurrentAnswers(parsedAnswers);
+          console.log('✅ Restored saved answers:', parsedAnswers);
+        } catch (parseError) {
+          // Corrupted JSON (e.g., truncated due to previous QuotaExceededError) — clear it
+          console.warn('⚠️ بيانات الاستبيان المحفوظة تالفة، جاري مسحها...');
+          localStorage.removeItem(STORAGE_KEY);
+        }
       }
 
       // Restore full page state
@@ -416,13 +422,29 @@ export default function DesignPage() {
     setToastVisible(true);
   };
 
-  // Save answers to localStorage
+  // Save answers to localStorage (strip large binary fields to avoid QuotaExceededError)
   const saveAnswersToLocalStorage = (answers: QuestionnaireAnswers) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-      console.log('💾 Auto-saved answers to localStorage');
-    } catch (error) {
-      console.error('Error saving answers to localStorage:', error);
+    // Always strip large binary fields before saving
+    const { referenceImage: _ref, customFabricImage: _fab, ...answersToSave } = answers as any;
+    const serialized = JSON.stringify(answersToSave);
+    const trySet = () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, serialized);
+        console.log('💾 Auto-saved answers to localStorage');
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    if (!trySet()) {
+      // Storage full: clear heavy items then retry once
+      console.warn('⚠️ تخزين ممتلئ عند حفظ الاستبيان — جاري تحرير مساحة...');
+      localStorage.removeItem(STORAGE_IMAGE_HISTORY_KEY);
+      localStorage.removeItem(STORAGE_OWNFABRIC_PRIMARY_IMAGE_KEY);
+      localStorage.removeItem(STORAGE_OWNFABRIC_SECONDARY_IMAGE_KEY);
+      if (!trySet()) {
+        console.warn('⚠️ لا يمكن حفظ الاستبيان في التخزين المحلي (ممتلئ)');
+      }
     }
   };
 
@@ -567,12 +589,20 @@ export default function DesignPage() {
       setStep('enhancing');
 
       // Step 1: Send questionnaire answers to enhance-prompt API
-      const enhancePayload: any = { questionnaireAnswers };
+      // Strip large binary fields from questionnaireAnswers before sending to avoid oversized requests
+      const {
+        referenceImage: _refImg,
+        referenceImagePart: _refPart,
+        referenceImagePartCustom: _refPartCustom,
+        customFabricImage: _customFab,
+        ...questionnaireAnswersForPayload
+      } = questionnaireAnswers as any;
 
-      // Add reference image data if present in questionnaire answers
+      const enhancePayload: any = { questionnaireAnswers: questionnaireAnswersForPayload };
+
+      // Pass reference image data separately (not embedded in questionnaireAnswers)
       if (questionnaireAnswers.referenceImage) {
         enhancePayload.referenceImage = questionnaireAnswers.referenceImage;
-        // Use custom text if 'other' was selected, otherwise use the part value
         enhancePayload.referenceImagePart = questionnaireAnswers.referenceImagePart === 'other' && questionnaireAnswers.referenceImagePartCustom
           ? questionnaireAnswers.referenceImagePartCustom
           : questionnaireAnswers.referenceImagePart;
@@ -642,7 +672,7 @@ export default function DesignPage() {
       // Own Fabric Workflow
       if (primaryFabricImage) {
         generatePayload.primaryFabricImage = primaryFabricImage;
-        generatePayload.questionnaireAnswers = questionnaireAnswers; // Include questionnaire answers for Design Specs
+        generatePayload.questionnaireAnswers = questionnaireAnswersForPayload; // Include questionnaire answers for Design Specs (binary fields stripped)
         if (secondaryFabricImage) {
           generatePayload.secondaryFabricImage = secondaryFabricImage;
         }

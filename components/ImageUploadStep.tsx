@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { compressImage, base64ToBlob } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
+import ImageCropper from './ImageCropper';
 
 interface ImageUploadStepProps {
   onImageSelected: (imageData: string) => void;
@@ -24,6 +25,7 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
   const [isDragging, setIsDragging] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [cropperImage, setCropperImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -226,9 +228,18 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
                   onClick={() => setLightboxOpen(true)}
                 />
                 <div className={cn(
-                  "absolute top-2 flex gap-2",
+                  "absolute top-2 flex gap-2 flex-wrap",
                   direction === 'rtl' ? 'left-2' : 'right-2'
                 )}>
+                  {/* Crop Button */}
+                  <button
+                    onClick={() => setCropperImage(preview)}
+                    className="bg-accent-gold/90 hover:bg-accent-gold text-white px-4 py-2 rounded-lg shadow-md transition-all"
+                  >
+                    <span className="text-sm font-medium">
+                      {direction === 'rtl' ? 'قص' : 'Crop'}
+                    </span>
+                  </button>
                   {/* Change Image Button */}
                   <label className="cursor-pointer bg-white/90 hover:bg-white px-4 py-2 rounded-lg shadow-md transition-all">
                     <input
@@ -294,6 +305,18 @@ export default function ImageUploadStep({ onImageSelected, onBack }: ImageUpload
         imageSrc={preview || ''}
         imageAlt={direction === 'rtl' ? 'معاينة الصورة' : 'Image Preview'}
       />
+
+      {/* Cropper */}
+      {cropperImage && (
+        <ImageCropper
+          imageSrc={cropperImage}
+          onCrop={(croppedImage) => {
+            setPreview(croppedImage);
+            setCropperImage(null);
+          }}
+          onCancel={() => setCropperImage(null)}
+        />
+      )}
     </div>
   );
 }
