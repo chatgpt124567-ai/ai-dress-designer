@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +35,7 @@ import { processAndUploadDesignImage } from '@/lib/imageUtils';
 
 type DesignMode = 'selection' | 'scratch' | 'external' | 'ownFabric' | 'removeModel';
 
-export default function DesignPage() {
+function DesignPageContent() {
   const { t, direction } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -2362,6 +2362,14 @@ export default function DesignPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function DesignPage() {
+  return (
+    <Suspense>
+      <DesignPageContent />
+    </Suspense>
   );
 }
 
