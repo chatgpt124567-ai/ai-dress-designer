@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
     const body: EnhancePromptRequest = await request.json();
     const {
       description,
+      fabricImage,
       questionnaireAnswers,
       primaryFabricImage,
       secondaryFabricImage,
@@ -276,6 +277,30 @@ This instruction must be seamlessly integrated into your description where you d
       referenceImageInstruction = `\n\nREFERENCE IMAGE INSTRUCTION (CRITICAL):\nThe client has provided a reference image attached to this request (it is the LAST image). It shows the exact design they want applied to the [${partLabel}] area.\nYou MUST include the following instruction, naturally integrated into the relevant section of your description:\n\n"The ${partLabel} design must faithfully replicate what is shown in the attached reference image: match the exact cut, structural construction, embellishment pattern, lace or fabric layering arrangement, and decorative detailing. Integrate this reference design seamlessly into the overall dress silhouette and adapt it to the primary fabric, while maintaining maximum visual similarity to the reference in the ${partLabel} area. Do NOT replicate any other element from the reference image — only the ${partLabel} design."\n\nThis instruction must be clearly and naturally integrated into your couture description.`;
     }
 
+    // Build visual inputs for multimodal prompt enhancement (text + images)
+    const referenceImagesToAnalyze: string[] = activeEntries
+      ? activeEntries.map((entry: { image: string; parts: string[] }) => entry.image)
+      : referenceImage ? [referenceImage] : [];
+
+    const fabricImagesToAnalyze: string[] = [];
+    if (primaryFabricImage) fabricImagesToAnalyze.push(primaryFabricImage);
+    if (secondaryFabricImage) fabricImagesToAnalyze.push(secondaryFabricImage);
+    if (fabricImage) fabricImagesToAnalyze.push(fabricImage);
+    if (questionnaireAnswers?.customFabricImage) fabricImagesToAnalyze.push(questionnaireAnswers.customFabricImage);
+
+    const attachedImageUrls = Array.from(
+      new Set(
+        [...fabricImagesToAnalyze, ...referenceImagesToAnalyze]
+          .filter((url): url is string => typeof url === 'string')
+          .map(url => url.trim())
+          .filter(url => url.length > 0)
+      )
+    );
+
+    const visualInputInstruction = attachedImageUrls.length > 0
+      ? `\n\nVISUAL ANALYSIS INSTRUCTION (MANDATORY):\nOne or more images are attached with this request. You MUST visually analyze them and use them as the source of truth for fabric and reference-area details.\n- Fabric images define exact pattern, texture, and color behavior.\n- Reference images define exact cut and decorative details for their specified dress areas.\n- If text and image details differ, prioritize the visual evidence from the attached images while preserving the client's requested intent.`
+      : '';
+
     const systemPrompt = `Your task is to create a detailed, professional, couture-level dress description based ONLY on the client's answers below.
 
 IMPORTANT RULES:
@@ -283,7 +308,7 @@ IMPORTANT RULES:
 - Do NOT describe any background, environment, room, mannequin, lighting, camera position, or logo. These elements are handled separately.
 - You may enhance clarity and professionalism, but you must NOT invent new features that the client did not imply.
 - All improvements must reflect the client's intended style, materials, preferences, and notes.
-- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.${customFabricInstruction}${referenceImageInstruction}
+- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.${customFabricInstruction}${referenceImageInstruction}${visualInputInstruction}
 
 Your output must be a single polished paragraph describing ONLY:
 • silhouette
@@ -322,6 +347,33 @@ ${clientAnswersText}
 Now transform all the information above into one refined, elegant paragraph that describes ONLY the dress design with expert-level precision and coherent structure.`;
 
     // نظام إعادة المحاولة
+    // Print the exact prompt sent to the prompt-enhancement AI in terminal.
+    // Highlight when the request uses custom fabric workflow / custom answers.
+    const isCustomFabricContext = hasOwnFabricWorkflow || !!hasCustomFabric;
+    if (isCustomFabricContext) {
+      console.log('\n[ENHANCE PROMPT][CUSTOM FABRIC] Prompt sent to AI:');
+    } else {
+      console.log('\n[ENHANCE PROMPT] Prompt sent to AI:');
+    }
+    console.log('============================================================');
+    console.log(systemPrompt);
+    console.log('============================================================\n');
+    console.log(`[ENHANCE PROMPT] Attached images sent to AI: ${attachedImageUrls.length} (fabric: ${fabricImagesToAnalyze.length}, reference: ${referenceImagesToAnalyze.length})`);
+
+    type EnhanceMessageContent =
+      | string
+      | Array<
+        | { type: 'text'; text: string }
+        | { type: 'image_url'; image_url: { url: string } }
+      >;
+
+    const enhanceMessageContent: EnhanceMessageContent = attachedImageUrls.length > 0
+      ? [
+        { type: 'text', text: systemPrompt },
+        ...attachedImageUrls.map((url: string) => ({ type: 'image_url' as const, image_url: { url } })),
+      ]
+      : systemPrompt;
+
     let enhancedPrompt = '';
     let lastError: Error | null = null;
     const maxRetries = 3;
@@ -343,7 +395,7 @@ Now transform all the information above into one refined, elegant paragraph that
             messages: [
               {
                 role: 'user',
-                content: systemPrompt,
+                content: enhanceMessageContent,
               },
             ],
           }),
