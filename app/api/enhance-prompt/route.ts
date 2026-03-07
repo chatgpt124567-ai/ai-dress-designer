@@ -145,7 +145,9 @@ export async function POST(request: NextRequest) {
       secondaryFabricType,
       primaryFabricPlacement,
       secondaryFabricPlacement,
-      secondaryFabricColor
+      secondaryFabricColor,
+      referenceImage,
+      referenceImagePart,
     } = body;
 
     // Support both old (description) and new (questionnaireAnswers) formats
@@ -238,6 +240,22 @@ The client has provided a custom fabric image. In your enhanced description, you
 This instruction must be seamlessly integrated into your description where you describe the fabric/materials.`;
     }
 
+
+    // Build reference image instruction if provided
+    const REFERENCE_PART_LABELS: Record<string, string> = {
+      bodice: 'bodice / upper chest area',
+      waist: 'waist area',
+      back: 'back area',
+      sleeves: 'sleeves',
+      skirt: 'skirt',
+      neckline: 'neckline',
+    };
+    let referenceImageInstruction = '';
+    if (referenceImage && referenceImagePart) {
+      const partLabel = REFERENCE_PART_LABELS[referenceImagePart] || referenceImagePart;
+      referenceImageInstruction = `\n\nREFERENCE IMAGE INSTRUCTION (CRITICAL):\nThe client has provided a reference image attached to this request (it is the LAST image). It shows the exact design they want applied to the [${partLabel}] area.\nYou MUST include the following instruction, naturally integrated into the relevant section of your description:\n\n"The ${partLabel} design must faithfully replicate what is shown in the attached reference image: match the exact cut, structural construction, embellishment pattern, lace or fabric layering arrangement, and decorative detailing. Integrate this reference design seamlessly into the overall dress silhouette and adapt it to the primary fabric, while maintaining maximum visual similarity to the reference in the ${partLabel} area. Do NOT replicate any other element from the reference image — only the ${partLabel} design."\n\nThis instruction must be clearly and naturally integrated into your couture description.`;
+    }
+
     const systemPrompt = `Your task is to create a detailed, professional, couture-level dress description based ONLY on the client's answers below.
 
 IMPORTANT RULES:
@@ -245,7 +263,7 @@ IMPORTANT RULES:
 - Do NOT describe any background, environment, room, mannequin, lighting, camera position, or logo. These elements are handled separately.
 - You may enhance clarity and professionalism, but you must NOT invent new features that the client did not imply.
 - All improvements must reflect the client's intended style, materials, preferences, and notes.
-- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.${customFabricInstruction}
+- The goal is to transform the client's selections into one cohesive luxury-fashion description suitable for insertion into an AI image-generation prompt.${customFabricInstruction}${referenceImageInstruction}
 
 Your output must be a single polished paragraph describing ONLY:
 • silhouette

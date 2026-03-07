@@ -569,6 +569,15 @@ export default function DesignPage() {
       // Step 1: Send questionnaire answers to enhance-prompt API
       const enhancePayload: any = { questionnaireAnswers };
 
+      // Add reference image data if present in questionnaire answers
+      if (questionnaireAnswers.referenceImage) {
+        enhancePayload.referenceImage = questionnaireAnswers.referenceImage;
+        // Use custom text if 'other' was selected, otherwise use the part value
+        enhancePayload.referenceImagePart = questionnaireAnswers.referenceImagePart === 'other' && questionnaireAnswers.referenceImagePartCustom
+          ? questionnaireAnswers.referenceImagePartCustom
+          : questionnaireAnswers.referenceImagePart;
+      }
+
       // Add fabric workflow data if present
       if (primaryFabricImage) {
         enhancePayload.primaryFabricImage = primaryFabricImage;
@@ -621,6 +630,14 @@ export default function DesignPage() {
         prompt: finalPrompt,
         model: selectedAIModel
       };
+
+      // Add reference image to generatePayload if present
+      if (questionnaireAnswers.referenceImage) {
+        generatePayload.referenceImage = questionnaireAnswers.referenceImage;
+        generatePayload.referenceImagePart = questionnaireAnswers.referenceImagePart === 'other' && questionnaireAnswers.referenceImagePartCustom
+          ? questionnaireAnswers.referenceImagePartCustom
+          : questionnaireAnswers.referenceImagePart;
+      }
 
       // Own Fabric Workflow
       if (primaryFabricImage) {

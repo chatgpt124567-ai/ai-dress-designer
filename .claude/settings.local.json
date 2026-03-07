@@ -3,7 +3,14 @@
     "allow": [
       "Bash(cmd /c 'dir \"\"c:\\\\Users\\\\khale\\\\OneDrive\\\\سطح المكتب\\\\ai designer virsion 2\\\\*.png\"\" /b 2>&1')",
       "Bash(cmd /c 'dir /b \"\"c:\\\\Users\\\\khale\\\\OneDrive\\\\Desktop\\\\ai designer virsion 2\\\\*.png\"\" 2>&1')",
-      "Bash(cmd /c 'dir /b \"\"c:\\\\Users\\\\khale\\\\OneDrive\\\\سطح المكتب\\\\ai designer virsion 2\"\" 2>&1')"
+      "Bash(cmd /c 'dir /b \"\"c:\\\\Users\\\\khale\\\\OneDrive\\\\سطح المكتب\\\\ai designer virsion 2\"\" 2>&1')",
+      "Bash(python _insert_case1.py)",
+      "Bash(python -c \"print\\(''hello''\\)\")",
+      "Bash(python -c \":*)",
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\insert_ref.py\")",
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_enhance.py\")",
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_generate.py\")",
+      "Bash(python \"C:\\\\Users\\\\khale\\\\AppData\\\\Local\\\\Temp\\\\update_page.py\")"
     ]
   }
 }

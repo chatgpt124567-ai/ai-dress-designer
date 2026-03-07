@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Check } from 'lucide-react';
+import { Check, Upload, X, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -31,8 +31,9 @@ export default function SimplifiedQuestionnaireWizard({
 }: SimplifiedQuestionnaireWizardProps) {
   const { t, direction } = useLanguage();
   // تم تحديث عدد الأسئلة إلى 10 بعد حذف سؤال مقاس الجسم
-  const totalSteps = 10; // 10 سؤال لقسم تصميم باستخدام قماشك الخاص
+  const totalSteps = 11; // 11 سؤال لقسم تصميم باستخدام قماشك الخاص (يشمل سؤال الصورة المرجعية)
   const containerRef = useRef<HTMLDivElement>(null);
+  const referenceImageInputRef = useRef<HTMLInputElement>(null);
 
   // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
   const [currentStep, setCurrentStep] = useState(1);
@@ -134,7 +135,7 @@ export default function SimplifiedQuestionnaireWizard({
   const handleNext = () => {
     if (currentStep < totalSteps) {
       // التحقق من الأجزاء الشفافة في السؤال 7 (بعد إضافة سؤال الظهر)
-      if (currentStep === 7) {
+      if (currentStep === 9) {
         // إذا اختار المستخدم "نعم" للأجزاء الشفافة ولم يحدد المواقع بعد
         if (answers.transparentParts === 'yes') {
           const selectedLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
@@ -194,9 +195,188 @@ export default function SimplifiedQuestionnaireWizard({
     onSubmit(answers);
   };
 
+  // Reference image part options
+  const referencePartOptions = [
+    { value: 'bodice', labelAr: 'الصدر / الجزء العلوي', labelEn: 'Bodice / Upper Body' },
+    { value: 'waist', labelAr: 'الخصر', labelEn: 'Waist' },
+    { value: 'back', labelAr: 'الظهر', labelEn: 'Back' },
+    { value: 'sleeves', labelAr: 'الأكمام', labelEn: 'Sleeves' },
+    { value: 'skirt', labelAr: 'التنورة', labelEn: 'Skirt' },
+    { value: 'neckline', labelAr: 'خط الرقبة', labelEn: 'Neckline' },
+    { value: 'other', labelAr: 'أخرى (حدد)', labelEn: 'Other (specify)' },
+  ];
+
+  // Handle reference image file upload
+  const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAnswers(prev => ({ ...prev, referenceImage: base64, referenceImagePart: undefined, referenceImagePartCustom: undefined }));
+    };
+    reader.readAsDataURL(file);
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
+
   const renderQuestion = () => {
     switch (currentStep) {
-      case 1: // Dress Type
+      case 1: { // Reference Image (Optional)
+        return (
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div>
+              <span className="text-xs font-medium text-accent-gold uppercase tracking-wide">
+                {direction === 'rtl' ? 'صورة مرجعية — اختيارية' : 'Reference Image — Optional'}
+              </span>
+              <h3 className="text-lg md:text-xl font-semibold text-primary mt-1">
+                {direction === 'rtl'
+                  ? 'هل لديك صورة مرجعية لجزء معين من الفستان؟'
+                  : 'Do you have a reference image for a specific dress part?'}
+              </h3>
+              <p className="text-sm text-gray-500 mt-2">
+                {direction === 'rtl'
+                  ? 'أرفق صورة لتصميم معين تريد تطبيقه على جزء محدد من الفستان (مثال: صدر فستان أو خصر تريد مطابقته).'
+                  : 'Attach a reference image for a specific design area you want to replicate (e.g., a bodice or waist you love).'}
+              </p>
+              <p className="text-xs text-accent-gold/80 mt-1 font-medium">
+                {direction === 'rtl' ? '❆ هذا السؤال اختياري — يمكنك تخطيه بالضغط على التالي' : '❆ Optional step — press Next to skip'}
+              </p>
+            </div>
+
+            {/* Upload Area */}
+            {!answers.referenceImage ? (
+              <button
+                type="button"
+                onClick={() => referenceImageInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-accent-gold/40 rounded-2xl p-10 text-center cursor-pointer hover:border-accent-gold/80 hover:bg-accent-gold/5 transition-all"
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 rounded-full bg-accent-gold/10 flex items-center justify-center">
+                    <Upload className="w-8 h-8 text-accent-gold" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-primary">
+                      {direction === 'rtl' ? 'انقر لرفع صورة مرجعية' : 'Click to upload reference image'}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {direction === 'rtl' ? 'PNG أو JPG — حد أقصى 10MB' : 'PNG or JPG — max 10MB'}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ) : (
+              <div className="space-y-5">
+                {/* Image Preview */}
+                <div className="relative rounded-2xl overflow-hidden border-2 border-accent-gold/50 bg-gray-50">
+                  <img
+                    src={answers.referenceImage}
+                    alt="Reference"
+                    className="w-full max-h-72 object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAnswers(prev => ({
+                        ...prev,
+                        referenceImage: undefined,
+                        referenceImagePart: undefined,
+                        referenceImagePartCustom: undefined,
+                      }))
+                    }
+                    className="absolute top-3 right-3 w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-3 left-3 bg-accent-gold/90 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    {direction === 'rtl' ? 'صورة مرجعية' : 'Reference Image'}
+                  </div>
+                </div>
+
+                {/* Part Selection */}
+                <div>
+                  <p className="font-semibold text-primary mb-3">
+                    {direction === 'rtl'
+                      ? 'أي جزء من الفستان يمثل هذه الصورة؟'
+                      : 'Which part of the dress does this reference?'}
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {referencePartOptions.map(part => (
+                      <button
+                        key={part.value}
+                        type="button"
+                        onClick={() => {
+                          setAnswers(prev => ({
+                            ...prev,
+                            referenceImagePart: part.value,
+                            referenceImagePartCustom: part.value !== 'other' ? undefined : prev.referenceImagePartCustom,
+                          }));
+                        }}
+                        className={cn(
+                          'p-3 rounded-xl border-2 text-sm font-medium transition-all',
+                          answers.referenceImagePart === part.value
+                            ? 'border-accent-gold bg-accent-gold/10 text-accent-gold'
+                            : 'border-gray-200 text-gray-700 hover:border-accent-gold/50 hover:bg-gray-50'
+                        )}
+                      >
+                        {direction === 'rtl' ? part.labelAr : part.labelEn}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom text for Other */}
+                  {answers.referenceImagePart === 'other' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-3"
+                    >
+                      <input
+                        type="text"
+                        value={answers.referenceImagePartCustom || ''}
+                        onChange={(e) =>
+                          setAnswers(prev => ({ ...prev, referenceImagePartCustom: e.target.value }))
+                        }
+                        placeholder={direction === 'rtl' ? 'صف الجزء المطلوب بالتفصيل...' : 'Describe the specific dress part in detail...'}
+                        className="w-full p-3 border-2 border-accent-gold/40 rounded-xl focus:outline-none focus:border-accent-gold text-sm bg-white"
+                      />
+                    </motion.div>
+                  )}
+                </div>
+
+                {/* Confirmation badge */}
+                {answers.referenceImagePart && answers.referenceImagePart !== 'other' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 p-3 bg-accent-gold/10 border border-accent-gold/30 rounded-xl"
+                  >
+                    <Check className="w-5 h-5 text-accent-gold flex-shrink-0" />
+                    <p className="text-sm text-primary">
+                      {direction === 'rtl'
+                        ? ('سيتم تطبيق التصميم المرجعي على: ' + (referencePartOptions.find(p => p.value === answers.referenceImagePart)?.labelAr || ''))
+                        : ('Reference will be applied to: ' + (referencePartOptions.find(p => p.value === answers.referenceImagePart)?.labelEn || ''))}
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+            )}
+
+            {/* Hidden file input */}
+            <input
+              ref={referenceImageInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/webp"
+              className="hidden"
+              onChange={handleReferenceImageUpload}
+            />
+          </div>
+        );
+      }
+
+      case 2: // Dress Type
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section1.title')}
@@ -216,7 +396,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 2: // Dress Length
+      case 3: // Dress Length
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section1.title')}
@@ -235,7 +415,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 3: // شكل التنورة - نسخة من السؤال 5 في قسم ابتكري تصميمك
+      case 4: // شكل التنورة - نسخة من السؤال 5 في قسم ابتكري تصميمك
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section2.title')}
@@ -264,7 +444,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 4: { // Neckline Type - Image Grid
+      case 5: { // Neckline Type - Image Grid
         const necklineOptions = [
           { value: 'vNeck',        image: '/V-neck.png',               labelKey: 'questionnaire.section3.q5.options.vNeck' },
           { value: 'sweetheart',   image: '/Sweetheart.png',           labelKey: 'questionnaire.section3.q5.options.sweetheart' },
@@ -316,7 +496,7 @@ export default function SimplifiedQuestionnaireWizard({
                   >
                     {/* Thumbnail */}
                     <div className={cn(
-                      'relative w-full aspect-[3/4] rounded-lg overflow-hidden mb-2 transition-all',
+                      'relative w-1/2 mx-auto aspect-[3/4] rounded-lg overflow-hidden mb-2 transition-all',
                       isSelected ? 'ring-2 ring-accent-gold shadow-md' : 'group-hover:opacity-90'
                     )}>
                       <Image
@@ -351,7 +531,7 @@ export default function SimplifiedQuestionnaireWizard({
         );
       }
 
-      case 5: // Back Style
+      case 6: // Back Style
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section4.title')}
@@ -377,7 +557,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 6: // Sleeve Type
+      case 7: // Sleeve Type
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section3.title')}
@@ -400,7 +580,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 7: // Transparent Parts
+      case 8: // Transparent Parts
         const selectedTransparentLocations = answers.transparentPartsLocation?.split(',').filter(Boolean) || [];
         const transparentLocationLabels: { [key: string]: { ar: string; en: string } } = {
           sleeves: { ar: 'الأكمام', en: 'Sleeves' },
@@ -465,7 +645,7 @@ export default function SimplifiedQuestionnaireWizard({
           </div>
         );
 
-      case 8: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
+      case 9: // الزينة والإضافات - نسخة من السؤال 8 في قسم ابتكري تصميمك
         // استخراج الإضافات المحددة
         const selectedEmbellishments = Array.isArray(answers.embellishments)
           ? answers.embellishments
@@ -539,7 +719,7 @@ export default function SimplifiedQuestionnaireWizard({
           </div>
         );
 
-      case 9: // أسلوب التصميم
+      case 10: // أسلوب التصميم
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section8.title')}
@@ -563,7 +743,7 @@ export default function SimplifiedQuestionnaireWizard({
           />
         );
 
-      case 10: // تفاصيل إضافية
+      case 11: // تفاصيل إضافية
         return (
           <QuestionStep
             sectionTitle={t('questionnaire.section9.title')}

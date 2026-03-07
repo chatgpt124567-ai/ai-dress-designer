@@ -11,6 +11,9 @@ export interface EnhancePromptRequest {
   primaryFabricPlacement?: string; // Where to use primary fabric
   secondaryFabricPlacement?: string; // Where to use secondary fabric
   secondaryFabricColor?: string; // Color of the secondary fabric
+  // Reference Image
+  referenceImage?: string; // Reference image (Base64) for a specific dress part
+  referenceImagePart?: string; // The dress part the reference applies to
 }
 
 export interface EnhancePromptResponse {
@@ -29,6 +32,9 @@ export interface GenerateImageRequest {
   primaryFabricImage?: string; // Primary fabric image (Base64)
   secondaryFabricImage?: string; // Secondary fabric image (Base64)
   questionnaireAnswers?: QuestionnaireAnswers; // Questionnaire answers for Design Specs
+  // Reference Image
+  referenceImage?: string; // Reference image (Base64) for a specific dress part
+  referenceImagePart?: string; // The dress part the reference applies to
 }
 
 export interface GenerateImageResponse {
@@ -122,6 +128,11 @@ export interface QuestionnaireAnswers {
   // Section 9: Additional Notes
   additionalNotes?: string; // Full questionnaire
   additionalDetails?: string; // Simplified questionnaire (own fabric workflow)
+
+  // Reference Image (Optional - for matching a specific dress part to a reference)
+  referenceImage?: string; // Base64 data URL of reference image
+  referenceImagePart?: string; // Dress part: 'bodice' | 'waist' | 'back' | 'sleeves' | 'skirt' | 'neckline' | 'other'
+  referenceImagePartCustom?: string; // Custom text when referenceImagePart is 'other'
 }
 
 // ===== أنواع ميزة توليد 5 تصاميم دفعة واحدة =====

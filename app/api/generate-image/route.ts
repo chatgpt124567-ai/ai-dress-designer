@@ -163,7 +163,9 @@ export async function POST(request: NextRequest) {
       primaryFabricImage,
       secondaryFabricImage,
       model = 'google/gemini-3.1-flash-image-preview',
-      questionnaireAnswers
+      questionnaireAnswers,
+      referenceImage,
+      referenceImagePart,
     } = body;
 
     if (!prompt || prompt.trim().length === 0) {
@@ -254,9 +256,41 @@ ${designSpecs}
       }
     }
 
+
+    // Build reference image instruction for the image prompt
+    const REFERENCE_PART_LABELS_IMG: Record<string, string> = {
+      bodice: 'bodice / upper chest area',
+      waist: 'waist area',
+      back: 'back area',
+      sleeves: 'sleeves',
+      skirt: 'skirt',
+      neckline: 'neckline',
+    };
+    let referenceImagePromptSection = '';
+    if (referenceImage && referenceImagePart) {
+      const partLabel = REFERENCE_PART_LABELS_IMG[referenceImagePart] || referenceImagePart;
+      const imageNumber = primaryFabricImage ? (secondaryFabricImage ? 'third' : 'second') : 'first';
+      referenceImagePromptSection = `
+
+REFERENCE DESIGN INSTRUCTION (MANDATORY — HIGHEST PRIORITY):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• A REFERENCE IMAGE is attached as the LAST (${imageNumber}) image in this request
+• This reference image shows the EXACT design the client wants for: [${partLabel}]
+• You MUST replicate from the reference image, applied to the [${partLabel}] area ONLY:
+  — The structural cut and silhouette shape of the ${partLabel}
+  — The embellishment pattern, density, and exact placement within the ${partLabel}
+  — Any lace, fabric layering, or sheer details in the ${partLabel}
+  — All decorative construction details visible in the reference (seams, ruching, boning lines, etc.)
+• Apply this reference faithfully to BOTH front and back views wherever the ${partLabel} is visible
+• The reference applies EXCLUSIVELY to the ${partLabel} — do NOT copy the overall silhouette, color, fabric pattern, or any other element from the reference image
+• The primary fabric image(s) define the FABRIC — the reference image defines the ${partLabel} DESIGN ONLY
+• Required fidelity level: HIGH — the ${partLabel} in the output must be immediately recognizable as matching the reference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    }
+
     const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
 ${designSpecsSection}
-${prompt}${customFabricInstruction}
+${prompt}${customFabricInstruction}${referenceImagePromptSection}
 
 ---
 
@@ -301,14 +335,7 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 ---
 
 Logo Placement:
-
-Text: "Brokar Al Sharqiya" floating in the background (centered between mannequins)
-Position: upper portion of image, above the mannequins
-Style: luxury, elegant, high-end
-Font: Elegant handwritten signature script style, sophisticated calligraphy 
-Color: Black
-Above the text: small hand-drawn minimal couture dress sketch in soft black line-art
-Logo appears to float on the seamless background - NOT on a wall
+no logo or text in the photo
 
 
 Background & Environment:
@@ -319,12 +346,12 @@ Background & Environment:
 • No extra props or clutter.
 
 Rendering Specifications:
-• 4K photorealistic output.
+• 2K photorealistic output.
 • Centered view showing both mannequins (left: back view, right: front view).
 • Clean composition, sharp edges, editorial quality.
 • Strict consistency for mannequins, background, lighting, and logo.
 • Only the dress design changes based on the enhanced client description.
-• Photo size will be 9:16
+• Photo size will be 1080*1350 px (instgarm post)
 
 Hard Rules (must follow):
 • Do NOT crop the dress.
@@ -419,6 +446,23 @@ Two full-body mannequins side by side (left: back view, right: front view) weari
         else {
           // Text-only request
           messageContent = imagePrompt;
+        }
+
+        // Append reference image to messageContent if provided (always as last image)
+        if (referenceImage) {
+          if (typeof messageContent === 'string') {
+            // Was text-only, convert to array
+            messageContent = [
+              { type: 'text', text: messageContent },
+              { type: 'image_url', image_url: { url: referenceImage } },
+            ];
+          } else if (Array.isArray(messageContent)) {
+            // Already an array (has fabric images), append reference image at end
+            messageContent = [
+              ...messageContent,
+              { type: 'image_url', image_url: { url: referenceImage } },
+            ];
+          }
         }
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
