@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
       questionnaireAnswers,
       referenceImage,
       referenceImagePart,
+      referenceImageEntries,
     } = body;
 
     if (!prompt || prompt.trim().length === 0) {
@@ -259,6 +260,7 @@ ${designSpecs}
 
     // Build reference image instruction for the image prompt
     const REFERENCE_PART_LABELS_IMG: Record<string, string> = {
+      full_body: 'full dress / entire body',
       bodice: 'bodice / upper chest area',
       waist: 'waist area',
       back: 'back area',
@@ -266,8 +268,32 @@ ${designSpecs}
       skirt: 'skirt',
       neckline: 'neckline',
     };
+
+    // Count how many fabric images are attached (to calculate reference image positions)
+    const fabricImageCount = (primaryFabricImage ? 1 : 0) + (secondaryFabricImage ? 1 : 0) + (fabricImage && !primaryFabricImage ? 1 : 0);
+
     let referenceImagePromptSection = '';
-    if (referenceImage && referenceImagePart) {
+    const activeEntries = referenceImageEntries && referenceImageEntries.length > 0 ? referenceImageEntries : null;
+
+    if (activeEntries) {
+      // Multiple reference images
+      const entryDescriptions = activeEntries.map((entry: { image: string; parts: string[] }, i: number) => {
+        const partLabels = entry.parts.map((p: string) => REFERENCE_PART_LABELS_IMG[p] || p).join(', ');
+        const imgNum = fabricImageCount + i + 1;
+        return `• Image ${imgNum} (reference image ${i + 1}) → APPLIES TO: [${partLabels}]\n  Replicate from this reference: structural cut, embellishment pattern, lace/layering, and decorative details of [${partLabels}] ONLY.\n  Do NOT copy silhouette, color, or fabric from this reference.`;
+      }).join('\n');
+      referenceImagePromptSection = `
+
+REFERENCE DESIGN INSTRUCTION (MANDATORY — HIGHEST PRIORITY):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The client has provided ${activeEntries.length} reference image(s) attached after the fabric image(s):
+${entryDescriptions}
+• Apply each reference faithfully to BOTH front and back views where the relevant area is visible
+• The primary fabric image(s) define the FABRIC — the reference images define specific area DESIGNS ONLY
+• Required fidelity level: HIGH — each referenced area must be immediately recognizable as matching its reference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    } else if (referenceImage && referenceImagePart) {
+      // Legacy single reference image
       const partLabel = REFERENCE_PART_LABELS_IMG[referenceImagePart] || referenceImagePart;
       const imageNumber = primaryFabricImage ? (secondaryFabricImage ? 'third' : 'second') : 'first';
       referenceImagePromptSection = `
@@ -448,19 +474,21 @@ Two full-body mannequins side by side (left: back view, right: front view) weari
           messageContent = imagePrompt;
         }
 
-        // Append reference image to messageContent if provided (always as last image)
-        if (referenceImage) {
+        // Append reference images to messageContent (always after fabric images)
+        const referenceImagesToAppend: string[] = activeEntries
+          ? activeEntries.map((e: { image: string; parts: string[] }) => e.image)
+          : referenceImage ? [referenceImage] : [];
+
+        if (referenceImagesToAppend.length > 0) {
           if (typeof messageContent === 'string') {
-            // Was text-only, convert to array
             messageContent = [
               { type: 'text', text: messageContent },
-              { type: 'image_url', image_url: { url: referenceImage } },
+              ...referenceImagesToAppend.map((img: string) => ({ type: 'image_url', image_url: { url: img } })),
             ];
           } else if (Array.isArray(messageContent)) {
-            // Already an array (has fabric images), append reference image at end
             messageContent = [
               ...messageContent,
-              { type: 'image_url', image_url: { url: referenceImage } },
+              ...referenceImagesToAppend.map((img: string) => ({ type: 'image_url', image_url: { url: img } })),
             ];
           }
         }

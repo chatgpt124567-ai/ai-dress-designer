@@ -12,8 +12,9 @@ export interface EnhancePromptRequest {
   secondaryFabricPlacement?: string; // Where to use secondary fabric
   secondaryFabricColor?: string; // Color of the secondary fabric
   // Reference Image
-  referenceImage?: string; // Reference image (Base64) for a specific dress part
-  referenceImagePart?: string; // The dress part the reference applies to
+  referenceImage?: string; // Reference image (Base64) for a specific dress part (legacy)
+  referenceImagePart?: string; // The dress part the reference applies to (legacy)
+  referenceImageEntries?: Array<{ image: string; parts: string[] }>; // Multiple reference images (new)
 }
 
 export interface EnhancePromptResponse {
@@ -33,8 +34,9 @@ export interface GenerateImageRequest {
   secondaryFabricImage?: string; // Secondary fabric image (Base64)
   questionnaireAnswers?: QuestionnaireAnswers; // Questionnaire answers for Design Specs
   // Reference Image
-  referenceImage?: string; // Reference image (Base64) for a specific dress part
-  referenceImagePart?: string; // The dress part the reference applies to
+  referenceImage?: string; // Reference image (Base64) for a specific dress part (legacy)
+  referenceImagePart?: string; // The dress part the reference applies to (legacy)
+  referenceImageEntries?: Array<{ image: string; parts: string[] }>; // Multiple reference images (new)
 }
 
 export interface GenerateImageResponse {
@@ -49,6 +51,13 @@ export interface DressDesign {
   enhancedPrompt: string;
   imageUrl: string;
   createdAt: Date;
+}
+
+// Reference Image Entry (for multiple reference images)
+export interface ReferenceImageEntry {
+  image: string; // Base64 data URL
+  parts: string[]; // Selected dress parts (multi-select)
+  partCustom?: string; // Custom text when 'other' is in parts
 }
 
 // Questionnaire Types
@@ -130,9 +139,10 @@ export interface QuestionnaireAnswers {
   additionalDetails?: string; // Simplified questionnaire (own fabric workflow)
 
   // Reference Image (Optional - for matching a specific dress part to a reference)
-  referenceImage?: string; // Base64 data URL of reference image
-  referenceImagePart?: string; // Dress part: 'bodice' | 'waist' | 'back' | 'sleeves' | 'skirt' | 'neckline' | 'other'
-  referenceImagePartCustom?: string; // Custom text when referenceImagePart is 'other'
+  referenceImage?: string; // Base64 data URL of reference image (legacy single image)
+  referenceImagePart?: string; // Dress part (legacy single selection)
+  referenceImagePartCustom?: string; // Custom text when referenceImagePart is 'other' (legacy)
+  referenceImageEntries?: ReferenceImageEntry[]; // Multiple reference images (new)
 }
 
 // ===== أنواع ميزة توليد 5 تصاميم دفعة واحدة =====

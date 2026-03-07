@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
       secondaryFabricColor,
       referenceImage,
       referenceImagePart,
+      referenceImageEntries,
     } = body;
 
     // Support both old (description) and new (questionnaireAnswers) formats
@@ -243,6 +244,7 @@ This instruction must be seamlessly integrated into your description where you d
 
     // Build reference image instruction if provided
     const REFERENCE_PART_LABELS: Record<string, string> = {
+      full_body: 'full dress / entire body',
       bodice: 'bodice / upper chest area',
       waist: 'waist area',
       back: 'back area',
@@ -251,7 +253,19 @@ This instruction must be seamlessly integrated into your description where you d
       neckline: 'neckline',
     };
     let referenceImageInstruction = '';
-    if (referenceImage && referenceImagePart) {
+
+    // New: multiple reference images
+    const activeEntries = referenceImageEntries && referenceImageEntries.length > 0 ? referenceImageEntries : null;
+    if (activeEntries) {
+      const entryInstructions = activeEntries.map((entry: { image: string; parts: string[] }, i: number) => {
+        const partLabels = entry.parts.map((p: string) => REFERENCE_PART_LABELS[p] || p).join(', ');
+        const imagePosition = i === activeEntries.length - 1 ? 'LAST' : `reference image ${i + 1}`;
+        return `Reference image ${i + 1} (${imagePosition} attached image) → applies to: [${partLabels}]\nFor each area listed above, the design must faithfully replicate: exact cut, structural construction, embellishment pattern, lace/fabric layering, and decorative detailing from that reference image. Do NOT copy silhouette, color, or fabric pattern from the reference — only the design of those specific areas.`;
+      }).join('\n\n');
+      referenceImageInstruction = `\n\nREFERENCE IMAGES INSTRUCTION (CRITICAL):\nThe client has provided ${activeEntries.length} reference image(s) attached at the end of this request.\n${entryInstructions}\nIntegrate these reference designs seamlessly into the overall dress description, adapted to the primary fabric.`;
+    }
+    // Legacy: single reference image
+    else if (referenceImage && referenceImagePart) {
       const partLabel = REFERENCE_PART_LABELS[referenceImagePart] || referenceImagePart;
       referenceImageInstruction = `\n\nREFERENCE IMAGE INSTRUCTION (CRITICAL):\nThe client has provided a reference image attached to this request (it is the LAST image). It shows the exact design they want applied to the [${partLabel}] area.\nYou MUST include the following instruction, naturally integrated into the relevant section of your description:\n\n"The ${partLabel} design must faithfully replicate what is shown in the attached reference image: match the exact cut, structural construction, embellishment pattern, lace or fabric layering arrangement, and decorative detailing. Integrate this reference design seamlessly into the overall dress silhouette and adapt it to the primary fabric, while maintaining maximum visual similarity to the reference in the ${partLabel} area. Do NOT replicate any other element from the reference image — only the ${partLabel} design."\n\nThis instruction must be clearly and naturally integrated into your couture description.`;
     }

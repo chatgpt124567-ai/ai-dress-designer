@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Check, Upload, X, ImageIcon } from 'lucide-react';
+import { Check, Upload, X, ImageIcon, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import type { QuestionnaireAnswers } from '@/types';
+import type { QuestionnaireAnswers, ReferenceImageEntry } from '@/types';
 import Button from './Button';
 import ProgressBar from './ProgressBar';
 import QuestionStep from './QuestionStep';
@@ -35,7 +35,7 @@ export default function SimplifiedQuestionnaireWizard({
   const totalSteps = 11; // 11 سؤال لقسم تصميم باستخدام قماشك الخاص (يشمل سؤال الصورة المرجعية)
   const containerRef = useRef<HTMLDivElement>(null);
   const referenceImageInputRef = useRef<HTMLInputElement>(null);
-  const [refImageCropper, setRefImageCropper] = useState<string | null>(null);
+  const [refImageCropper, setRefImageCropper] = useState<{ imageSrc: string; index: number } | null>(null);
 
   // تهيئة الخطوة الحالية بقيمة افتراضية لتجنب مشاكل الـ hydration
   const [currentStep, setCurrentStep] = useState(1);
@@ -199,6 +199,7 @@ export default function SimplifiedQuestionnaireWizard({
 
   // Reference image part options
   const referencePartOptions = [
+    { value: 'full_body', labelAr: 'كامل الجسم', labelEn: 'Full Body' },
     { value: 'bodice', labelAr: 'الصدر / الجزء العلوي', labelEn: 'Bodice / Upper Body' },
     { value: 'waist', labelAr: 'الخصر', labelEn: 'Waist' },
     { value: 'back', labelAr: 'الظهر', labelEn: 'Back' },
@@ -208,23 +209,50 @@ export default function SimplifiedQuestionnaireWizard({
     { value: 'other', labelAr: 'أخرى (حدد)', labelEn: 'Other (specify)' },
   ];
 
-  // Handle reference image file upload
+  // Handle reference image file upload — adds a new entry
   const handleReferenceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
-      setAnswers(prev => ({ ...prev, referenceImage: base64, referenceImagePart: undefined, referenceImagePartCustom: undefined }));
+      const newEntry: ReferenceImageEntry = { image: base64, parts: [] };
+      setAnswers(prev => ({
+        ...prev,
+        referenceImageEntries: [...(prev.referenceImageEntries || []), newEntry],
+      }));
     };
     reader.readAsDataURL(file);
-    // Reset input so same file can be re-selected
     e.target.value = '';
+  };
+
+  // Toggle a part for a specific entry
+  const toggleEntryPart = (entryIndex: number, partValue: string) => {
+    setAnswers(prev => {
+      const entries = [...(prev.referenceImageEntries || [])];
+      const entry = { ...entries[entryIndex] };
+      if (entry.parts.includes(partValue)) {
+        entry.parts = entry.parts.filter(p => p !== partValue);
+      } else {
+        entry.parts = [...entry.parts, partValue];
+      }
+      entries[entryIndex] = entry;
+      return { ...prev, referenceImageEntries: entries };
+    });
+  };
+
+  // Remove a reference image entry
+  const removeReferenceEntry = (index: number) => {
+    setAnswers(prev => ({
+      ...prev,
+      referenceImageEntries: (prev.referenceImageEntries || []).filter((_, i) => i !== index),
+    }));
   };
 
   const renderQuestion = () => {
     switch (currentStep) {
-      case 1: { // Reference Image (Optional)
+      case 1: { // Reference Images (Optional)
+        const entries = answers.referenceImageEntries || [];
         return (
           <div className="space-y-6">
             {/* Section Header */}
@@ -239,141 +267,153 @@ export default function SimplifiedQuestionnaireWizard({
               </h3>
               <p className="text-sm text-gray-500 mt-2">
                 {direction === 'rtl'
-                  ? 'أرفق صورة لتصميم معين تريد تطبيقه على جزء محدد من الفستان (مثال: صدر فستان أو خصر تريد مطابقته).'
-                  : 'Attach a reference image for a specific design area you want to replicate (e.g., a bodice or waist you love).'}
+                  ? 'أرفق صورة أو أكثر لتصميم معين تريد تطبيقه على جزء محدد من الفستان.'
+                  : 'Attach one or more reference images for specific design areas you want to replicate.'}
               </p>
               <p className="text-xs text-accent-gold/80 mt-1 font-medium">
                 {direction === 'rtl' ? '❆ هذا السؤال اختياري — يمكنك تخطيه بالضغط على التالي' : '❆ Optional step — press Next to skip'}
               </p>
             </div>
 
-            {/* Upload Area */}
-            {!answers.referenceImage ? (
-              <button
-                type="button"
-                onClick={() => referenceImageInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-accent-gold/40 rounded-2xl p-10 text-center cursor-pointer hover:border-accent-gold/80 hover:bg-accent-gold/5 transition-all"
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 rounded-full bg-accent-gold/10 flex items-center justify-center">
-                    <Upload className="w-8 h-8 text-accent-gold" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-primary">
-                      {direction === 'rtl' ? 'انقر لرفع صورة مرجعية' : 'Click to upload reference image'}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {direction === 'rtl' ? 'PNG أو JPG — حد أقصى 10MB' : 'PNG or JPG — max 10MB'}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ) : (
-              <div className="space-y-5">
-                {/* Image Preview */}
-                <div className="relative rounded-2xl overflow-hidden border-2 border-accent-gold/50 bg-gray-50">
-                  <img
-                    src={answers.referenceImage}
-                    alt="Reference"
-                    className="w-full max-h-72 object-contain"
-                  />
-                  {/* Crop Button */}
-                  <button
-                    type="button"
-                    onClick={() => setRefImageCropper(answers.referenceImage!)}
-                    className="absolute top-3 left-3 bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-1.5 rounded-lg shadow-md transition-colors text-sm font-medium"
-                  >
-                    {direction === 'rtl' ? 'قص' : 'Crop'}
-                  </button>
-                  {/* Remove Button */}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAnswers(prev => ({
-                        ...prev,
-                        referenceImage: undefined,
-                        referenceImagePart: undefined,
-                        referenceImagePartCustom: undefined,
-                      }))
-                    }
-                    className="absolute top-3 right-3 w-9 h-9 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-md transition-colors"
-                    aria-label="Remove image"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-3 left-3 bg-accent-gold/90 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                    {direction === 'rtl' ? 'صورة مرجعية' : 'Reference Image'}
-                  </div>
-                </div>
-
-                {/* Part Selection */}
-                <div>
-                  <p className="font-semibold text-primary mb-3">
-                    {direction === 'rtl'
-                      ? 'أي جزء من الفستان يمثل هذه الصورة؟'
-                      : 'Which part of the dress does this reference?'}
-                  </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {referencePartOptions.map(part => (
-                      <button
-                        key={part.value}
-                        type="button"
-                        onClick={() => {
-                          setAnswers(prev => ({
-                            ...prev,
-                            referenceImagePart: part.value,
-                            referenceImagePartCustom: part.value !== 'other' ? undefined : prev.referenceImagePartCustom,
-                          }));
-                        }}
-                        className={cn(
-                          'p-3 rounded-xl border-2 text-sm font-medium transition-all',
-                          answers.referenceImagePart === part.value
-                            ? 'border-accent-gold bg-accent-gold/10 text-accent-gold'
-                            : 'border-gray-200 text-gray-700 hover:border-accent-gold/50 hover:bg-gray-50'
-                        )}
-                      >
-                        {direction === 'rtl' ? part.labelAr : part.labelEn}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Custom text for Other */}
-                  {answers.referenceImagePart === 'other' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-3"
-                    >
-                      <input
-                        type="text"
-                        value={answers.referenceImagePartCustom || ''}
-                        onChange={(e) =>
-                          setAnswers(prev => ({ ...prev, referenceImagePartCustom: e.target.value }))
-                        }
-                        placeholder={direction === 'rtl' ? 'صف الجزء المطلوب بالتفصيل...' : 'Describe the specific dress part in detail...'}
-                        className="w-full p-3 border-2 border-accent-gold/40 rounded-xl focus:outline-none focus:border-accent-gold text-sm bg-white"
+            {/* Existing entries */}
+            {entries.length > 0 && (
+              <div className="space-y-6">
+                {entries.map((entry, idx) => (
+                  <div key={idx} className="border-2 border-accent-gold/30 rounded-2xl p-4 space-y-4 bg-accent-gold/5">
+                    {/* Image Preview */}
+                    <div className="relative rounded-xl overflow-hidden border border-accent-gold/40 bg-gray-50">
+                      <img
+                        src={entry.image}
+                        alt={`Reference ${idx + 1}`}
+                        className="w-full max-h-64 object-contain"
                       />
-                    </motion.div>
-                  )}
-                </div>
+                      {/* Crop Button */}
+                      <button
+                        type="button"
+                        onClick={() => setRefImageCropper({ imageSrc: entry.image, index: idx })}
+                        className="absolute top-2 left-2 bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-1 rounded-lg shadow text-xs font-medium transition-colors"
+                      >
+                        {direction === 'rtl' ? 'قص' : 'Crop'}
+                      </button>
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => removeReferenceEntry(idx)}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow transition-colors"
+                        aria-label="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-2 bg-accent-gold/90 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {direction === 'rtl' ? `صورة ${idx + 1}` : `Image ${idx + 1}`}
+                      </div>
+                    </div>
 
-                {/* Confirmation badge */}
-                {answers.referenceImagePart && answers.referenceImagePart !== 'other' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-2 p-3 bg-accent-gold/10 border border-accent-gold/30 rounded-xl"
-                  >
-                    <Check className="w-5 h-5 text-accent-gold flex-shrink-0" />
-                    <p className="text-sm text-primary">
-                      {direction === 'rtl'
-                        ? ('سيتم تطبيق التصميم المرجعي على: ' + (referencePartOptions.find(p => p.value === answers.referenceImagePart)?.labelAr || ''))
-                        : ('Reference will be applied to: ' + (referencePartOptions.find(p => p.value === answers.referenceImagePart)?.labelEn || ''))}
-                    </p>
-                  </motion.div>
-                )}
+                    {/* Part Selection — multi-select checkboxes */}
+                    <div>
+                      <p className="font-semibold text-primary mb-2 text-sm">
+                        {direction === 'rtl'
+                          ? 'أي جزء من الفستان يمثل هذه الصورة؟ (يمكن اختيار أكثر من جزء)'
+                          : 'Which part(s) of the dress does this reference? (multiple allowed)'}
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {referencePartOptions.map(part => {
+                          const selected = entry.parts.includes(part.value);
+                          return (
+                            <button
+                              key={part.value}
+                              type="button"
+                              onClick={() => toggleEntryPart(idx, part.value)}
+                              className={cn(
+                                'p-2.5 rounded-xl border-2 text-xs font-medium transition-all flex items-center gap-1.5',
+                                selected
+                                  ? 'border-accent-gold bg-accent-gold/10 text-accent-gold'
+                                  : 'border-gray-200 text-gray-700 hover:border-accent-gold/50 hover:bg-gray-50'
+                              )}
+                            >
+                              <span className={cn(
+                                'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                                selected ? 'bg-accent-gold border-accent-gold' : 'border-gray-300'
+                              )}>
+                                {selected && <Check className="w-2.5 h-2.5 text-white" />}
+                              </span>
+                              {direction === 'rtl' ? part.labelAr : part.labelEn}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Custom text for Other */}
+                      {entry.parts.includes('other') && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2"
+                        >
+                          <input
+                            type="text"
+                            value={entry.partCustom || ''}
+                            onChange={(e) => {
+                              setAnswers(prev => {
+                                const updated = [...(prev.referenceImageEntries || [])];
+                                updated[idx] = { ...updated[idx], partCustom: e.target.value };
+                                return { ...prev, referenceImageEntries: updated };
+                              });
+                            }}
+                            placeholder={direction === 'rtl' ? 'صف الجزء المطلوب بالتفصيل...' : 'Describe the specific dress part in detail...'}
+                            className="w-full p-2.5 border-2 border-accent-gold/40 rounded-xl focus:outline-none focus:border-accent-gold text-sm bg-white"
+                          />
+                        </motion.div>
+                      )}
+
+                      {/* Selected parts summary */}
+                      {entry.parts.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-2 flex items-center gap-1.5 flex-wrap"
+                        >
+                          <Check className="w-4 h-4 text-accent-gold flex-shrink-0" />
+                          <span className="text-xs text-primary">
+                            {entry.parts
+                              .map(p => {
+                                if (p === 'other') return entry.partCustom || (direction === 'rtl' ? 'أخرى' : 'Other');
+                                return direction === 'rtl'
+                                  ? referencePartOptions.find(o => o.value === p)?.labelAr || p
+                                  : referencePartOptions.find(o => o.value === p)?.labelEn || p;
+                              })
+                              .join('، ')}
+                          </span>
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
+
+            {/* Add image button */}
+            <button
+              type="button"
+              onClick={() => referenceImageInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-accent-gold/40 rounded-2xl p-8 text-center cursor-pointer hover:border-accent-gold/80 hover:bg-accent-gold/5 transition-all"
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-accent-gold/10 flex items-center justify-center">
+                  {entries.length === 0 ? <Upload className="w-7 h-7 text-accent-gold" /> : <Plus className="w-7 h-7 text-accent-gold" />}
+                </div>
+                <div>
+                  <p className="font-semibold text-primary">
+                    {direction === 'rtl'
+                      ? (entries.length === 0 ? 'انقر لرفع صورة مرجعية' : 'إضافة صورة مرجعية أخرى')
+                      : (entries.length === 0 ? 'Click to upload reference image' : 'Add another reference image')}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {direction === 'rtl' ? 'PNG أو JPG — حد أقصى 10MB' : 'PNG or JPG — max 10MB'}
+                  </p>
+                </div>
+              </div>
+            </button>
 
             {/* Hidden file input */}
             <input
@@ -894,9 +934,14 @@ export default function SimplifiedQuestionnaireWizard({
       {/* قاص الصورة المرجعية */}
       {refImageCropper && (
         <ImageCropper
-          imageSrc={refImageCropper}
+          imageSrc={refImageCropper.imageSrc}
           onCrop={(croppedImage) => {
-            setAnswers(prev => ({ ...prev, referenceImage: croppedImage, referenceImagePart: undefined, referenceImagePartCustom: undefined }));
+            const entryIndex = refImageCropper.index;
+            setAnswers(prev => {
+              const updated = [...(prev.referenceImageEntries || [])];
+              updated[entryIndex] = { ...updated[entryIndex], image: croppedImage };
+              return { ...prev, referenceImageEntries: updated };
+            });
             setRefImageCropper(null);
           }}
           onCancel={() => setRefImageCropper(null)}

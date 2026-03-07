@@ -425,7 +425,7 @@ export default function DesignPage() {
   // Save answers to localStorage (strip large binary fields to avoid QuotaExceededError)
   const saveAnswersToLocalStorage = (answers: QuestionnaireAnswers) => {
     // Always strip large binary fields before saving
-    const { referenceImage: _ref, customFabricImage: _fab, ...answersToSave } = answers as any;
+    const { referenceImage: _ref, customFabricImage: _fab, referenceImageEntries: _refEntries, ...answersToSave } = answers as any;
     const serialized = JSON.stringify(answersToSave);
     const trySet = () => {
       try {
@@ -594,18 +594,19 @@ export default function DesignPage() {
         referenceImage: _refImg,
         referenceImagePart: _refPart,
         referenceImagePartCustom: _refPartCustom,
+        referenceImageEntries: _refEntries2,
         customFabricImage: _customFab,
         ...questionnaireAnswersForPayload
       } = questionnaireAnswers as any;
 
       const enhancePayload: any = { questionnaireAnswers: questionnaireAnswersForPayload };
 
-      // Pass reference image data separately (not embedded in questionnaireAnswers)
-      if (questionnaireAnswers.referenceImage) {
-        enhancePayload.referenceImage = questionnaireAnswers.referenceImage;
-        enhancePayload.referenceImagePart = questionnaireAnswers.referenceImagePart === 'other' && questionnaireAnswers.referenceImagePartCustom
-          ? questionnaireAnswers.referenceImagePartCustom
-          : questionnaireAnswers.referenceImagePart;
+      // Pass reference image entries separately (not embedded in questionnaireAnswers)
+      if (questionnaireAnswers.referenceImageEntries && questionnaireAnswers.referenceImageEntries.length > 0) {
+        enhancePayload.referenceImageEntries = questionnaireAnswers.referenceImageEntries.map((entry: any) => ({
+          image: entry.image,
+          parts: entry.parts.map((p: string) => p === 'other' && entry.partCustom ? entry.partCustom : p),
+        }));
       }
 
       // Add fabric workflow data if present
@@ -661,12 +662,12 @@ export default function DesignPage() {
         model: selectedAIModel
       };
 
-      // Add reference image to generatePayload if present
-      if (questionnaireAnswers.referenceImage) {
-        generatePayload.referenceImage = questionnaireAnswers.referenceImage;
-        generatePayload.referenceImagePart = questionnaireAnswers.referenceImagePart === 'other' && questionnaireAnswers.referenceImagePartCustom
-          ? questionnaireAnswers.referenceImagePartCustom
-          : questionnaireAnswers.referenceImagePart;
+      // Add reference image entries to generatePayload if present
+      if (questionnaireAnswers.referenceImageEntries && questionnaireAnswers.referenceImageEntries.length > 0) {
+        generatePayload.referenceImageEntries = questionnaireAnswers.referenceImageEntries.map((entry: any) => ({
+          image: entry.image,
+          parts: entry.parts.map((p: string) => p === 'other' && entry.partCustom ? entry.partCustom : p),
+        }));
       }
 
       // Own Fabric Workflow
@@ -1740,12 +1741,7 @@ export default function DesignPage() {
                       loading={loading}
                       initialAnswers={savedAnswers || undefined}
                       onAnswersChange={(answers) => {
-                        // Save to localStorage
-                        try {
-                          localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-                        } catch (error) {
-                          console.error('Error saving answers to localStorage:', error);
-                        }
+                        saveAnswersToLocalStorage(answers);
                       }}
                     />
                   )}
