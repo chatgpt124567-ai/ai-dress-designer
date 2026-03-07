@@ -9,19 +9,25 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   parts.push(`**Dress Type:** ${answers.dressType}${answers.dressTypeCustom ? ` (${answers.dressTypeCustom})` : ''}`);
   parts.push(`**Dress Length:** ${answers.dressLength}${answers.dressLengthCustom ? ` (${answers.dressLengthCustom})` : ''}`);
 
+  const REF_MATCH = 'as shown in the attached reference image for this area';
+
   // Section 2: Silhouette (Q3 Waist Shape removed)
-  parts.push(`**Skirt Shape:** ${answers.skirtShape}${answers.skirtShapeCustom ? ` (${answers.skirtShapeCustom})` : ''}`);
+  const skirtShapeVal = answers.skirtShape === 'reference_match' ? REF_MATCH : answers.skirtShape;
+  parts.push(`**Skirt Shape:** ${skirtShapeVal}${answers.skirtShapeCustom && answers.skirtShape !== 'reference_match' ? ` (${answers.skirtShapeCustom})` : ''}`);
 
   // Section 3: Upper Body
-  parts.push(`**Neckline Type:** ${answers.necklineType}${answers.necklineTypeCustom ? ` (${answers.necklineTypeCustom})` : ''}`);
+  const necklineVal = answers.necklineType === 'reference_match' ? REF_MATCH : answers.necklineType;
+  parts.push(`**Neckline Type:** ${necklineVal}${answers.necklineTypeCustom && answers.necklineType !== 'reference_match' ? ` (${answers.necklineTypeCustom})` : ''}`);
 
   // Section 4: Back Design
   if (answers.backStyle) {
-    parts.push(`**Back Style:** ${answers.backStyle}${answers.backStyleCustom ? ` (${answers.backStyleCustom})` : ''}`);
+    const backVal = answers.backStyle === 'reference_match' ? REF_MATCH : answers.backStyle;
+    parts.push(`**Back Style:** ${backVal}${answers.backStyleCustom && answers.backStyle !== 'reference_match' ? ` (${answers.backStyleCustom})` : ''}`);
   }
 
   // Section 5: Sleeves
-  parts.push(`**Sleeve Type:** ${answers.sleeveType}${answers.sleeveTypeCustom ? ` (${answers.sleeveTypeCustom})` : ''}`);
+  const sleeveVal = answers.sleeveType === 'reference_match' ? REF_MATCH : answers.sleeveType;
+  parts.push(`**Sleeve Type:** ${sleeveVal}${answers.sleeveTypeCustom && answers.sleeveType !== 'reference_match' ? ` (${answers.sleeveTypeCustom})` : ''}`);
 
   // Section 6: Fabric & Materials
   const fabricTypes = Array.isArray(answers.fabricType) ? answers.fabricType : (answers.fabricType ? [answers.fabricType] : []);

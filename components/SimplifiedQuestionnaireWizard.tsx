@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { Check, Upload, X, ImageIcon, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -249,6 +249,88 @@ export default function SimplifiedQuestionnaireWizard({
     }));
   };
 
+  // ─── Reference Match Helpers ───────────────────────────────────────
+  // Collect all parts from all uploaded reference images
+  const allReferenceParts = useMemo(() => {
+    const parts = new Set<string>();
+    (answers.referenceImageEntries || []).forEach(entry => {
+      entry.parts.forEach(p => parts.add(p));
+    });
+    return parts;
+  }, [answers.referenceImageEntries]);
+
+  // Does any reference image apply to one of the given question parts?
+  const hasReferenceForQuestion = (questionParts: string[]): boolean => {
+    if (allReferenceParts.has('full_body')) return true;
+    return questionParts.some(p => allReferenceParts.has(p));
+  };
+
+  // Return images of reference entries whose parts overlap with the question parts
+  const getMatchingReferenceImages = (questionParts: string[]): string[] =>
+    (answers.referenceImageEntries || [])
+      .filter(e => e.parts.includes('full_body') || e.parts.some(p => questionParts.includes(p)))
+      .map(e => e.image);
+
+  // Auto-select 'reference_match' when entering a relevant step with no prior answer
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (currentStep === 4 && !answers.skirtShape  && hasReferenceForQuestion(['skirt', 'waist']))    updateAnswer('skirtShape',   'reference_match');
+    if (currentStep === 5 && !answers.necklineType && hasReferenceForQuestion(['neckline', 'bodice'])) updateAnswer('necklineType', 'reference_match');
+    if (currentStep === 6 && !answers.backStyle   && hasReferenceForQuestion(['back']))               updateAnswer('backStyle',    'reference_match');
+    if (currentStep === 7 && !answers.sleeveType  && hasReferenceForQuestion(['sleeves']))            updateAnswer('sleeveType',   'reference_match');
+  }, [currentStep]); // intentionally only runs on step change
+
+  // Render a "Match Reference Image" card at the top of an affected question
+  const renderReferenceMatchCard = (
+    currentValue: string,
+    onSelect: () => void,
+    matchingImages: string[]
+  ) => {
+    const isSelected = currentValue === 'reference_match';
+    return (
+      <motion.button
+        type="button"
+        onClick={onSelect}
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={cn(
+          'w-full p-3 rounded-xl border-2 text-start transition-all flex items-center gap-3 mb-4',
+          isSelected
+            ? 'border-accent-gold bg-accent-gold/10 shadow-md'
+            : 'border-accent-gold/40 bg-accent-gold/5 hover:border-accent-gold hover:bg-accent-gold/10'
+        )}
+      >
+        {/* Reference image thumbnails (up to 3) */}
+        <div className="flex gap-1 flex-shrink-0">
+          {matchingImages.slice(0, 3).map((img, i) => (
+            <div key={i} className="w-10 h-14 rounded-lg overflow-hidden border border-accent-gold/30 flex-shrink-0">
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+        {/* Text */}
+        <div className="flex-1 min-w-0">
+          <p className={cn('font-semibold text-sm', isSelected ? 'text-accent-gold' : 'text-primary')}>
+            {direction === 'rtl' ? '✦ مطابق للصورة المرجعية' : '✦ Match Reference Image'}
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5 leading-tight">
+            {direction === 'rtl'
+              ? 'سيتم تطبيق التصميم الموجود في الصورة المرجعية على هذا الجزء'
+              : 'The design from the reference image will be applied to this area'}
+          </p>
+        </div>
+        {/* Checkbox indicator */}
+        <div className={cn(
+          'w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+          isSelected ? 'bg-accent-gold border-accent-gold' : 'border-gray-300'
+        )}>
+          {isSelected && <Check className="w-3 h-3 text-white" />}
+        </div>
+      </motion.button>
+    );
+  };
+  // ────────────────────────────────────────────────────────────────────
+
   const renderQuestion = () => {
     switch (currentStep) {
       case 1: { // Reference Images (Optional)
@@ -468,31 +550,37 @@ export default function SimplifiedQuestionnaireWizard({
 
       case 4: // شكل التنورة - نسخة من السؤال 5 في قسم ابتكري تصميمك
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section2.title')}
-            questionText={t('questionnaire.section2.q4.question')}
-            questionType="radio"
-            options={[
-              // خيارات محدثة من قسم ابتكري تصميمك الخاص (السؤال 5)
-              { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
-              { value: 'tight', labelKey: 'questionnaire.section2.q4.options.tight' },
-              { value: 'pleated', labelKey: 'questionnaire.section2.q4.options.pleated' },
-              { value: 'puffy', labelKey: 'questionnaire.section2.q4.options.puffy' },
-              { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' },
-              { value: 'mermaidTail', labelKey: 'questionnaire.section2.q4.options.mermaidTail' },
-              { value: 'overskirt', labelKey: 'questionnaire.section2.q4.options.overskirt' },
-              { value: 'peplum', labelKey: 'questionnaire.section2.q4.options.peplum' },
-              { value: 'sideDrape', labelKey: 'questionnaire.section2.q4.options.sideDrape' },
-              { value: 'other', labelKey: 'questionnaire.section2.q4.options.other', hasCustomInput: true },
-            ]}
-            value={answers.skirtShape}
-            customValue={answers.skirtShapeCustom}
-            onChange={(value, customValue) => updateAnswer('skirtShape', value as string, customValue)}
-            onAutoAdvance={handleNext}
-            enableSkirtPreview={true}
-            onSkirtPreview={handleSkirtPreview}
-            skirtPreviewOptions={['sideDrape', 'peplum', 'overskirt', 'mermaidTail', 'layered']}
-          />
+          <>
+            {hasReferenceForQuestion(['skirt', 'waist']) && renderReferenceMatchCard(
+              answers.skirtShape,
+              () => updateAnswer('skirtShape', 'reference_match'),
+              getMatchingReferenceImages(['skirt', 'waist'])
+            )}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section2.title')}
+              questionText={t('questionnaire.section2.q4.question')}
+              questionType="radio"
+              options={[
+                { value: 'straight', labelKey: 'questionnaire.section2.q4.options.straight' },
+                { value: 'tight', labelKey: 'questionnaire.section2.q4.options.tight' },
+                { value: 'pleated', labelKey: 'questionnaire.section2.q4.options.pleated' },
+                { value: 'puffy', labelKey: 'questionnaire.section2.q4.options.puffy' },
+                { value: 'layered', labelKey: 'questionnaire.section2.q4.options.layered' },
+                { value: 'mermaidTail', labelKey: 'questionnaire.section2.q4.options.mermaidTail' },
+                { value: 'overskirt', labelKey: 'questionnaire.section2.q4.options.overskirt' },
+                { value: 'peplum', labelKey: 'questionnaire.section2.q4.options.peplum' },
+                { value: 'sideDrape', labelKey: 'questionnaire.section2.q4.options.sideDrape' },
+                { value: 'other', labelKey: 'questionnaire.section2.q4.options.other', hasCustomInput: true },
+              ]}
+              value={answers.skirtShape === 'reference_match' ? '' : answers.skirtShape}
+              customValue={answers.skirtShapeCustom}
+              onChange={(value, customValue) => updateAnswer('skirtShape', value as string, customValue)}
+              onAutoAdvance={handleNext}
+              enableSkirtPreview={true}
+              onSkirtPreview={handleSkirtPreview}
+              skirtPreviewOptions={['sideDrape', 'peplum', 'overskirt', 'mermaidTail', 'layered']}
+            />
+          </>
         );
 
       case 5: { // Neckline Type - Image Grid
@@ -529,6 +617,13 @@ export default function SimplifiedQuestionnaireWizard({
                 {t('questionnaire.section3.q5.question')}
               </h3>
             </div>
+
+            {/* Reference match card — shown above grid if relevant */}
+            {hasReferenceForQuestion(['neckline', 'bodice']) && renderReferenceMatchCard(
+              answers.necklineType,
+              () => updateAnswer('necklineType', 'reference_match'),
+              getMatchingReferenceImages(['neckline', 'bodice'])
+            )}
 
             {/* Image grid – 2 cols on mobile, 3 on sm, 4 on md, 5 on lg+ */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -584,51 +679,65 @@ export default function SimplifiedQuestionnaireWizard({
 
       case 6: // Back Style
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section4.title')}
-            questionText={t('questionnaire.section4.q7.question')}
-            questionType="radio"
-            options={[
-              { value: 'covered', labelKey: 'questionnaire.section4.q7.options.covered' },
-              { value: 'openBack', labelKey: 'questionnaire.section4.q7.options.openBack' },
-              { value: 'deepV', labelKey: 'questionnaire.section4.q7.options.deepV' },
-              { value: 'keyhole', labelKey: 'questionnaire.section4.q7.options.keyhole' },
-              { value: 'illusion', labelKey: 'questionnaire.section4.q7.options.illusion' },
-              { value: 'laceBack', labelKey: 'questionnaire.section4.q7.options.laceBack' },
-              { value: 'lowBack', labelKey: 'questionnaire.section4.q7.options.lowBack' },
-              { value: 'crossBack', labelKey: 'questionnaire.section4.q7.options.crossBack' },
-              { value: 'bowBack', labelKey: 'questionnaire.section4.q7.options.bowBack' },
-              { value: 'corsetBack', labelKey: 'questionnaire.section4.q7.options.corsetBack' },
-              { value: 'other', labelKey: 'questionnaire.section4.q7.options.other', hasCustomInput: true },
-            ]}
-            value={answers.backStyle || ''}
-            customValue={answers.backStyleCustom}
-            onChange={(value, customValue) => updateAnswer('backStyle', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
+          <>
+            {hasReferenceForQuestion(['back']) && renderReferenceMatchCard(
+              answers.backStyle || '',
+              () => updateAnswer('backStyle', 'reference_match'),
+              getMatchingReferenceImages(['back'])
+            )}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section4.title')}
+              questionText={t('questionnaire.section4.q7.question')}
+              questionType="radio"
+              options={[
+                { value: 'covered', labelKey: 'questionnaire.section4.q7.options.covered' },
+                { value: 'openBack', labelKey: 'questionnaire.section4.q7.options.openBack' },
+                { value: 'deepV', labelKey: 'questionnaire.section4.q7.options.deepV' },
+                { value: 'keyhole', labelKey: 'questionnaire.section4.q7.options.keyhole' },
+                { value: 'illusion', labelKey: 'questionnaire.section4.q7.options.illusion' },
+                { value: 'laceBack', labelKey: 'questionnaire.section4.q7.options.laceBack' },
+                { value: 'lowBack', labelKey: 'questionnaire.section4.q7.options.lowBack' },
+                { value: 'crossBack', labelKey: 'questionnaire.section4.q7.options.crossBack' },
+                { value: 'bowBack', labelKey: 'questionnaire.section4.q7.options.bowBack' },
+                { value: 'corsetBack', labelKey: 'questionnaire.section4.q7.options.corsetBack' },
+                { value: 'other', labelKey: 'questionnaire.section4.q7.options.other', hasCustomInput: true },
+              ]}
+              value={answers.backStyle === 'reference_match' ? '' : (answers.backStyle || '')}
+              customValue={answers.backStyleCustom}
+              onChange={(value, customValue) => updateAnswer('backStyle', value as string, customValue)}
+              onAutoAdvance={handleNext}
+            />
+          </>
         );
 
       case 7: // Sleeve Type
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section3.title')}
-            questionText={t('questionnaire.section3.q6.question')}
-            questionType="radio"
-            options={[
-              { value: 'sleeveless', labelKey: 'questionnaire.section3.q6.options.sleeveless' },
-              { value: 'short', labelKey: 'questionnaire.section3.q6.options.short' },
-              { value: 'long', labelKey: 'questionnaire.section3.q6.options.long' },
-              { value: 'sheer', labelKey: 'questionnaire.section3.q6.options.sheer' },
-              { value: 'puff', labelKey: 'questionnaire.section3.q6.options.puff' },
-              { value: 'offShoulder', labelKey: 'questionnaire.section3.q6.options.offShoulder' },
-              { value: 'lace', labelKey: 'questionnaire.section3.q6.options.lace' },
-              { value: 'other', labelKey: 'questionnaire.section3.q6.options.other', hasCustomInput: true },
-            ]}
-            value={answers.sleeveType}
-            customValue={answers.sleeveTypeCustom}
-            onChange={(value, customValue) => updateAnswer('sleeveType', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
+          <>
+            {hasReferenceForQuestion(['sleeves']) && renderReferenceMatchCard(
+              answers.sleeveType,
+              () => updateAnswer('sleeveType', 'reference_match'),
+              getMatchingReferenceImages(['sleeves'])
+            )}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section3.title')}
+              questionText={t('questionnaire.section3.q6.question')}
+              questionType="radio"
+              options={[
+                { value: 'sleeveless', labelKey: 'questionnaire.section3.q6.options.sleeveless' },
+                { value: 'short', labelKey: 'questionnaire.section3.q6.options.short' },
+                { value: 'long', labelKey: 'questionnaire.section3.q6.options.long' },
+                { value: 'sheer', labelKey: 'questionnaire.section3.q6.options.sheer' },
+                { value: 'puff', labelKey: 'questionnaire.section3.q6.options.puff' },
+                { value: 'offShoulder', labelKey: 'questionnaire.section3.q6.options.offShoulder' },
+                { value: 'lace', labelKey: 'questionnaire.section3.q6.options.lace' },
+                { value: 'other', labelKey: 'questionnaire.section3.q6.options.other', hasCustomInput: true },
+              ]}
+              value={answers.sleeveType === 'reference_match' ? '' : answers.sleeveType}
+              customValue={answers.sleeveTypeCustom}
+              onChange={(value, customValue) => updateAnswer('sleeveType', value as string, customValue)}
+              onAutoAdvance={handleNext}
+            />
+          </>
         );
 
       case 8: // Transparent Parts

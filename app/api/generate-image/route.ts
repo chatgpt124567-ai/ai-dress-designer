@@ -82,6 +82,7 @@ const ENGLISH_LABELS: Record<string, Record<string, string>> = {
 
 // Helper: get English label for a predefined option, or custom text as-is
 function getEnglishLabel(category: string, value: string, customValue?: string): string {
+  if (value === 'reference_match') return 'as shown in the reference image for this area';
   if (value === 'other' && customValue) return customValue;
   if (customValue) return customValue;
   return ENGLISH_LABELS[category]?.[value] || value;
