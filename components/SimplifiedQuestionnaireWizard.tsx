@@ -375,7 +375,7 @@ export default function SimplifiedQuestionnaireWizard({
                         onClick={() => setRefImageCropper({ imageSrc: entry.image, index: idx })}
                         className="absolute top-2 left-2 bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-1 rounded-lg shadow text-xs font-medium transition-colors"
                       >
-                        {direction === 'rtl' ? 'قص' : 'Crop'}
+                        {direction === 'rtl' ? 'تعديل الصورة' : 'Edit Image'}
                       </button>
                       {/* Remove Button */}
                       <button

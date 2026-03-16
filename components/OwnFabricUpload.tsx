@@ -226,7 +226,7 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                     className="bg-accent-gold/90 hover:bg-accent-gold text-white px-4 py-2 rounded-lg shadow-md transition-all"
                   >
                     <span className="text-sm font-medium">
-                      {direction === 'rtl' ? 'قص' : 'Crop'}
+                      {direction === 'rtl' ? 'تعديل الصورة' : 'Edit Image'}
                     </span>
                   </button>
                   {/* Change Image Button */}
@@ -400,7 +400,7 @@ export default function OwnFabricUpload({ onComplete, onBack }: OwnFabricUploadP
                             className="bg-accent-gold/90 hover:bg-accent-gold text-white px-3 py-2 rounded-lg shadow-md transition-all"
                           >
                             <span className="text-sm font-medium">
-                              {direction === 'rtl' ? 'قص' : 'Crop'}
+                              {direction === 'rtl' ? 'تعديل الصورة' : 'Edit Image'}
                             </span>
                           </button>
                           {/* Remove Button */}

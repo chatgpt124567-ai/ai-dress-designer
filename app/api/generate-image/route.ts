@@ -389,7 +389,7 @@ Hard Rules (must follow):
 • MUST show BOTH front and back views in the same image.
 
 Output:
-Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress, centered, with the "Brokar Al Sharqiya" gold logo and the couture sketch above them.`;
+Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress.`;
 
     // طباعة البرومبت النهائي الكامل الذي سيُرسل لتوليد الصورة
     console.log('\n');
