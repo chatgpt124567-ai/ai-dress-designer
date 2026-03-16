@@ -71,6 +71,8 @@ function DesignPageContent() {
   const [modelSelectionModalOpen, setModelSelectionModalOpen] = useState(false); // Track model selection modal
   const [selectedModel, setSelectedModel] = useState<GeminiImageModel>('google/gemini-3.1-flash-image-preview'); // Track selected model
   const [pendingGenerationAnswers, setPendingGenerationAnswers] = useState<QuestionnaireAnswers | null>(null); // Track answers pending model selection
+  const [lastGeneratePayload, setLastGeneratePayload] = useState<any>(null); // Track last payload for retry
+  const [retrying, setRetrying] = useState(false);
 
   // Own Fabric Workflow State
   const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'choice' | 'placement' | 'questionnaire' | 'batchQuestionnaire' | 'multiDesign'>('upload');
@@ -683,6 +685,9 @@ function DesignPageContent() {
         generatePayload.fabricImage = questionnaireAnswers.customFabricImage;
       }
 
+      // Save payload for retry functionality
+      setLastGeneratePayload(generatePayload);
+
       const generateResponse = await fetch('/api/generate-image', {
         method: 'POST',
         headers: {
@@ -770,6 +775,51 @@ function DesignPageContent() {
       link.download = `dress-design-${Date.now()}.png`;
       link.click();
       showToast(t('design.toast.downloaded'), 'success');
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!lastGeneratePayload) return;
+    setRetrying(true);
+    setStep('generating');
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lastGeneratePayload),
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || 'Failed to generate image');
+      }
+      let newImageUrl = '';
+      if (data.imageUrl) {
+        newImageUrl = data.imageUrl;
+      } else if (data.imageData) {
+        newImageUrl = data.imageData;
+      } else {
+        throw new Error('No image received from server');
+      }
+      // Save current image to history before replacing
+      if (imageUrl) {
+        const historyItem: ImageHistoryItem = {
+          id: Date.now().toString(),
+          imageUrl,
+          prompt: enhancedPrompt,
+          timestamp: new Date(),
+          isOriginal: imageHistory.length === 0,
+        };
+        setImageHistory(prev => [historyItem, ...prev]);
+      }
+      setImageUrl(newImageUrl);
+      setStep('complete');
+      showToast(direction === 'rtl' ? 'تم إعادة التوليد بنجاح' : 'Regenerated successfully', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to retry';
+      showToast(errorMessage, 'error');
+      setStep('complete');
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -1772,7 +1822,7 @@ function DesignPageContent() {
 
                       {/* Action Buttons - Luxurious compact design */}
                       <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2 md:gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
                           {/* Button 1: New Design */}
                           <motion.button
                             whileHover={{ scale: 1.02, y: -2 }}
@@ -1786,7 +1836,23 @@ function DesignPageContent() {
                             </span>
                           </motion.button>
 
-                          {/* Button 2: Request Modification */}
+                          {/* Button 2: Retry */}
+                          <motion.button
+                            whileHover={{ scale: 1.02, y: -2 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleRetry}
+                            disabled={retrying || !lastGeneratePayload}
+                            className="group relative px-3 py-2.5 md:px-4 md:py-3 rounded-xl bg-white border border-gray-200 hover:border-blue-400/50 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <span className="relative text-xs md:text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                              {retrying
+                                ? (direction === 'rtl' ? 'جاري...' : 'Retrying...')
+                                : (direction === 'rtl' ? 'إعادة المحاولة' : 'Retry')}
+                            </span>
+                          </motion.button>
+
+                          {/* Button 3: Request Modification */}
                           <motion.button
                             whileHover={{ scale: 1.02, y: -2 }}
                             whileTap={{ scale: 0.98 }}
@@ -1800,7 +1866,7 @@ function DesignPageContent() {
                             </span>
                           </motion.button>
 
-                          {/* Button 3: Save Image */}
+                          {/* Button 4: Save Image */}
                           <motion.button
                             whileHover={{ scale: 1.02, y: -2 }}
                             whileTap={{ scale: 0.98 }}
