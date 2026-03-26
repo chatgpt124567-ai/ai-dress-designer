@@ -73,6 +73,9 @@ function DesignPageContent() {
   const [pendingGenerationAnswers, setPendingGenerationAnswers] = useState<QuestionnaireAnswers | null>(null); // Track answers pending model selection
   const [lastGeneratePayload, setLastGeneratePayload] = useState<any>(null); // Track last payload for retry
   const [retrying, setRetrying] = useState(false);
+  const [attemptResults, setAttemptResults] = useState<Array<{ imageUrl: string; enhancedPrompt: string }>>([]);
+  const [attemptCount, setAttemptCount] = useState(1);
+  const [completedAttempts, setCompletedAttempts] = useState(0);
 
   // Own Fabric Workflow State
   const [ownFabricStep, setOwnFabricStep] = useState<'upload' | 'choice' | 'placement' | 'questionnaire' | 'batchQuestionnaire' | 'multiDesign'>('upload');
@@ -553,16 +556,24 @@ function DesignPageContent() {
     // User stays on questionnaire to edit answers
   };
 
-  const handleModelSelection = async (model: GeminiImageModel) => {
-    console.log('=== Model selected:', model, '===');
+  const handleModelSelection = async (model: GeminiImageModel, attempts?: number) => {
+    console.log('=== Model selected:', model, 'attempts:', attempts || 1, '===');
     setSelectedModel(model);
     setModelSelectionModalOpen(false);
 
     if (!pendingGenerationAnswers) return;
 
-    // Proceed with design generation using selected model
-    console.log('Proceeding with design generation using model:', model);
-    await processDesign(pendingGenerationAnswers, model);
+    const numAttempts = attempts || 1;
+    setAttemptCount(numAttempts);
+
+    if (numAttempts > 1) {
+      // Multiple attempts: run processDesign in parallel with different prompts
+      console.log(`Starting ${numAttempts} parallel design attempts`);
+      await processMultipleAttempts(pendingGenerationAnswers, model, numAttempts);
+    } else {
+      // Single attempt: original flow
+      await processDesign(pendingGenerationAnswers, model);
+    }
     setPendingGenerationAnswers(null);
   };
 
@@ -731,12 +742,168 @@ function DesignPageContent() {
     }
   };
 
+  const processMultipleAttempts = async (questionnaireAnswers: QuestionnaireAnswers, model: GeminiImageModel, numAttempts: number) => {
+    setError('');
+    setAttemptResults([]);
+    setCompletedAttempts(0);
+    setCurrentAnswers(questionnaireAnswers);
+
+    const selectedAIModel = model || 'google/gemini-3.1-flash-image-preview';
+    console.log(`🎨 Processing ${numAttempts} design attempts with model:`, selectedAIModel);
+
+    try {
+      setLoading(true);
+      setStep('enhancing');
+
+      // Strip large binary fields
+      const {
+        referenceImage: _refImg,
+        referenceImagePart: _refPart,
+        referenceImagePartCustom: _refPartCustom,
+        referenceImageEntries: _refEntries2,
+        customFabricImage: _customFab,
+        ...questionnaireAnswersForPayload
+      } = questionnaireAnswers as any;
+
+      // Build base enhance payload
+      const baseEnhancePayload: any = { questionnaireAnswers: questionnaireAnswersForPayload };
+
+      if (questionnaireAnswers.referenceImageEntries && questionnaireAnswers.referenceImageEntries.length > 0) {
+        baseEnhancePayload.referenceImageEntries = questionnaireAnswers.referenceImageEntries.map((entry: any) => ({
+          image: entry.image,
+          parts: entry.parts.map((p: string) => p === 'other' && entry.partCustom ? entry.partCustom : p),
+        }));
+      }
+
+      if (primaryFabricImage) {
+        baseEnhancePayload.primaryFabricImage = primaryFabricImage;
+        baseEnhancePayload.primaryFabricPlacement = primaryFabricPlacement;
+        if (secondaryFabricImage) {
+          baseEnhancePayload.secondaryFabricImage = secondaryFabricImage;
+          baseEnhancePayload.secondaryFabricPlacement = secondaryFabricPlacement;
+          if (secondaryFabricColor) baseEnhancePayload.secondaryFabricColor = secondaryFabricColor;
+        } else if (secondaryFabricType) {
+          baseEnhancePayload.secondaryFabricType = secondaryFabricType;
+          baseEnhancePayload.secondaryFabricPlacement = secondaryFabricPlacement;
+          if (secondaryFabricColor) baseEnhancePayload.secondaryFabricColor = secondaryFabricColor;
+        }
+      }
+
+      // Run all attempts in parallel
+      const attemptPromises = Array.from({ length: numAttempts }, async (_, index) => {
+        try {
+          // Step 1: Enhance prompt (each call generates a different prompt)
+          const enhancePayload = {
+            ...baseEnhancePayload,
+            variationIndex: index + 1, // Signal to API this is a variation
+          };
+
+          const enhanceResponse = await fetch('/api/enhance-prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(enhancePayload),
+          });
+
+          const enhanceData: EnhancePromptResponse = await enhanceResponse.json();
+          if (!enhanceResponse.ok || enhanceData.error) {
+            throw new Error(enhanceData.error || 'Failed to enhance prompt');
+          }
+
+          const finalPrompt = enhanceData.enhancedPrompt;
+          console.log(`\n🎨 محاولة ${index + 1} - البرومبت المُحسّن:`);
+          console.log(finalPrompt);
+
+          // Step 2: Generate image
+          const generatePayload: any = {
+            prompt: finalPrompt,
+            model: selectedAIModel,
+          };
+
+          if (questionnaireAnswers.referenceImageEntries && questionnaireAnswers.referenceImageEntries.length > 0) {
+            generatePayload.referenceImageEntries = questionnaireAnswers.referenceImageEntries.map((entry: any) => ({
+              image: entry.image,
+              parts: entry.parts.map((p: string) => p === 'other' && entry.partCustom ? entry.partCustom : p),
+            }));
+          }
+
+          if (primaryFabricImage) {
+            generatePayload.primaryFabricImage = primaryFabricImage;
+            generatePayload.questionnaireAnswers = questionnaireAnswersForPayload;
+            if (secondaryFabricImage) {
+              generatePayload.secondaryFabricImage = secondaryFabricImage;
+            }
+          } else if (questionnaireAnswers.customFabricImage) {
+            generatePayload.fabricImage = questionnaireAnswers.customFabricImage;
+          }
+
+          const generateResponse = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(generatePayload),
+          });
+
+          const generateData: GenerateImageResponse = await generateResponse.json();
+          if (!generateResponse.ok || generateData.error) {
+            throw new Error(generateData.error || 'Failed to generate image');
+          }
+
+          const generatedImageUrl = generateData.imageUrl || generateData.imageData || '';
+          if (!generatedImageUrl) throw new Error('No image received');
+
+          // Auto-save each design
+          await autoSaveDesign(questionnaireAnswers, finalPrompt, generatedImageUrl, selectedAIModel);
+
+          setCompletedAttempts(prev => prev + 1);
+
+          return { imageUrl: generatedImageUrl, enhancedPrompt: finalPrompt };
+        } catch (err) {
+          console.error(`Attempt ${index + 1} failed:`, err);
+          return null;
+        }
+      });
+
+      setStep('generating');
+
+      const results = await Promise.all(attemptPromises);
+      const successfulResults = results.filter((r): r is { imageUrl: string; enhancedPrompt: string } => r !== null);
+
+      if (successfulResults.length === 0) {
+        throw new Error(direction === 'rtl' ? 'فشلت جميع المحاولات' : 'All attempts failed');
+      }
+
+      // Set first result as the main one for backward compatibility
+      setImageUrl(successfulResults[0].imageUrl);
+      setEnhancedPrompt(successfulResults[0].enhancedPrompt);
+      setDescription(successfulResults[0].enhancedPrompt);
+      setAttemptResults(successfulResults);
+
+      clearSavedAnswers();
+      setStep('complete');
+      showToast(
+        direction === 'rtl'
+          ? `تم توليد ${successfulResults.length} تصميم بنجاح`
+          : `Successfully generated ${successfulResults.length} designs`,
+        'success'
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : t('design.toast.error');
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+      setStep('input');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleReset = () => {
     setDescription('');
     setEnhancedPrompt('');
     setImageUrl('');
     setError('');
     setStep('input');
+    setAttemptResults([]);
+    setAttemptCount(1);
+    setCompletedAttempts(0);
 
     // Clear image history when starting a new design
     setImageHistory([]);
@@ -1806,11 +1973,19 @@ function DesignPageContent() {
                           : (direction === 'rtl' ? 'جاري توليد التصميم...' : 'Generating design...')
                         }
                       </p>
+                      {attemptCount > 1 && (
+                        <p className="text-sm text-gray-500">
+                          {direction === 'rtl'
+                            ? `محاولة ${completedAttempts + 1} من ${attemptCount}`
+                            : `Attempt ${completedAttempts + 1} of ${attemptCount}`
+                          }
+                        </p>
+                      )}
                     </div>
                   )}
 
-                  {/* Show generated design */}
-                  {step === 'complete' && imageUrl && (
+                  {/* Show generated design(s) */}
+                  {step === 'complete' && imageUrl && attemptResults.length <= 1 && (
                     <div className="space-y-6">
                       <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
                         <ImageCard
@@ -1957,6 +2132,109 @@ function DesignPageContent() {
                           </div>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Show multiple attempt results */}
+                  {step === 'complete' && attemptResults.length > 1 && (
+                    <div className="space-y-6">
+                      <div className="text-center mb-4">
+                        <h3 className="text-lg font-bold text-primary">
+                          {direction === 'rtl'
+                            ? `${attemptResults.length} تصاميم مختلفة`
+                            : `${attemptResults.length} Different Designs`
+                          }
+                        </h3>
+                        <p className="text-sm text-neutral-500 mt-1">
+                          {direction === 'rtl'
+                            ? 'اختاري التصميم المفضل لديك'
+                            : 'Choose your preferred design'
+                          }
+                        </p>
+                      </div>
+
+                      <div className={cn(
+                        'grid gap-4',
+                        attemptResults.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                      )}>
+                        {attemptResults.map((result, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.15 }}
+                            className="bg-white rounded-xl border-2 border-gray-200 hover:border-accent-gold/50 transition-all overflow-hidden group"
+                          >
+                            {/* Design number badge */}
+                            <div className="relative">
+                              <div className="absolute top-3 start-3 z-10 w-8 h-8 rounded-full bg-accent-gold text-white flex items-center justify-center text-sm font-bold shadow-lg">
+                                {index + 1}
+                              </div>
+                              <div className="aspect-[3/4] overflow-hidden">
+                                <img
+                                  src={result.imageUrl}
+                                  alt={`${direction === 'rtl' ? 'تصميم' : 'Design'} ${index + 1}`}
+                                  className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
+                                  onClick={() => {
+                                    setImageUrl(result.imageUrl);
+                                    setLightboxOpen(true);
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Action buttons for each design */}
+                            <div className="p-3 flex gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  setImageUrl(result.imageUrl);
+                                  setEnhancedPrompt(result.enhancedPrompt);
+                                  setDescription(result.enhancedPrompt);
+                                  setEditingHistoryDesign({
+                                    image_url: result.imageUrl,
+                                    enhanced_prompt: result.enhancedPrompt,
+                                    questionnaire_answers: currentAnswers
+                                  });
+                                  setEditModalOpen(true);
+                                }}
+                                className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-accent-gold/10 to-accent-gold/5 border border-accent-gold/30 hover:border-accent-gold text-xs font-medium text-accent-gold transition-all"
+                              >
+                                {direction === 'rtl' ? 'طلب تعديل' : 'Modify'}
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = result.imageUrl;
+                                  link.download = `dress-design-${index + 1}-${Date.now()}.png`;
+                                  link.click();
+                                  showToast(t('design.toast.downloaded'), 'success');
+                                }}
+                                className="flex-1 px-3 py-2 rounded-lg bg-gradient-to-r from-accent-gold to-amber-500 text-xs font-medium text-white transition-all"
+                              >
+                                {direction === 'rtl' ? 'حفظ' : 'Save'}
+                              </motion.button>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+
+                      {/* New Design button */}
+                      <div className="flex justify-center mt-4">
+                        <motion.button
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleReset}
+                          className="px-6 py-3 rounded-xl bg-white border border-gray-200 hover:border-accent-gold/50 shadow-sm hover:shadow-md transition-all duration-300"
+                        >
+                          <span className="text-sm font-medium text-gray-700 hover:text-primary">
+                            {direction === 'rtl' ? 'تصميم جديد' : 'New Design'}
+                          </span>
+                        </motion.button>
+                      </div>
                     </div>
                   )}
                 </>
@@ -2400,6 +2678,7 @@ function DesignPageContent() {
           }}
           onSelectModel={handleModelSelection}
           loading={loading}
+          showAttempts={true}
           title={direction === 'rtl' ? 'اختيار نموذج الذكاء الاصطناعي' : 'Select AI Model'}
           subtitle={direction === 'rtl'
             ? 'اختاري نموذج الذكاء الاصطناعي المناسب لتوليد تصميمك'

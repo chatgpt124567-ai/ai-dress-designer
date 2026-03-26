@@ -127,6 +127,11 @@ export default function QuestionStep({
                         : 'border-gray-200 bg-white',
                       showSkirtPreviewIcon && (direction === 'rtl' ? 'pl-12' : 'pr-12')
                     )}
+                    onClick={() => {
+                      if (value === option.value) {
+                        onChange('', undefined);
+                      }
+                    }}
                   >
                     <input
                       type="radio"
@@ -237,6 +242,11 @@ export default function QuestionStep({
                     ? 'border-accent-gold bg-accent-gold/10 shadow-lg scale-105 ring-2 ring-accent-gold/30'
                     : 'border-gray-300 bg-white hover:border-accent-gold hover:shadow-md'
                 )}
+                onClick={() => {
+                  if (value === option) {
+                    onChange('');
+                  }
+                }}
               >
                 <input
                   type="radio"

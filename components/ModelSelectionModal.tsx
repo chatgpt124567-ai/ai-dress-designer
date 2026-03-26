@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Minus, Plus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import Button from './Button';
@@ -10,10 +11,11 @@ import type { GeminiImageModel } from '@/types';
 interface ModelSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectModel: (model: GeminiImageModel) => void;
+  onSelectModel: (model: GeminiImageModel, attempts?: number) => void;
   loading?: boolean;
   title?: string;
   subtitle?: string;
+  showAttempts?: boolean;
 }
 
 export default function ModelSelectionModal({
@@ -23,11 +25,13 @@ export default function ModelSelectionModal({
   loading = false,
   title,
   subtitle,
+  showAttempts = false,
 }: ModelSelectionModalProps) {
   const { t, direction } = useLanguage();
+  const [attempts, setAttempts] = useState(1);
 
   const handleModelSelect = (model: GeminiImageModel) => {
-    onSelectModel(model);
+    onSelectModel(model, showAttempts ? attempts : undefined);
   };
 
   return (
@@ -158,6 +162,42 @@ export default function ModelSelectionModal({
                     </div>
                   </button>
                 </div>
+
+                {/* Attempts Selector */}
+                {showAttempts && (
+                  <div className="mt-6 p-4 rounded-xl border-2 border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-bold text-primary">
+                          {direction === 'rtl' ? 'عدد المحاولات' : 'Number of Attempts'}
+                        </h4>
+                        <p className="text-xs text-neutral-500 mt-1">
+                          {direction === 'rtl'
+                            ? 'كل محاولة تولّد تصميم مختلف بوصف مختلف'
+                            : 'Each attempt generates a different design with a unique prompt'
+                          }
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setAttempts(prev => Math.max(1, prev - 1))}
+                          disabled={attempts <= 1 || loading}
+                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-accent-gold hover:bg-accent-gold/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="text-2xl font-bold text-primary w-8 text-center">{attempts}</span>
+                        <button
+                          onClick={() => setAttempts(prev => Math.min(3, prev + 1))}
+                          disabled={attempts >= 3 || loading}
+                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-accent-gold hover:bg-accent-gold/10 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

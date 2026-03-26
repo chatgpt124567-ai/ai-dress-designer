@@ -315,22 +315,10 @@ REFERENCE DESIGN INSTRUCTION (MANDATORY — HIGHEST PRIORITY):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
     }
 
-    const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
-${designSpecsSection}
-${prompt}${customFabricInstruction}${referenceImagePromptSection}
+    const hasBackStyle = !!(questionnaireAnswers?.backStyle);
 
----
-
-Dress Rendering Requirements:
-• The dress must appear as a complete, continuous, non-deformed garment with no missing parts.
-• Maintain clean, symmetrical construction with a realistic silhouette.
-• Ensure all fabric edges are intact, smooth, and not cut off.
-• Highly detailed couture fashion design.
-• Realistic textile rendering with natural folds, fabric texture, fabric flow, and proper reflections.
-• Accurate color reproduction.
-• The dress must fit the mannequin naturally and consistently.
-
-═══════════════════════════════════════════════════════════════════
+    const dualViewSection = hasBackStyle
+      ? `═══════════════════════════════════════════════════════════════════
 DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 ═══════════════════════════════════════════════════════════════════
 
@@ -357,7 +345,66 @@ DUAL-VIEW PRESENTATION (FRONT & BACK) - CRITICAL REQUIREMENT
 **IMPORTANT - BOTH VIEWS MANDATORY:**
 • Do NOT show just the front view - BOTH front and back views are required
 • The back view (LEFT) must clearly show: back neckline, closure details, back embellishments, and train/hem as seen from behind
-• The front view (RIGHT) must clearly show: front neckline, bodice details, front embellishments
+• The front view (RIGHT) must clearly show: front neckline, bodice details, front embellishments`
+      : `═══════════════════════════════════════════════════════════════════
+SINGLE-VIEW PRESENTATION (FRONT ONLY) - CRITICAL REQUIREMENT
+═══════════════════════════════════════════════════════════════════
+
+**IMAGE LAYOUT:**
+• Create a SINGLE image showing ONE mannequin/dress form
+• FRONT view of the dress only (facing the viewer)
+• Centered composition
+
+**MANNEQUIN REQUIREMENTS:**
+• white fabric torso.
+• No arms.
+• Headless mannequin.
+• Full-length view showing the entire dress from neckline to hem.
+
+**IMPORTANT - FRONT VIEW ONLY:**
+• Show ONLY the front view — do NOT add a back view
+• The front view must clearly show: front neckline, bodice details, front embellishments`;
+
+    const renderingSpecs = hasBackStyle
+      ? `Rendering Specifications:
+• 2K photorealistic output.
+• Centered view showing both mannequins (left: back view, right: front view).
+• Clean composition, sharp edges, editorial quality.
+• Strict consistency for mannequins, background, lighting, and logo.
+• Only the dress design changes based on the enhanced client description.
+• Photo size will be 1080*1350 px (instgarm post)`
+      : `Rendering Specifications:
+• 2K photorealistic output.
+• Centered view showing one mannequin (front view).
+• Clean composition, sharp edges, editorial quality.
+• Strict consistency for mannequin, background, lighting, and logo.
+• Only the dress design changes based on the enhanced client description.
+• Photo size will be 1080*1350 px (instgarm post)`;
+
+    const hardRulesBackLine = hasBackStyle
+      ? `• MUST show BOTH front and back views in the same image.`
+      : `• Show ONLY the front view — do NOT include a back view.`;
+
+    const outputLine = hasBackStyle
+      ? `Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress.`
+      : `One full-body mannequin (front view) wearing the complete dress.`;
+
+    const imagePrompt = `Generate a high-quality, fully coherent fashion design image of a dress based on the following enhanced client description:
+${designSpecsSection}
+${prompt}${customFabricInstruction}${referenceImagePromptSection}
+
+---
+
+Dress Rendering Requirements:
+• The dress must appear as a complete, continuous, non-deformed garment with no missing parts.
+• Maintain clean, symmetrical construction with a realistic silhouette.
+• Ensure all fabric edges are intact, smooth, and not cut off.
+• Highly detailed couture fashion design.
+• Realistic textile rendering with natural folds, fabric texture, fabric flow, and proper reflections.
+• Accurate color reproduction.
+• The dress must fit the mannequin naturally and consistently.
+
+${dualViewSection}
 
 ---
 
@@ -368,17 +415,11 @@ no logo or text in the photo
 Background & Environment:
 • Minimal luxury fashion studio.
 • white background.
-• Clean soft shadows under both mannequins.
+• Clean soft shadows under ${hasBackStyle ? 'both mannequins' : 'the mannequin'}.
 • Consistent neutral lighting.
 • No extra props or clutter.
 
-Rendering Specifications:
-• 2K photorealistic output.
-• Centered view showing both mannequins (left: back view, right: front view).
-• Clean composition, sharp edges, editorial quality.
-• Strict consistency for mannequins, background, lighting, and logo.
-• Only the dress design changes based on the enhanced client description.
-• Photo size will be 1080*1350 px (instgarm post)
+${renderingSpecs}
 
 Hard Rules (must follow):
 • Do NOT crop the dress.
@@ -386,10 +427,10 @@ Hard Rules (must follow):
 • Do NOT distort proportions.
 • Dress must always be smooth, clean, symmetrical, and fully constructed.
 • The garment must look wearable and professionally tailored.
-• MUST show BOTH front and back views in the same image.
+${hardRulesBackLine}
 
 Output:
-Two full-body mannequins side by side (left: back view, right: front view) wearing the complete dress.`;
+${outputLine}`;
 
     // طباعة البرومبت النهائي الكامل الذي سيُرسل لتوليد الصورة
     console.log('\n');

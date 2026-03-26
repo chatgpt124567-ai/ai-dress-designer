@@ -142,7 +142,7 @@ function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: EnhancePromptRequest = await request.json();
+    const body: EnhancePromptRequest & { variationIndex?: number } = await request.json();
     const {
       description,
       fabricImage,
@@ -156,6 +156,7 @@ export async function POST(request: NextRequest) {
       referenceImage,
       referenceImagePart,
       referenceImageEntries,
+      variationIndex,
     } = body;
 
     // Support both old (description) and new (questionnaireAnswers) formats
@@ -301,7 +302,29 @@ This instruction must be seamlessly integrated into your description where you d
       ? `\n\nVISUAL ANALYSIS INSTRUCTION (MANDATORY):\nOne or more images are attached with this request. You MUST visually analyze them and use them as the source of truth for fabric and reference-area details.\n- Fabric images define exact pattern, texture, and color behavior.\n- Reference images define exact cut and decorative details for their specified dress areas.\n- If text and image details differ, prioritize the visual evidence from the attached images while preserving the client's requested intent.`
       : '';
 
-    const systemPrompt = `Your task is to create a detailed, professional, couture-level dress description based ONLY on the client's answers below.
+    const hasBackStyle = !!(questionnaireAnswers?.backStyle);
+
+    const backDesignOutputItem = hasBackStyle
+      ? `\n• back design (style, closure, embellishments on back)`
+      : '';
+
+    const backDesignInstruction = hasBackStyle
+      ? `
+
+IMPORTANT - BACK DESIGN:
+Warning: The back design must be perfectly consistent with the front design. The gown must read as one fully integrated, cohesive piece. Avoid creating any back design that feels disconnected, contradictory, or visually inconsistent with the front.
+You MUST describe the back of the dress in detail, including:
+- Back neckline style (open, covered, keyhole, illusion, deep V, etc.)
+- Closure type (hidden zipper, buttons, corset lacing, etc.)
+- Any embellishments or details on the back
+- How the back design complements the front`
+      : '';
+
+    const variationInstruction = variationIndex && variationIndex > 1
+      ? `\n\nVARIATION INSTRUCTION: This is variation #${variationIndex}. You MUST create a DISTINCTLY DIFFERENT interpretation of the client's answers. Vary the aesthetic mood, embellishment arrangement, proportional emphasis, fabric draping style, and decorative detailing while staying faithful to the client's core selections. Each variation should feel like a different designer's take on the same brief.\n`
+      : '';
+
+    const systemPrompt = `Your task is to create a detailed, professional, couture-level dress description based ONLY on the client's answers below.${variationInstruction}
 
 IMPORTANT RULES:
 - Describe the DRESS ONLY.
@@ -315,23 +338,14 @@ Your output must be a single polished paragraph describing ONLY:
 • proportions
 • fabrics
 • materials
-• neckline
-• back design (style, closure, embellishments on back)
+• neckline${backDesignOutputItem}
 • sleeves
 • skirt shape
-• embellishments (both front and back placement)
+• embellishments (front placement${hasBackStyle ? ' and back placement' : ''})
 • transparency details
 • colors
 • movement & textile behavior
-• aesthetic style
-
-IMPORTANT - BACK DESIGN:
-Warning: The back design must be perfectly consistent with the front design. The gown must read as one fully integrated, cohesive piece. Avoid creating any back design that feels disconnected, contradictory, or visually inconsistent with the front.
-You MUST describe the back of the dress in detail, including:
-- Back neckline style (open, covered, keyhole, illusion, deep V, etc.)
-- Closure type (hidden zipper, buttons, corset lacing, etc.)
-- Any embellishments or details on the back
-- How the back design complements the front
+• aesthetic style${backDesignInstruction}
 
 Do NOT mention questionnaires, choices, user inputs, or any meta context.
 Write in the tone of an elite fashion designer describing a couture dress.
@@ -398,6 +412,7 @@ Now transform all the information above into one refined, elegant paragraph that
                 content: enhanceMessageContent,
               },
             ],
+            ...(variationIndex ? { temperature: 1.2 } : {}),
           }),
         });
 

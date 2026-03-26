@@ -25,34 +25,26 @@ export default function DesignModeSelection({ onSelectMode }: DesignModeSelectio
     {
       id: 'scratch' as const,
       icon: Sparkles,
-      titleAr: 'ابتكري تصميمك',
-      titleEn: 'Create Your Vision',
-      subtitleAr: 'إنشاء تصميم جديد من اختيارك',
-      subtitleEn: 'From imagination to reality',
+      titleAr: 'إنشاء تصميم جديد من اختيارك',
+      titleEn: 'Create a New Design from Your Choice',
     },
     {
       id: 'external' as const,
       icon: Wand2,
-      titleAr: 'عدلي تصميمك',
-      titleEn: 'Elevate a Design',
-      subtitleAr: 'إجراء تعديل على تصميمك الخاص',
-      subtitleEn: 'Add your unique touch',
+      titleAr: 'إجراء تعديل على تصميمك الخاص',
+      titleEn: 'Edit Your Own Design',
     },
     {
       id: 'ownFabric' as const,
       icon: Scissors,
-      titleAr: 'قماشك الخاص',
-      titleEn: 'Your Fabric, Our Art',
-      subtitleAr: 'إنشاء فستان من قماشك الخاص ',
-      subtitleEn: 'A dress from your fabric',
+      titleAr: 'إنشاء فستان من قماشك الخاص',
+      titleEn: 'Create a Dress from Your Own Fabric',
     },
     {
       id: 'removeModel' as const,
       icon: UserX,
-      titleAr: 'إزالة العارضة',
-      titleEn: 'Remove Model',
-      subtitleAr: 'استبدال العارضة بمانيكان أنيق',
-      subtitleEn: 'Replace model with elegant mannequin',
+      titleAr: 'استبدال العارضة بمانيكان أنيق',
+      titleEn: 'Replace Model with Elegant Mannequin',
     },
   ];
 
@@ -162,14 +154,9 @@ export default function DesignModeSelection({ onSelectMode }: DesignModeSelectio
               </motion.div>
 
               {/* Title */}
-              <h2 className="relative text-sm sm:text-base md:text-xl lg:text-2xl font-headline font-bold text-primary mb-1 sm:mb-1.5 md:mb-2 tracking-tight leading-tight">
+              <h2 className="relative text-sm sm:text-base md:text-xl lg:text-2xl font-headline font-bold text-primary tracking-tight leading-tight">
                 {direction === 'rtl' ? mode.titleAr : mode.titleEn}
               </h2>
-
-              {/* Subtitle */}
-              <p className="relative text-[10px] sm:text-xs md:text-sm lg:text-base text-neutral-400 font-light tracking-wide leading-snug">
-                {direction === 'rtl' ? mode.subtitleAr : mode.subtitleEn}
-              </p>
 
               {/* Hover Indicator */}
               <motion.div
