@@ -71,7 +71,8 @@ export async function compressImage(
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = base64Image;
+    // Ensure proper data URL format - raw base64 strings won't load as image src
+    img.src = base64Image.startsWith('data:') ? base64Image : `data:image/png;base64,${base64Image}`;
   });
 }
 

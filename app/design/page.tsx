@@ -74,6 +74,7 @@ function DesignPageContent() {
   const [lastGeneratePayload, setLastGeneratePayload] = useState<any>(null); // Track last payload for retry
   const [retrying, setRetrying] = useState(false);
   const [attemptResults, setAttemptResults] = useState<Array<{ imageUrl: string; enhancedPrompt: string }>>([]);
+  const [editingAttemptIndex, setEditingAttemptIndex] = useState<number | null>(null);
   const [attemptCount, setAttemptCount] = useState(1);
   const [completedAttempts, setCompletedAttempts] = useState(0);
 
@@ -904,6 +905,7 @@ function DesignPageContent() {
     setAttemptResults([]);
     setAttemptCount(1);
     setCompletedAttempts(0);
+    setEditingAttemptIndex(null);
 
     // Clear image history when starting a new design
     setImageHistory([]);
@@ -1147,6 +1149,17 @@ function DesignPageContent() {
           // Show the new edited image as the main result
           setImageUrl(newImageData);
           setEnhancedPrompt(editingHistoryDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`);
+
+          // If editing from attemptResults grid, update that specific result
+          if (editingAttemptIndex !== null) {
+            setAttemptResults(prev => prev.map((r, i) =>
+              i === editingAttemptIndex
+                ? { ...r, imageUrl: newImageData, enhancedPrompt: editingHistoryDesign.enhanced_prompt + `\n\nEdit: ${editRequest}` }
+                : r
+            ));
+            setEditingAttemptIndex(null);
+          }
+
           setEditingHistoryDesign(null);
           setEditingDesign(false);
           setStep('complete');
@@ -2189,6 +2202,7 @@ function DesignPageContent() {
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => {
+                                  setEditingAttemptIndex(index);
                                   setImageUrl(result.imageUrl);
                                   setEnhancedPrompt(result.enhancedPrompt);
                                   setDescription(result.enhancedPrompt);

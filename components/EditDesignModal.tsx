@@ -112,14 +112,8 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
       }
 
       // Pass the refined prompt and selected model to the parent component
+      // Don't reset form here - it will be reset when modal closes after API completes
       onSubmit(refineData.refinedPrompt, model);
-
-      // Reset form
-      setStep('location');
-      setSelectedLocations([]);
-      setOtherLocation('');
-      setModificationDescription('');
-      setSelectedModel('google/gemini-3.1-flash-image-preview');
     } catch (error) {
       console.error('Error refining modification:', error);
       // Fallback: use the original description if refinement fails
@@ -202,7 +196,25 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 relative">
+                {/* Loading overlay when API call is in progress */}
+                {loading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-4"
+                  >
+                    <div className="w-16 h-16 rounded-full border-4 border-accent-gold/20 border-t-accent-gold animate-spin" />
+                    <p className="text-lg font-semibold text-primary">
+                      {direction === 'rtl' ? 'جارٍ تعديل التصميم...' : 'Editing design...'}
+                    </p>
+                    <p className="text-sm text-neutral-500 text-center max-w-xs">
+                      {direction === 'rtl'
+                        ? 'قد يستغرق هذا بضع دقائق، يرجى الانتظار'
+                        : 'This may take a few minutes, please wait'}
+                    </p>
+                  </motion.div>
+                )}
                 <AnimatePresence mode="wait">
                   {step === 'location' ? (
                     <motion.div

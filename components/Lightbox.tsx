@@ -2,10 +2,9 @@
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import Button from './Button';
 
 interface LightboxProps {
   isOpen: boolean;
@@ -53,37 +52,30 @@ export default function Lightbox({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black"
           onClick={onClose}
         >
-          <motion.div
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className={cn(
+              "absolute top-4 z-10 p-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors",
+              direction === 'rtl' ? 'left-4' : 'right-4'
+            )}
+            aria-label={t('lightbox.close')}
+          >
+            <X size={24} className="text-white" />
+          </button>
+
+          <motion.img
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative max-w-5xl w-full bg-white rounded-2xl overflow-hidden"
+            src={imageSrc}
+            alt={imageAlt}
+            className="max-w-full max-h-full w-full h-full object-contain"
             onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close Button */}
-            <button
-              onClick={onClose}
-              className={cn(
-                "absolute top-4 z-10 p-2 bg-white/90 rounded-full hover:bg-white transition-colors",
-                direction === 'rtl' ? 'left-4' : 'right-4'
-              )}
-              aria-label={t('lightbox.close')}
-            >
-              <X size={24} className="text-primary" />
-            </button>
-
-            {/* Full screen image only - no metadata or prompt */}
-            <div className="relative w-full h-[90vh]">
-              <img
-                src={imageSrc}
-                alt={imageAlt}
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </motion.div>
+          />
         </motion.div>
       )}
     </AnimatePresence>

@@ -32,6 +32,9 @@ export default function DesignGallery({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingDesign, setEditingDesign] = useState<Design | null>(null);
   const [isEditingDesign, setIsEditingDesign] = useState(false);
+  const [previewImageData, setPreviewImageData] = useState<string | null>(null);
+  const [pendingEditRequest, setPendingEditRequest] = useState<string>('');
+  const [isSavingDesign, setIsSavingDesign] = useState(false);
 
   const handleDelete = async (id: string) => {
     try {
@@ -187,68 +190,14 @@ export default function DesignGallery({
 
       if (data.imageData) {
         console.log('Received image data from API, length:', data.imageData.length);
-        console.log('Saving edited design to database...');
 
-        try {
-          // Save edited design to database with storage upload
-          const supabase = createClient();
-          const { data: { user } } = await supabase.auth.getUser();
+        // Close edit modal and show preview
+        setEditModalOpen(false);
+        setPendingEditRequest(editRequest);
+        setPreviewImageData(data.imageData);
 
-          if (!user) {
-            throw new Error(direction === 'rtl' ? 'المستخدم غير مسجل الدخول' : 'User not authenticated');
-          }
-
-          console.log('Uploading edited design to storage for user:', user.id);
-
-          // Generate a unique design ID
-          const designId = crypto.randomUUID();
-
-          // Process and upload image to storage (full + thumbnail)
-          const { fullImageUrl, thumbnailUrl, fullImagePath, thumbnailPath } =
-            await processAndUploadDesignImage(user.id, designId, data.imageData);
-
-          console.log('Images uploaded to storage, saving to database...');
-
-          const { error: dbError } = await supabase.from('designs').insert({
-            id: designId,
-            user_id: user.id,
-            original_description: editingDesign.original_description || JSON.stringify(editingDesign.questionnaire_answers),
-            image_url: fullImageUrl, // Public URL from storage
-            storage_path: fullImagePath, // Storage path for full image
-            thumbnail_url: thumbnailUrl, // Public URL for thumbnail
-            thumbnail_storage_path: thumbnailPath, // Storage path for thumbnail
-            enhanced_prompt: editingDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`,
-            questionnaire_answers: editingDesign.questionnaire_answers,
-            embellishment_placement: editingDesign.questionnaire_answers?.embellishmentPlacement || null,
-          });
-
-          if (dbError) {
-            console.error('Supabase insert error:', {
-              message: dbError.message,
-              details: dbError.details,
-              hint: dbError.hint,
-              code: dbError.code,
-            });
-            throw new Error(
-              dbError.message ||
-              (direction === 'rtl' ? 'فشل في حفظ التصميم في قاعدة البيانات' : 'Failed to save design to database')
-            );
-          }
-
-          console.log('Design saved successfully, refreshing designs...');
-
-          // Refresh designs
-          onDesignsUpdate();
-
-          console.log('Designs refreshed successfully');
-
-          setEditModalOpen(false);
-          setEditingDesign(null);
-          alert(direction === 'rtl' ? 'تم حفظ التصميم المعدّل بنجاح!' : 'Edited design saved successfully!');
-        } catch (dbSaveError) {
-          console.error('Error saving edited design to database:', dbSaveError);
-          throw dbSaveError; // Re-throw to be caught by outer catch
-        }
+        // Auto-save to library in background
+        autoSaveEditedDesign(data.imageData, editRequest);
       }
     } catch (error) {
       console.error('Error editing design:', error);
@@ -273,6 +222,71 @@ export default function DesignGallery({
     } finally {
       setIsEditingDesign(false);
     }
+  };
+
+  const autoSaveEditedDesign = async (imageData: string, editRequest: string) => {
+    if (!editingDesign) return;
+
+    try {
+      setIsSavingDesign(true);
+
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const designId = crypto.randomUUID();
+      const { fullImageUrl, thumbnailUrl, fullImagePath, thumbnailPath } =
+        await processAndUploadDesignImage(user.id, designId, imageData);
+
+      const { error: dbError } = await supabase.from('designs').insert({
+        id: designId,
+        user_id: user.id,
+        original_description: editingDesign.original_description || JSON.stringify(editingDesign.questionnaire_answers),
+        image_url: fullImageUrl,
+        storage_path: fullImagePath,
+        thumbnail_url: thumbnailUrl,
+        thumbnail_storage_path: thumbnailPath,
+        enhanced_prompt: editingDesign.enhanced_prompt + `\n\nEdit: ${editRequest}`,
+        questionnaire_answers: editingDesign.questionnaire_answers,
+        embellishment_placement: editingDesign.questionnaire_answers?.embellishmentPlacement || null,
+      });
+
+      if (dbError) throw new Error(dbError.message);
+
+      onDesignsUpdate();
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+    } finally {
+      setIsSavingDesign(false);
+    }
+  };
+
+  const handleDownloadPreview = () => {
+    if (!previewImageData) return;
+    const a = document.createElement('a');
+    a.href = `data:image/png;base64,${previewImageData}`;
+    a.download = `edited-design-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleRequestAnotherEdit = () => {
+    if (!previewImageData || !editingDesign) return;
+    // Use the current preview image as the new base for editing
+    setEditingDesign({
+      ...editingDesign,
+      image_url: `data:image/png;base64,${previewImageData}`,
+    });
+    setPreviewImageData(null);
+    setPendingEditRequest('');
+    setEditModalOpen(true);
+  };
+
+  const handleClosePreview = () => {
+    setPreviewImageData(null);
+    setEditingDesign(null);
+    setPendingEditRequest('');
   };
 
   // Filter out designs that are being deleted (optimistic UI)
@@ -359,6 +373,97 @@ export default function DesignGallery({
         onSubmit={handleEditDesign}
         loading={isEditingDesign}
       />
+
+      {/* Edit Result Preview Modal */}
+      <AnimatePresence>
+        {previewImageData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            dir={direction}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-bold text-primary">
+                    {direction === 'rtl' ? 'نتيجة التعديل' : 'Edit Result'}
+                  </h2>
+                  {/* Auto-save status */}
+                  <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
+                    isSavingDesign
+                      ? 'bg-amber-50 text-amber-600'
+                      : 'bg-green-50 text-green-600'
+                  }`}>
+                    {isSavingDesign ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-500 rounded-full animate-spin" />
+                        {direction === 'rtl' ? 'جارٍ الحفظ...' : 'Saving...'}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {direction === 'rtl' ? 'تم الحفظ في المكتبة' : 'Saved to Library'}
+                      </>
+                    )}
+                  </span>
+                </div>
+                <button
+                  onClick={handleClosePreview}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Image Preview */}
+              <div className="flex-1 overflow-y-auto p-5">
+                <div className="relative rounded-xl overflow-hidden shadow-lg bg-gray-50">
+                  <img
+                    src={`data:image/png;base64,${previewImageData}`}
+                    alt="Edited Design Preview"
+                    className="w-full object-contain max-h-[55vh]"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 p-5 border-t border-gray-200">
+                <button
+                  onClick={handleDownloadPreview}
+                  className="flex-1 px-5 py-3 rounded-xl border-2 border-gray-200 text-neutral-700 font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  {direction === 'rtl' ? 'حفظ الصورة' : 'Save Image'}
+                </button>
+                <button
+                  onClick={handleRequestAnotherEdit}
+                  disabled={isSavingDesign}
+                  className="flex-1 px-5 py-3 rounded-xl bg-accent-gold text-white font-semibold hover:bg-accent-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  {direction === 'rtl' ? 'طلب تعديل آخر' : 'Request Another Edit'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
