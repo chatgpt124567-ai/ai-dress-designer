@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export type GeminiModel = 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview';
+export type GeminiModel = 'google/gemini-3.1-flash-image-preview' | 'openai/gpt-5.4-image-2';
 
 export interface EditDesignRequest {
   originalImageUrl: string;

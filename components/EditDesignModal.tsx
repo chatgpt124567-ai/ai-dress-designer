@@ -371,7 +371,7 @@ export default function EditDesignModal({ isOpen, onClose, onSubmit, loading = f
 
                         {/* Advanced Model Option */}
                         <button
-                          onClick={() => handleSubmit('google/gemini-3-pro-image-preview')}
+                          onClick={() => handleSubmit('openai/gpt-5.4-image-2')}
                           disabled={isProcessing}
                           className={cn(
                             'group relative p-6 rounded-xl border-2 transition-all text-start',

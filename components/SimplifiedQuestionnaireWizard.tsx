@@ -553,7 +553,7 @@ export default function SimplifiedQuestionnaireWizard({
           <>
             {hasReferenceForQuestion(['skirt', 'waist']) && renderReferenceMatchCard(
               answers.skirtShape,
-              () => updateAnswer('skirtShape', 'reference_match'),
+              () => updateAnswer('skirtShape', answers.skirtShape === 'reference_match' ? '' : 'reference_match'),
               getMatchingReferenceImages(['skirt', 'waist'])
             )}
             <QuestionStep
@@ -621,7 +621,7 @@ export default function SimplifiedQuestionnaireWizard({
             {/* Reference match card — shown above grid if relevant */}
             {hasReferenceForQuestion(['neckline', 'bodice']) && renderReferenceMatchCard(
               answers.necklineType,
-              () => updateAnswer('necklineType', 'reference_match'),
+              () => updateAnswer('necklineType', answers.necklineType === 'reference_match' ? '' : 'reference_match'),
               getMatchingReferenceImages(['neckline', 'bodice'])
             )}
 
@@ -682,7 +682,7 @@ export default function SimplifiedQuestionnaireWizard({
           <>
             {hasReferenceForQuestion(['back']) && renderReferenceMatchCard(
               answers.backStyle || '',
-              () => updateAnswer('backStyle', 'reference_match'),
+              () => updateAnswer('backStyle', answers.backStyle === 'reference_match' ? '' : 'reference_match'),
               getMatchingReferenceImages(['back'])
             )}
             <QuestionStep
@@ -715,7 +715,7 @@ export default function SimplifiedQuestionnaireWizard({
           <>
             {hasReferenceForQuestion(['sleeves']) && renderReferenceMatchCard(
               answers.sleeveType,
-              () => updateAnswer('sleeveType', 'reference_match'),
+              () => updateAnswer('sleeveType', answers.sleeveType === 'reference_match' ? '' : 'reference_match'),
               getMatchingReferenceImages(['sleeves'])
             )}
             <QuestionStep

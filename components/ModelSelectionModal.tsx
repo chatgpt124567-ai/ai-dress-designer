@@ -127,7 +127,7 @@ export default function ModelSelectionModal({
 
                   {/* Advanced Model Option */}
                   <button
-                    onClick={() => handleModelSelect('google/gemini-3-pro-image-preview')}
+                    onClick={() => handleModelSelect('openai/gpt-5.4-image-2')}
                     disabled={loading}
                     className={cn(
                       'group relative p-6 rounded-xl border-2 transition-all text-start',

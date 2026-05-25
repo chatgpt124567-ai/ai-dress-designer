@@ -515,47 +515,24 @@ function DesignPageContent() {
     console.log('=== handleSubmit called ===');
     console.log('Is authenticated:', isAuthenticated);
 
-    // Show review modal instead of processing immediately
-    setPendingSubmitAnswers(questionnaireAnswers);
-    setReviewModalOpen(true);
-  };
-
-  const handleReviewConfirm = async () => {
-    console.log('=== Review confirmed ===');
-    setReviewModalOpen(false);
-
-    if (!pendingSubmitAnswers) return;
-
     // Check if user is authenticated
     if (!isAuthenticated) {
       console.log('User not authenticated - saving answers and showing auth modal');
-
-      // Save answers to localStorage (for recovery after OAuth)
-      saveAnswersToLocalStorage(pendingSubmitAnswers);
-      console.log('Saved answers to localStorage');
-
-      // Set OAuth redirect flag so we know to restore answers after login
+      saveAnswersToLocalStorage(questionnaireAnswers);
       sessionStorage.setItem(OAUTH_REDIRECT_FLAG, 'true');
-      console.log('Set OAuth redirect flag');
-
-      // Save answers temporarily and show auth modal
-      setPendingAnswers(pendingSubmitAnswers);
+      setPendingAnswers(questionnaireAnswers);
       setAuthModalOpen(true);
       return;
     }
 
-    // User is authenticated - show model selection modal
+    // User is authenticated - show model selection modal directly
     console.log('User authenticated - showing model selection modal');
-    setPendingGenerationAnswers(pendingSubmitAnswers);
+    setPendingGenerationAnswers(questionnaireAnswers);
     setModelSelectionModalOpen(true);
-    setPendingSubmitAnswers(null);
   };
 
-  const handleReviewEdit = () => {
-    console.log('=== Review edit requested ===');
-    setReviewModalOpen(false);
-    // User stays on questionnaire to edit answers
-  };
+  const handleReviewConfirm = async () => {};
+  const handleReviewEdit = () => {};
 
   const handleModelSelection = async (model: GeminiImageModel, attempts?: number) => {
     console.log('=== Model selected:', model, 'attempts:', attempts || 1, '===');
@@ -851,10 +828,11 @@ function DesignPageContent() {
           const generatedImageUrl = generateData.imageUrl || generateData.imageData || '';
           if (!generatedImageUrl) throw new Error('No image received');
 
-          // Auto-save each design
-          await autoSaveDesign(questionnaireAnswers, finalPrompt, generatedImageUrl, selectedAIModel);
-
           setCompletedAttempts(prev => prev + 1);
+
+          // Auto-save in background (don't block result display)
+          autoSaveDesign(questionnaireAnswers, finalPrompt, generatedImageUrl, selectedAIModel)
+            .catch(err => console.error(`Auto-save failed for attempt ${index + 1}:`, err));
 
           return { imageUrl: generatedImageUrl, enhancedPrompt: finalPrompt };
         } catch (err) {
@@ -1738,7 +1716,7 @@ function DesignPageContent() {
         body: JSON.stringify({
           originalImageUrl: design.imageUrl,
           editRequest: editRequest,
-          model: model as 'google/gemini-3.1-flash-image-preview' | 'google/gemini-3-pro-image-preview',
+          model: model as 'google/gemini-3.1-flash-image-preview' | 'openai/gpt-5.4-image-2',
         } as EditDesignRequest),
       });
 
@@ -1961,12 +1939,11 @@ function DesignPageContent() {
 
               {ownFabricStep === 'questionnaire' && (
                 <>
-                  {step === 'input' && !reviewModalOpen && (
+                  {step === 'input' && (
                     <SimplifiedQuestionnaireWizard
                       onSubmit={(answers) => {
                         setCurrentAnswers(answers);
-                        setPendingSubmitAnswers(answers);
-                        setReviewModalOpen(true);
+                        handleSubmit(answers);
                       }}
                       loading={loading}
                       initialAnswers={savedAnswers || undefined}
@@ -2254,16 +2231,6 @@ function DesignPageContent() {
                 </>
               )}
 
-              {/* Questionnaire Review Modal for Own Fabric */}
-              {pendingSubmitAnswers && (
-                <QuestionnaireReviewModal
-                  isOpen={reviewModalOpen}
-                  answers={pendingSubmitAnswers}
-                  onConfirm={handleReviewConfirm}
-                  onEdit={handleReviewEdit}
-                  onClose={() => setReviewModalOpen(false)}
-                />
-              )}
             </>
           )}
 
@@ -2533,16 +2500,6 @@ function DesignPageContent() {
           imageAlt={direction === 'rtl' ? 'إصدار سابق' : 'Previous Version'}
         />
 
-        {/* Questionnaire Review Modal (for scratch mode) */}
-        {designMode === 'scratch' && pendingSubmitAnswers && (
-          <QuestionnaireReviewModal
-            isOpen={reviewModalOpen}
-            answers={pendingSubmitAnswers}
-            onConfirm={handleReviewConfirm}
-            onEdit={handleReviewEdit}
-            onClose={() => setReviewModalOpen(false)}
-          />
-        )}
 
         {/* Design Details Modal for History */}
         <DesignDetailsModal
