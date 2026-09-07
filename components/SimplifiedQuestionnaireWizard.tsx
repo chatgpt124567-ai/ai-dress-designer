@@ -274,6 +274,8 @@ export default function SimplifiedQuestionnaireWizard({
   // Auto-select 'reference_match' when entering a relevant step with no prior answer
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
+    if (currentStep === 2 && !answers.dressType   && hasReferenceForQuestion(['full_body']))           updateAnswer('dressType',    'reference_match');
+    if (currentStep === 3 && !answers.dressLength && hasReferenceForQuestion(['full_body', 'skirt']))  updateAnswer('dressLength',  'reference_match');
     if (currentStep === 4 && !answers.skirtShape  && hasReferenceForQuestion(['skirt', 'waist']))    updateAnswer('skirtShape',   'reference_match');
     if (currentStep === 5 && !answers.necklineType && hasReferenceForQuestion(['neckline', 'bodice'])) updateAnswer('necklineType', 'reference_match');
     if (currentStep === 6 && !answers.backStyle   && hasReferenceForQuestion(['back']))               updateAnswer('backStyle',    'reference_match');
@@ -511,41 +513,55 @@ export default function SimplifiedQuestionnaireWizard({
 
       case 2: // Dress Type
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section1.title')}
-            questionText={t('questionnaire.section1.q1.question')}
-            questionType="radio"
-            options={[
-              { value: 'evening', labelKey: 'questionnaire.section1.q1.options.evening' },
-              { value: 'wedding', labelKey: 'questionnaire.section1.q1.options.wedding' },
-              { value: 'engagement', labelKey: 'questionnaire.section1.q1.options.engagement' },
-              { value: 'party', labelKey: 'questionnaire.section1.q1.options.party' },
-              { value: 'other', labelKey: 'questionnaire.section1.q1.options.other', hasCustomInput: true },
-            ]}
-            value={answers.dressType}
-            customValue={answers.dressTypeCustom}
-            onChange={(value, customValue) => updateAnswer('dressType', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
+          <>
+            {hasReferenceForQuestion(['full_body']) && renderReferenceMatchCard(
+              answers.dressType,
+              () => updateAnswer('dressType', answers.dressType === 'reference_match' ? '' : 'reference_match'),
+              getMatchingReferenceImages(['full_body'])
+            )}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section1.title')}
+              questionText={t('questionnaire.section1.q1.question')}
+              questionType="radio"
+              options={[
+                { value: 'evening', labelKey: 'questionnaire.section1.q1.options.evening' },
+                { value: 'wedding', labelKey: 'questionnaire.section1.q1.options.wedding' },
+                { value: 'engagement', labelKey: 'questionnaire.section1.q1.options.engagement' },
+                { value: 'party', labelKey: 'questionnaire.section1.q1.options.party' },
+                { value: 'other', labelKey: 'questionnaire.section1.q1.options.other', hasCustomInput: true },
+              ]}
+              value={answers.dressType === 'reference_match' ? '' : answers.dressType}
+              customValue={answers.dressTypeCustom}
+              onChange={(value, customValue) => updateAnswer('dressType', value as string, customValue)}
+              onAutoAdvance={handleNext}
+            />
+          </>
         );
 
       case 3: // Dress Length
         return (
-          <QuestionStep
-            sectionTitle={t('questionnaire.section1.title')}
-            questionText={t('questionnaire.section1.q3.question')}
-            questionType="radio"
-            options={[
-              { value: 'knee', labelKey: 'questionnaire.section1.q3.options.knee' },
-              { value: 'floor', labelKey: 'questionnaire.section1.q3.options.floor' },
-              { value: 'train', labelKey: 'questionnaire.section1.q3.options.train' },
-              { value: 'other', labelKey: 'questionnaire.section1.q3.options.other', hasCustomInput: true },
-            ]}
-            value={answers.dressLength}
-            customValue={answers.dressLengthCustom}
-            onChange={(value, customValue) => updateAnswer('dressLength', value as string, customValue)}
-            onAutoAdvance={handleNext}
-          />
+          <>
+            {hasReferenceForQuestion(['full_body', 'skirt']) && renderReferenceMatchCard(
+              answers.dressLength,
+              () => updateAnswer('dressLength', answers.dressLength === 'reference_match' ? '' : 'reference_match'),
+              getMatchingReferenceImages(['full_body', 'skirt'])
+            )}
+            <QuestionStep
+              sectionTitle={t('questionnaire.section1.title')}
+              questionText={t('questionnaire.section1.q3.question')}
+              questionType="radio"
+              options={[
+                { value: 'knee', labelKey: 'questionnaire.section1.q3.options.knee' },
+                { value: 'floor', labelKey: 'questionnaire.section1.q3.options.floor' },
+                { value: 'train', labelKey: 'questionnaire.section1.q3.options.train' },
+                { value: 'other', labelKey: 'questionnaire.section1.q3.options.other', hasCustomInput: true },
+              ]}
+              value={answers.dressLength === 'reference_match' ? '' : answers.dressLength}
+              customValue={answers.dressLengthCustom}
+              onChange={(value, customValue) => updateAnswer('dressLength', value as string, customValue)}
+              onAutoAdvance={handleNext}
+            />
+          </>
         );
 
       case 4: // شكل التنورة - نسخة من السؤال 5 في قسم ابتكري تصميمك

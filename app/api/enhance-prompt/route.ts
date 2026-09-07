@@ -5,11 +5,13 @@ import type { EnhancePromptRequest, EnhancePromptResponse, QuestionnaireAnswers 
 function formatQuestionnaireAnswers(answers: QuestionnaireAnswers): string {
   const parts: string[] = [];
 
-  // Section 1: Basics
-  parts.push(`**Dress Type:** ${answers.dressType}${answers.dressTypeCustom ? ` (${answers.dressTypeCustom})` : ''}`);
-  parts.push(`**Dress Length:** ${answers.dressLength}${answers.dressLengthCustom ? ` (${answers.dressLengthCustom})` : ''}`);
-
   const REF_MATCH = 'as shown in the attached reference image for this area';
+
+  // Section 1: Basics
+  const dressTypeVal = answers.dressType === 'reference_match' ? REF_MATCH : answers.dressType;
+  parts.push(`**Dress Type:** ${dressTypeVal}${answers.dressTypeCustom && answers.dressType !== 'reference_match' ? ` (${answers.dressTypeCustom})` : ''}`);
+  const dressLengthVal = answers.dressLength === 'reference_match' ? REF_MATCH : answers.dressLength;
+  parts.push(`**Dress Length:** ${dressLengthVal}${answers.dressLengthCustom && answers.dressLength !== 'reference_match' ? ` (${answers.dressLengthCustom})` : ''}`);
 
   // Section 2: Silhouette (Q3 Waist Shape removed)
   const skirtShapeVal = answers.skirtShape === 'reference_match' ? REF_MATCH : answers.skirtShape;

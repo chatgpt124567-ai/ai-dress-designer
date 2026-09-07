@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Upload, Sparkles, Download, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { compressImage, base64ToBlob } from '@/lib/imageUtils';
+import { smartCompressImage } from '@/lib/imageUtils';
 import Button from './Button';
 import Lightbox from './Lightbox';
 import { createClient } from '@/lib/supabase/client';
@@ -81,11 +81,10 @@ export default function RemoveModelWorkflow({
   const [isCompressing, setIsCompressing] = useState(false);
 
   // Handle file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       setError(direction === 'rtl' ? 'يرجى اختيار صورة بصيغة JPG أو PNG أو WEBP' : 'Please select a JPG, PNG, or WEBP image');
@@ -93,68 +92,34 @@ export default function RemoveModelWorkflow({
     }
 
     setError('');
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const fileSizeMB = file.size / (1024 * 1024);
 
-    // Convert to base64
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const base64 = event.target?.result as string;
-      if (!base64) {
-        setError(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+    try {
+      setIsCompressing(true);
+      const result = await smartCompressImage(file);
+
+      if (result.exceedsTarget) {
+        setError(
+          direction === 'rtl'
+            ? `الصورة كبيرة جداً (${result.originalSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، حجمها (${result.finalSizeMB.toFixed(1)} ميجا) لا يزال كبيراً جداً. يرجى اختيار صورة أصغر.`
+            : `Image too large (${result.originalSizeMB.toFixed(1)}MB). Even after maximum compression, size (${result.finalSizeMB.toFixed(1)}MB) is still too large. Please choose a smaller image.`
+        );
         return;
       }
 
-      let finalImage = base64;
+      setUploadedImage(result.base64);
 
-      // Smart compression for images > 5MB
-      if (file.size > MAX_SIZE) {
-        try {
-          setIsCompressing(true);
-          const targetSizeMB = 4.99;
-          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
-
-          console.log(`Image is ${fileSizeMB.toFixed(2)}MB, compressing with quality ${quality.toFixed(2)}...`);
-
-          const compressed = await compressImage(base64, 99999, quality);
-          const compressedBlob = base64ToBlob(compressed);
-          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
-
-          console.log(`Compressed: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB`);
-
-          if (compressedBlob.size > MAX_SIZE) {
-            setIsCompressing(false);
-            setError(
-              direction === 'rtl'
-                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
-                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
-            );
-            return;
-          }
-
-          finalImage = compressed;
-
-          const message = direction === 'rtl'
-            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
-            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
-          setTimeout(() => alert(message), 100);
-        } catch (err) {
-          console.error('Compression error:', err);
-          setIsCompressing(false);
-          setError(
-            direction === 'rtl'
-              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
-              : 'Failed to compress image. Please choose an image smaller than 5MB.'
-          );
-          return;
-        } finally {
-          setIsCompressing(false);
-        }
+      if (result.wasCompressed) {
+        const message = direction === 'rtl'
+          ? `✅ تم ضغط الصورة: ${result.originalSizeMB.toFixed(1)} ميجا ← ${result.finalSizeMB.toFixed(1)} ميجا`
+          : `✅ Image compressed: ${result.originalSizeMB.toFixed(1)}MB → ${result.finalSizeMB.toFixed(1)}MB`;
+        setTimeout(() => alert(message), 100);
       }
-
-      setUploadedImage(finalImage);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Compression error:', err);
+      setError(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   // Handle submit - start processing with fast model

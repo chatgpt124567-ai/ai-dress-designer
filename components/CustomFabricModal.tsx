@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { compressImage, base64ToBlob } from '@/lib/imageUtils';
+import { smartCompressImage } from '@/lib/imageUtils';
 import Button from '@/components/Button';
 
 interface CustomFabricModalProps {
@@ -50,115 +50,45 @@ export default function CustomFabricModal({
     }
   }, [isOpen, customFabricImage, fabricPlacement, fabricPlacementDetails]);
 
-  const handleFileChange = (file: File | null) => {
-    if (!file) {
-      console.log('No file selected');
-      return;
-    }
+  const handleFileChange = async (file: File | null) => {
+    if (!file) return;
 
-    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       alert(direction === 'rtl' ? 'يرجى اختيار ملف صورة' : 'Please select an image file');
       return;
     }
 
-    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const fileSizeMB = file.size / (1024 * 1024);
+    try {
+      setIsCompressing(true);
+      const result = await smartCompressImage(file);
 
-    const reader = new FileReader();
-
-    reader.onloadstart = () => {
-      console.log('Starting to read file...');
-    };
-
-    reader.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const percentLoaded = Math.round((e.loaded / e.total) * 100);
-        console.log(`Loading: ${percentLoaded}%`);
-      }
-    };
-
-    reader.onload = async () => {
-      console.log('File loaded successfully');
-      const result = reader.result as string;
-      if (!result) {
-        console.error('Reader result is empty');
-        alert(direction === 'rtl' ? 'فشل في قراءة الصورة' : 'Failed to read image');
+      if (result.exceedsTarget) {
+        alert(
+          direction === 'rtl'
+            ? `الصورة كبيرة جداً (${result.originalSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، حجمها (${result.finalSizeMB.toFixed(1)} ميجا) لا يزال كبيراً جداً. يرجى اختيار صورة أصغر.`
+            : `Image too large (${result.originalSizeMB.toFixed(1)}MB). Even after maximum compression, size (${result.finalSizeMB.toFixed(1)}MB) is still too large. Please choose a smaller image.`
+        );
         return;
       }
 
-      let finalImage = result;
-
-      // Smart compression for images > 5MB
-      if (file.size > MAX_SIZE) {
-        try {
-          setIsCompressing(true);
-          const targetSizeMB = 4.99;
-          const quality = Math.max(0.75, targetSizeMB / fileSizeMB);
-
-          console.log(`Image is ${fileSizeMB.toFixed(2)}MB, compressing with quality ${quality.toFixed(2)}...`);
-
-          // Compress without reducing dimensions (maxWidth = 99999)
-          const compressed = await compressImage(result, 99999, quality);
-          const compressedBlob = base64ToBlob(compressed);
-          const compressedSizeMB = compressedBlob.size / (1024 * 1024);
-
-          console.log(`Compressed: ${fileSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB`);
-
-          if (compressedBlob.size > MAX_SIZE) {
-            setIsCompressing(false);
-            alert(
-              direction === 'rtl'
-                ? `الصورة كبيرة جداً (${fileSizeMB.toFixed(1)} ميجا). حتى بعد الضغط بأقصى درجة، الحجم (${compressedSizeMB.toFixed(1)} ميجا) لا يزال أكبر من 5 ميجا. يرجى اختيار صورة أصغر.`
-                : `Image too large (${fileSizeMB.toFixed(1)}MB). Even after maximum compression, size (${compressedSizeMB.toFixed(1)}MB) still exceeds 5MB. Please choose a smaller image.`
-            );
-            return;
-          }
-
-          finalImage = compressed;
-
-          // Notify user about compression
-          const message = direction === 'rtl'
-            ? `✅ تم ضغط الصورة: ${fileSizeMB.toFixed(1)} ميجا ← ${compressedSizeMB.toFixed(1)} ميجا`
-            : `✅ Image compressed: ${fileSizeMB.toFixed(1)}MB → ${compressedSizeMB.toFixed(1)}MB`;
-          setTimeout(() => alert(message), 100);
-
-        } catch (error) {
-          console.error('Compression error:', error);
-          setIsCompressing(false);
-          alert(
-            direction === 'rtl'
-              ? 'فشل في ضغط الصورة. يرجى اختيار صورة أصغر من 5 ميجا.'
-              : 'Failed to compress image. Please choose an image smaller than 5MB.'
-          );
-          return;
-        } finally {
-          setIsCompressing(false);
-        }
-      }
-
-      console.log('Setting temp image, length:', finalImage.length);
-      setTempImage(finalImage);
+      setTempImage(result.base64);
       setStep('placement');
-    };
 
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      alert(direction === 'rtl' ? 'حدث خطأ أثناء قراءة الصورة. يرجى المحاولة مرة أخرى' : 'Error reading image. Please try again');
-    };
-
-    reader.onabort = () => {
-      console.warn('FileReader aborted');
-      alert(direction === 'rtl' ? 'تم إلغاء قراءة الصورة' : 'Image reading was cancelled');
-    };
-
-    try {
-      reader.readAsDataURL(file);
+      if (result.wasCompressed) {
+        const message = direction === 'rtl'
+          ? `✅ تم ضغط الصورة: ${result.originalSizeMB.toFixed(1)} ميجا ← ${result.finalSizeMB.toFixed(1)} ميجا`
+          : `✅ Image compressed: ${result.originalSizeMB.toFixed(1)}MB → ${result.finalSizeMB.toFixed(1)}MB`;
+        setTimeout(() => alert(message), 100);
+      }
     } catch (error) {
-      console.error('Error starting FileReader:', error);
-      alert(direction === 'rtl' ? 'فشل في بدء قراءة الصورة' : 'Failed to start reading image');
+      console.error('Compression error:', error);
+      alert(
+        direction === 'rtl'
+          ? 'فشل في معالجة الصورة. يرجى المحاولة مرة أخرى.'
+          : 'Failed to process image. Please try again.'
+      );
+    } finally {
+      setIsCompressing(false);
     }
   };
 

@@ -76,6 +76,113 @@ export async function compressImage(
   });
 }
 
+// Safe upload target: keep the binary payload small enough so that after
+// base64 encoding (+~33%) the JSON body stays well under the serverless body
+// limit (~4.5MB on Vercel), even when several images are sent together.
+export const SAFE_UPLOAD_TARGET_BYTES = 1 * 1024 * 1024; // 1MB binary -> ~1.4MB base64
+
+export interface SmartCompressResult {
+  /** Final base64 data URL (image/jpeg) ready to send. */
+  base64: string;
+  /** Final binary blob (image/jpeg). */
+  blob: Blob;
+  /** Original file size in MB (for UI messages). */
+  originalSizeMB: number;
+  /** Final size in MB after compression (for UI messages). */
+  finalSizeMB: number;
+  /** True if the image had to be re-encoded/resized. */
+  wasCompressed: boolean;
+  /** True if compression couldn't bring the image under the target. */
+  exceedsTarget: boolean;
+}
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === 'string' && result.length > 0) resolve(result);
+      else reject(new Error('Empty file read result'));
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Iteratively compress an image (reducing dimensions + quality) until the
+ * binary blob is at or below `targetBytes`. Used for any user-uploaded image
+ * that will be sent to a server API in JSON, so the request stays below the
+ * platform's body-size limit even when multiple images are bundled together.
+ */
+export async function smartCompressImage(
+  file: File,
+  options?: { targetBytes?: number }
+): Promise<SmartCompressResult> {
+  const targetBytes = options?.targetBytes ?? SAFE_UPLOAD_TARGET_BYTES;
+  const originalSizeMB = file.size / (1024 * 1024);
+
+  const base64 = await readFileAsDataURL(file);
+
+  // Already small enough — return as-is.
+  if (file.size <= targetBytes) {
+    return {
+      base64,
+      blob: file,
+      originalSizeMB,
+      finalSizeMB: originalSizeMB,
+      wasCompressed: false,
+      exceedsTarget: false,
+    };
+  }
+
+  // Progressively more aggressive passes: shrink both max dimension and quality.
+  const attempts: Array<{ width: number; quality: number }> = [
+    { width: 2048, quality: 0.85 },
+    { width: 1920, quality: 0.8 },
+    { width: 1600, quality: 0.78 },
+    { width: 1280, quality: 0.75 },
+    { width: 1024, quality: 0.72 },
+    { width: 900, quality: 0.7 },
+    { width: 800, quality: 0.68 },
+    { width: 720, quality: 0.65 },
+  ];
+
+  let bestBase64 = base64;
+  let bestBlob: Blob = file;
+
+  for (const { width, quality } of attempts) {
+    const compressed = await compressImage(base64, width, quality);
+    const blob = base64ToBlob(compressed);
+
+    // Track the smallest result so we can return it if nothing reaches the target.
+    if (blob.size < bestBlob.size) {
+      bestBase64 = compressed;
+      bestBlob = blob;
+    }
+
+    if (blob.size <= targetBytes) {
+      return {
+        base64: compressed,
+        blob,
+        originalSizeMB,
+        finalSizeMB: blob.size / (1024 * 1024),
+        wasCompressed: true,
+        exceedsTarget: false,
+      };
+    }
+  }
+
+  return {
+    base64: bestBase64,
+    blob: bestBlob,
+    originalSizeMB,
+    finalSizeMB: bestBlob.size / (1024 * 1024),
+    wasCompressed: true,
+    exceedsTarget: bestBlob.size > targetBytes,
+  };
+}
+
 /**
  * Generate thumbnail from base64 image
  * @param base64Image - Base64 data URL of the image
